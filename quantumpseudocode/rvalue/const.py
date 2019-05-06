@@ -14,15 +14,11 @@ class BoolRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def permutation_registers(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
         return []
 
-    def permutation_registers_from_value(self, val: bool) -> Tuple[int, ...]:
-        assert val == self.val
-        return ()
-
-    def value_from_permutation_registers(self, args: Tuple[int, ...]
-                                         ) -> bool:
+    def value_from_resolved_deps(self, args: Tuple[int, ...]
+                                 ) -> bool:
         return self.val
 
     def make_storage_location(self, name: Optional[str] = None):
@@ -55,16 +51,12 @@ class IntRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def permutation_registers(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
         return []
 
-    def value_from_permutation_registers(self, args: Tuple[int, ...]
-                                         ) -> int:
+    def value_from_resolved_deps(self, args: Tuple[int, ...]
+                                 ) -> int:
         return self.val
-
-    def permutation_registers_from_value(self, val: int) -> Tuple[int, ...]:
-        assert val == self.val
-        return ()
 
     def make_storage_location(self, name: str = ''):
         return quantumpseudocode.Quint(quantumpseudocode.NamedQureg(name, self.val.bit_length()))

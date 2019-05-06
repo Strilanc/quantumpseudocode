@@ -35,15 +35,12 @@ class ScaledIntRValue(RValue[int]):
 
         return NotImplemented
 
-    def permutation_registers(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
         return [self.coherent.qureg]
 
-    def value_from_permutation_registers(self, args: Tuple[int, ...]
-                                         ) -> int:
+    def value_from_resolved_deps(self, args: Tuple[int, ...]
+                                 ) -> int:
         return args[0]
-
-    def permutation_registers_from_value(self, val: int) -> Tuple[int, ...]:
-        return val,
 
     def make_storage_location(self, name: Optional[str] = None):
         return quantumpseudocode.Quint(quantumpseudocode.NamedQureg(
@@ -89,14 +86,11 @@ class QubitIntersection(RValue[bool]):
             return QubitIntersection(self.qubits + (other,))
         return NotImplemented
 
-    def permutation_registers(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
         return quantumpseudocode.RawQureg(self.qubits)
 
-    def value_from_permutation_registers(self, args: Tuple[int, ...]) -> bool:
+    def value_from_resolved_deps(self, args: Tuple[int, ...]) -> bool:
         return all(args)
-
-    def permutation_registers_from_value(self, val: bool) -> Tuple[int, ...]:
-        raise NotImplementedError("Irreversible.")
 
     def __rixor__(self, other):
         if isinstance(other, quantumpseudocode.Qubit):

@@ -1,6 +1,6 @@
 from typing import Optional, Any, Union, Generic, TypeVar, List, Tuple, Iterable, overload
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 T = TypeVar('T')
@@ -9,13 +9,10 @@ T = TypeVar('T')
 class RValue(Generic[T]):
     """A value or expression that only needs to exist temporarily."""
 
-    def permutation_registers(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['qp.Qureg']:
         raise NotImplementedError()
 
-    def value_from_permutation_registers(self, args: Tuple[int, ...]) -> T:
-        raise NotImplementedError()
-
-    def permutation_registers_from_value(self, val: T) -> Tuple[int, ...]:
+    def value_from_resolved_deps(self, args: Tuple[int, ...]) -> T:
         raise NotImplementedError()
 
     def existing_storage_location(self) -> Any:
@@ -24,55 +21,55 @@ class RValue(Generic[T]):
     def make_storage_location(self, name: Optional[str] = None) -> Any:
         raise NotImplementedError()
 
-    def phase_flip_if(self, controls: 'quantumpseudocode.QubitIntersection'):
-        with quantumpseudocode.hold(self, controls=controls) as loc:
-            quantumpseudocode.phase_flip(loc)
+    def phase_flip_if(self, controls: 'qp.QubitIntersection'):
+        with qp.hold(self, controls=controls) as loc:
+            qp.phase_flip(loc)
 
     def init_storage_location(self,
                               location: Any,
-                              controls: 'quantumpseudocode.QubitIntersection'):
+                              controls: 'qp.QubitIntersection'):
         raise NotImplementedError()
 
     def del_storage_location(self,
                              location: Any,
-                             controls: 'quantumpseudocode.QubitIntersection'):
-        with quantumpseudocode.invert():
+                             controls: 'qp.QubitIntersection'):
+        with qp.invert():
             self.init_storage_location(location, controls)
 
 
 @overload
-def rval(val: 'quantumpseudocode.Qubit') -> 'quantumpseudocode.RValue[bool]':
+def rval(val: 'qp.Qubit') -> 'qp.RValue[bool]':
     pass
 @overload
-def rval(val: 'quantumpseudocode.Quint') -> 'quantumpseudocode.RValue[int]':
+def rval(val: 'qp.Quint') -> 'qp.RValue[int]':
     pass
 @overload
-def rval(val: 'int') -> 'quantumpseudocode.RValue[int]':
+def rval(val: 'int') -> 'qp.RValue[int]':
     pass
 @overload
-def rval(val: 'bool') -> 'quantumpseudocode.RValue[bool]':
+def rval(val: 'bool') -> 'qp.RValue[bool]':
     pass
 @overload
-def rval(val: 'quantumpseudocode.RValue[T]') -> 'quantumpseudocode.RValue[T]':
+def rval(val: 'qp.RValue[T]') -> 'qp.RValue[T]':
     pass
-def rval(val: Any) -> 'quantumpseudocode.RValue[Any]':
-    """Wraps the given candidate value into a `quantumpseudocode.RValue`, if needed.
+def rval(val: Any) -> 'qp.RValue[Any]':
+    """Wraps the given candidate value into a `qp.RValue`, if needed.
 
     Args:
          val: The value that the caller wants as an rvalue.
 
     Returns:
-        A `quantumpseudocode.RValue` wrapper around the given candidate value.
+        A `qp.RValue` wrapper around the given candidate value.
     """
     if isinstance(val, bool):
-        return quantumpseudocode.BoolRValue(val)
+        return qp.BoolRValue(val)
     if isinstance(val, int):
-        return quantumpseudocode.IntRValue(val)
-    if isinstance(val, quantumpseudocode.Qubit):
-        return quantumpseudocode.QubitRValue(val)
-    if isinstance(val, quantumpseudocode.Quint):
-        return quantumpseudocode.QuintRValue(val)
-    if isinstance(val, quantumpseudocode.RValue):
+        return qp.IntRValue(val)
+    if isinstance(val, qp.Qubit):
+        return qp.QubitRValue(val)
+    if isinstance(val, qp.Quint):
+        return qp.QuintRValue(val)
+    if isinstance(val, qp.RValue):
         return val
     raise NotImplementedError(
         "Don't know how to wrap type {} (value {!r}).".format(

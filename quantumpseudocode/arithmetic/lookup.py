@@ -1,10 +1,7 @@
-from typing import List, Optional, Union, Tuple, Callable, Any, Iterable
-
-import cirq
-import numpy as np
+from typing import Optional, Union, Tuple, Iterable
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation, Op
+from quantumpseudocode.ops import Op
 
 
 def _flatten(x):
@@ -124,6 +121,12 @@ class LookupRValue(qp.RValue[int]):
             return other
 
         return NotImplemented
+
+    def qureg_deps(self) -> Iterable['qp.Qureg']:
+        return self.address.qureg
+
+    def value_from_resolved_deps(self, args: Tuple[int]) -> int:
+        return self.table[args[0]]
 
     def make_storage_location(self,
                               name: Optional[str] = None) -> 'qp.Quint':
