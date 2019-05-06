@@ -9,6 +9,11 @@ class UnaryRValue(qp.RValue[int]):
     def __init__(self, binary: 'qp.Quint'):
         self.binary = binary
 
+    def __rixor__(self, other):
+        t = qp.LookupTable(1 << k for k in range(1 << len(self.binary)))
+        other ^= t[self.binary]
+        return other
+
     def qureg_deps(self) -> Iterable['qp.Qureg']:
         return [self.binary.qureg]
 
