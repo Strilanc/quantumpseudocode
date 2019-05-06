@@ -182,7 +182,7 @@ class Sim(qp.Lens):
             if r is None:
                 r = random.random() < 0.5
             op.result = r
-            self._write_qubit(op.target, 0)
+            self._write_qubit(op.target, False)
             return []
 
         if isinstance(op, qp.SignatureOperation):

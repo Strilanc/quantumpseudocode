@@ -2,16 +2,16 @@ import collections
 from typing import List, Union, Callable, Any, Optional, Tuple
 
 import cirq
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
-def separate_controls(op: 'quantumpseudocode.Operation') -> 'Tuple[quantumpseudocode.Operation, quantumpseudocode.QubitIntersection]':
-    if isinstance(op, quantumpseudocode.ControlledOperation):
+def separate_controls(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
+    if isinstance(op, qp.ControlledOperation):
         return op.uncontrolled, op.controls
-    return op, quantumpseudocode.QubitIntersection.EMPTY
+    return op, qp.QubitIntersection.EMPTY
 
 
-def _toggle_targets(lvalue: 'quantumpseudocode.Qureg') -> 'quantumpseudocode.Qureg':
+def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
     return lvalue
 
 
@@ -40,7 +40,7 @@ class MeasureResetGate(cirq.SingleQubitGate):
         return 'Mr'
 
 
-class LogCirqCircuit(quantumpseudocode.Lens):
+class LogCirqCircuit(qp.Lens):
     def __init__(self):
         super().__init__()
         self.circuit = cirq.Circuit()
@@ -48,11 +48,11 @@ class LogCirqCircuit(quantumpseudocode.Lens):
     def _val(self):
         return self.circuit
 
-    def modify(self, operation: 'quantumpseudocode.Operation'):
+    def modify(self, operation: 'qp.Operation'):
         unknown = False
 
         op, controls = separate_controls(operation)
-        if isinstance(op, quantumpseudocode.MeasureOperation):
+        if isinstance(op, qp.MeasureOperation):
             qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
             if op.reset:
                 self.circuit.append(MeasureResetGate()(*qubits),
@@ -61,13 +61,13 @@ class LogCirqCircuit(quantumpseudocode.Lens):
                 self.circuit.append(cirq.measure(*qubits),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
-        elif isinstance(op, quantumpseudocode.MeasureXForPhaseKickOperation):
+        elif isinstance(op, qp.MeasureXForPhaseKickOperation):
             q = op.target
             q2 = cirq.NamedQubit(str(q))
             self.circuit.append(MeasureXFixupGate()(q2),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
-        elif op == quantumpseudocode.OP_PHASE_FLIP:
+        elif op == qp.OP_PHASE_FLIP:
             if len(controls):
                 g = cirq.Z
                 for _ in range(len(controls) - 1):
@@ -76,8 +76,8 @@ class LogCirqCircuit(quantumpseudocode.Lens):
                 self.circuit.append(g(*ctrls),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
-        elif isinstance(op, quantumpseudocode.SignatureOperation):
-            if op.gate == quantumpseudocode.OP_TOGGLE:
+        elif isinstance(op, qp.SignatureOperation):
+            if op.gate == qp.OP_TOGGLE:
                 ctrls = [cirq.NamedQubit(str(q)) for q in controls]
                 targets = op.args.pass_into(_toggle_targets)
                 if len(targets):
@@ -87,9 +87,9 @@ class LogCirqCircuit(quantumpseudocode.Lens):
             else:
                 unknown = True
 
-        elif isinstance(op, quantumpseudocode.AllocQuregOperation):
+        elif isinstance(op, qp.AllocQuregOperation):
             pass
-        elif isinstance(op, quantumpseudocode.ReleaseQuregOperation):
+        elif isinstance(op, qp.ReleaseQuregOperation):
             pass
         else:
             unknown = True
@@ -100,7 +100,7 @@ class LogCirqCircuit(quantumpseudocode.Lens):
         return [operation]
 
 
-class CountNots(quantumpseudocode.Lens):
+class CountNots(qp.Lens):
     def __init__(self):
         super().__init__()
         self.counts = collections.Counter()
@@ -108,11 +108,11 @@ class CountNots(quantumpseudocode.Lens):
     def _val(self):
         return self.counts
 
-    def modify(self, operation: 'quantumpseudocode.Operation'):
+    def modify(self, operation: 'qp.Operation'):
         op, controls = separate_controls(operation)
 
-        if isinstance(op, quantumpseudocode.SignatureOperation):
-            if op.gate == quantumpseudocode.OP_TOGGLE:
+        if isinstance(op, qp.SignatureOperation):
+            if op.gate == qp.OP_TOGGLE:
                 targets = op.args.pass_into(_toggle_targets)
                 if len(controls) > 1:
                     self.counts[1] += 2 * (len(targets) - 1)

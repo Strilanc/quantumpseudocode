@@ -32,14 +32,16 @@ class Qubit:
     def init(self,
              value: 'qp.RValue[bool]',
              controls: 'qp.QubitIntersection' = None):
-        value.init_storage_location(self,
-                                    controls or qp.QubitIntersection.EMPTY)
+        qp.emit(
+            qp.LetRValueOperation(value, self).controlled_by(
+                controls or qp.QubitIntersection.EMPTY))
 
     def clear(self,
               value: 'qp.RValue[bool]',
               controls: 'qp.QubitIntersection' = None):
-        value.del_storage_location(self,
-                                   controls or qp.QubitIntersection.EMPTY)
+        qp.emit(
+            qp.DelRValueOperation(value, self).controlled_by(
+                controls or qp.QubitIntersection.EMPTY))
 
     def __ixor__(self, other):
         if other in [False, 0]:

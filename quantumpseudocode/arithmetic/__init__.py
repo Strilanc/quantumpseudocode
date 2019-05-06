@@ -16,11 +16,6 @@ from .mult_add import (
     PlusEqualProduct,
 )
 
-from .let_and import (
-    LetAnd,
-    DelAnd,
-)
-
 from .measure import (
     measure,
     measure_x_for_phase_fixup_and_reset,

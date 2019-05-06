@@ -22,14 +22,16 @@ class Quint:
     def init(self,
              value: 'qp.RValue[int]',
              controls: 'qp.QubitIntersection' = None):
-        value.init_storage_location(self,
-                                    controls or qp.QubitIntersection.EMPTY)
+        qp.emit(
+            qp.LetRValueOperation(value, self).controlled_by(
+                controls or qp.QubitIntersection.EMPTY))
 
     def clear(self,
               value: 'qp.RValue[int]',
               controls: 'qp.QubitIntersection' = None):
-        value.del_storage_location(self,
-                                   controls or qp.QubitIntersection.EMPTY)
+        qp.emit(
+            qp.DelRValueOperation(value, self).controlled_by(
+                controls or qp.QubitIntersection.EMPTY))
 
     def __setitem__(self, key, value):
         if value != self[key]:

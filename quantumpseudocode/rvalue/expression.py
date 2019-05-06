@@ -104,7 +104,14 @@ class QubitIntersection(RValue[bool]):
     def init_storage_location(self,
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
-        qp.emit(qp.LetAnd(lvalue=location).controlled_by(self & controls))
+        t = qp.RawQureg([location])
+        qp.emit(qp.OP_TOGGLE(t).controlled_by(self & controls))
+
+    def del_storage_location(self,
+                             location: Any,
+                             controls: 'qp.QubitIntersection'):
+        if qp.measure_x_for_phase_fixup_and_reset(location):
+            qp.phase_flip(self & controls)
 
     def __str__(self):
         return ' & '.join(str(e) for e in self)

@@ -1,56 +1,56 @@
 from typing import List, Union, Callable, Any, Optional, TypeVar, Generic, overload
 
-import quantumpseudocode
-from quantumpseudocode.ops.operation import Operation, FlagOperation
+import quantumpseudocode as qp
+from quantumpseudocode.ops import Operation, FlagOperation
 
 
 T = TypeVar('T')
 
 
 @overload
-def measure(val: quantumpseudocode.RValue[T], *, reset: bool = False) -> T:
+def measure(val: qp.RValue[T], *, reset: bool = False) -> T:
     pass
 @overload
-def measure(val: quantumpseudocode.Quint, *, reset: bool = False) -> int:
+def measure(val: qp.Quint, *, reset: bool = False) -> int:
     pass
 @overload
-def measure(val: quantumpseudocode.Qubit, *, reset: bool = False) -> bool:
+def measure(val: qp.Qubit, *, reset: bool = False) -> bool:
     pass
 @overload
-def measure(val: quantumpseudocode.Qureg, *, reset: bool = False) -> List[bool]:
+def measure(val: qp.Qureg, *, reset: bool = False) -> List[bool]:
     pass
-def measure(val: Union[quantumpseudocode.RValue[T], quantumpseudocode.Quint, quantumpseudocode.Qureg, quantumpseudocode.Qubit],
+def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
             *,
             reset: bool = False) -> Union[bool, int, List[bool], T]:
     op = _measure_op(val, reset=reset)
-    quantumpseudocode.emit(op)
+    qp.emit(op)
     assert op.results is not None
     return op.results
 
 
-def measure_x_for_phase_fixup_and_reset(val: quantumpseudocode.Qubit) -> bool:
-    op = quantumpseudocode.MeasureXForPhaseKickOperation(val)
-    quantumpseudocode.emit(op)
+def measure_x_for_phase_fixup_and_reset(val: qp.Qubit) -> bool:
+    op = qp.MeasureXForPhaseKickOperation(val)
+    qp.emit(op)
     return op.result
 
 
 def _measure_op(
-        val: Union[quantumpseudocode.RValue[T], quantumpseudocode.Qubit, quantumpseudocode.Qureg, quantumpseudocode.Quint] = None,
+        val: Union[qp.RValue[T], qp.Qubit, qp.Qureg, qp.Quint] = None,
         *,
         reset: bool = False
         ) -> Union['MeasureOperation[bool]',
                    'MeasureOperation[int]',
                    'MeasureOperation[List[bool]]',
                    '_MeasureRValueOperation[T]']:
-    if isinstance(val, quantumpseudocode.Qubit):
-        return MeasureOperation(quantumpseudocode.RawQureg([val]),
+    if isinstance(val, qp.Qubit):
+        return MeasureOperation(qp.RawQureg([val]),
                                 lambda e: bool(e[0]),
                                 reset)
 
-    if isinstance(val, quantumpseudocode.Qureg):
+    if isinstance(val, qp.Qureg):
         return MeasureOperation(val, lambda e: e, reset)
 
-    if isinstance(val, quantumpseudocode.Quint):
+    if isinstance(val, qp.Quint):
         def little_endian_int(e: List[bool]):
             t = 0
             for b in reversed(e):
@@ -60,7 +60,7 @@ def _measure_op(
             return t
         return MeasureOperation(val.qureg, little_endian_int, reset)
 
-    if isinstance(val, quantumpseudocode.RValue):
+    if isinstance(val, qp.RValue):
         return _MeasureRValueOperation(val, reset)
 
     raise NotImplementedError("Don't know {!r}".format(val))
@@ -68,7 +68,7 @@ def _measure_op(
 
 class _MeasureRValueOperation(Generic[T], Operation):
     def __init__(self,
-                 target: quantumpseudocode.RValue[T],
+                 target: qp.RValue[T],
                  reset: bool):
         self.target = target
         self.reset = reset
@@ -80,16 +80,16 @@ class _MeasureRValueOperation(Generic[T], Operation):
     def permute(self, forward: bool, args):
         pass
 
-    def emit_ops(self, controls: 'quantumpseudocode.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         assert len(controls) == 0, "Not allowed to control measurement."
 
-        with quantumpseudocode.hold(self.target) as target:
+        with qp.hold(self.target) as target:
             self.results = measure(target)
 
 
 class MeasureOperation(Generic[T], FlagOperation):
     def __init__(self,
-                 targets: quantumpseudocode.Qureg,
+                 targets: qp.Qureg,
                  interpret: Callable[[List[bool]], T],
                  reset: bool):
         self.targets = targets
@@ -103,12 +103,12 @@ class MeasureOperation(Generic[T], FlagOperation):
         return self.interpret(self.raw_results)
 
     def __repr__(self):
-        return 'quantumpseudocode.MeasureOperation({!r}, {!r}, {!r})'.format(
+        return 'qp.MeasureOperation({!r}, {!r}, {!r})'.format(
             self.targets, self.interpret, self.reset)
 
 
 class MeasureXForPhaseKickOperation(FlagOperation):
-    def __init__(self, target: quantumpseudocode.Qubit):
+    def __init__(self, target: qp.Qubit):
         self.target = target
         self.result = None  # type: Optional[bool]
 
@@ -116,5 +116,5 @@ class MeasureXForPhaseKickOperation(FlagOperation):
         return "Mxc({})".format(self.target)
 
     def __repr__(self):
-        return 'quantumpseudocode.MeasureXForPhaseKickOperation({!r})'.format(
+        return 'qp.MeasureXForPhaseKickOperation({!r})'.format(
             self.target)

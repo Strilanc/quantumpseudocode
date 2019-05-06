@@ -64,11 +64,11 @@ class DelRValueOperation(Operation):
         return LetRValueOperation(self.rvalue, self.loc)
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
-        self.rvalue.init_storage_location(self.loc, controls)
+        self.rvalue.del_storage_location(self.loc, controls)
 
     def __str__(self):
         return '{} := {}'.format(self.loc, self.rvalue)
 
     def __repr__(self):
         return 'qp.LetRValueOperation({!r}, {!r})'.format(self.rvalue,
-                                                             self.loc)
+                                                          self.loc)

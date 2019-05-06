@@ -1,17 +1,17 @@
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 def test_let_unary_circuit():
-    with quantumpseudocode.Sim():
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=3, name='b') as b:
-                with quantumpseudocode.qmanaged_int(bits=8, name='u') as u:
-                    with quantumpseudocode.qmanaged(quantumpseudocode.Qubit(name='_c')) as c:
-                            quantumpseudocode.emit(quantumpseudocode.LetUnary(
-                                binary=b,
-                                lvalue=u).controlled_by(c))
+    with qp.Sim():
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=3, name='b') as b:
+                with qp.qmanaged_int(bits=8, name='u') as u:
+                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+                        qp.emit(qp.LetUnary(
+                            binary=b,
+                            lvalue=u).controlled_by(c))
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _c: -----@-----------------------------------------------------------
@@ -41,12 +41,12 @@ u[7]: -------------------------------------------------------X---@---
 
 
 def test_del_unary_circuit():
-    with quantumpseudocode.Sim(phase_fixup_bias=True):
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=3, name='b') as b:
-                with quantumpseudocode.qmanaged_int(bits=8, name='u') as u:
-                    with quantumpseudocode.qmanaged(quantumpseudocode.Qubit(name='_c')) as c:
-                            quantumpseudocode.emit(quantumpseudocode.LetUnary(
+    with qp.Sim(phase_fixup_bias=True):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=3, name='b') as b:
+                with qp.qmanaged_int(bits=8, name='u') as u:
+                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+                        qp.emit(qp.LetUnary(
                                 binary=b,
                                 lvalue=u).inverse().controlled_by(c))
 
@@ -79,12 +79,12 @@ u[7]: ---@---Mxc----------------------------------------------------------------
     del u
     del b
     del c
-    with quantumpseudocode.Sim(phase_fixup_bias=False):
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=3, name='b') as b:
-                with quantumpseudocode.qmanaged_int(bits=8, name='u') as u:
-                    with quantumpseudocode.qmanaged(quantumpseudocode.Qubit(name='_c')) as c:
-                            quantumpseudocode.emit(quantumpseudocode.LetUnary(
+    with qp.Sim(phase_fixup_bias=False):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=3, name='b') as b:
+                with qp.qmanaged_int(bits=8, name='u') as u:
+                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+                            qp.emit(qp.LetUnary(
                                 binary=b,
                                 lvalue=u).inverse().controlled_by(c))
 

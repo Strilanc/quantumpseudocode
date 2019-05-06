@@ -61,6 +61,8 @@ class XorLookup(Op):
            table: 'qp.LookupTable',
            address: 'qp.Quint',
            phase_instead_of_toggle: bool):
+        table = table[:1 << len(address)]
+
         # Base case: single distinct value in table.
         if all(e == table[0] for e in table):
             address ^= -1
@@ -139,20 +141,33 @@ class LookupRValue(qp.RValue[int]):
     def init_storage_location(self,
                               location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):
-        with qp.condition(controls):
-            location ^= self
+        qp.emit(XorLookup(
+            lvalue=location,
+            table=self.table,
+            address=self.address,
+            phase_instead_of_toggle=False
+        ).controlled_by(controls))
 
     def del_storage_location(self,
                              location: 'qp.Quint',
                              controls: 'qp.QubitIntersection'):
+        if len(location) == 0:
+            return
+
         address_count = min(1 << len(self.address), len(self.table))
+        if address_count == 1:
+            location ^= self.table[0] & qp.controlled_by(controls)
+            return
+
         n = qp.ceil_lg2(address_count)
         k = min(n >> 1, qp.floor_lg2(len(location)))
         low = self.address[:k]
         high = self.address[k:n]
+        assert len(low) >= 0
+        assert len(high) >= 0
 
         # Determine fixups by performing eager measurements.
-        fixups = [0] * address_count
+        fixups = [0] * (1 << len(high))
         for i in range(len(location)):
             if qp.measure_x_for_phase_fixup_and_reset(location[i]):
                 for j in range(address_count):
