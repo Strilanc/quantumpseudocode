@@ -2,6 +2,7 @@ from typing import Optional, Dict, Set
 
 import cirq
 
+
 @cirq.value_equality
 class UniqueHandle:
     _next_handle = {}  # type: Dict[Optional[str], int]
@@ -38,4 +39,4 @@ class UniqueHandle:
         return '{}_{}'.format(self.key, self.n)
 
     def __repr__(self):
-        return 'quantumpseudocode.UniqueHandle({!r}, {!r})'.format(self.key, self.n)
+        return 'qp.UniqueHandle({!r}, {!r})'.format(self.key, self.n)

@@ -8,7 +8,7 @@ from quantumpseudocode.ops.signature_gate import SignatureGate
 
 
 class _IfLessThanThenGateClass(SignatureGate):
-    def register_name_prefix(self):
+    def alloc_prefix(self):
         return '_cmp_'
 
     def emulate(self,
@@ -20,9 +20,7 @@ class _IfLessThanThenGateClass(SignatureGate):
                 effect: 'quantumpseudocode.SubEffect'):
         condition = lhs <= rhs if or_equal else lhs < rhs
         if condition:
-            effect.op.mutate_state(forward,
-                                   *effect.args.args,
-                                   **effect.args.kwargs)
+            effect.op.mutate_state(forward, effect.args)
 
     def do(self,
            controls: 'quantumpseudocode.QubitIntersection',

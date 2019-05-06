@@ -3,7 +3,7 @@ from quantumpseudocode.ops.signature_gate import SignatureGate
 
 
 class _LetUnaryGate(SignatureGate):
-    def register_name_prefix(self):
+    def alloc_prefix(self):
         return '_let_unary_'
 
     def emulate(self,

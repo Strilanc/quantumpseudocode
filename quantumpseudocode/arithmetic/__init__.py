@@ -4,7 +4,8 @@ from .xor import (
 )
 
 from .add import (
-    PlusEqualGate,
+    MinusEqual,
+    PlusEqual,
 )
 
 from .cmp import (

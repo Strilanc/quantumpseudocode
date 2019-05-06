@@ -3,20 +3,20 @@ from typing import Union, Any, TypeVar, get_type_hints, Generic
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 from .operation import Operation
 
 T = TypeVar('T')
 
 
-ArgTypes = Union[quantumpseudocode.RValue[Any], 'quantumpseudocode.Operation']
+ArgTypes = Union[qp.RValue[Any], 'qp.Operation']
 
 
 @cirq.value_equality
 class SignatureOperation(Operation):
     def __init__(self,
-                 gate: 'quantumpseudocode.SignatureGate',
-                 args: quantumpseudocode.ArgsAndKwargs[ArgTypes]):
+                 gate: 'qp.SignatureGate',
+                 args: qp.ArgsAndKwargs[ArgTypes]):
         self.gate = gate
         self.args = args
 
@@ -26,14 +26,14 @@ class SignatureOperation(Operation):
     def state_locations(self):
         return self.args
 
-    def mutate_state(self, forward: bool, args: 'quantumpseudocode.ArgsAndKwargs'):
+    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
         matched = args.match_parameters(self.gate.emulate, skip=1)
 
-        def unwrap_immutable(a: quantumpseudocode.ArgParameter):
-            if getattr(a.parameter_type, '__origin__', None) is quantumpseudocode.Mutable:
-                assert isinstance(a.arg, quantumpseudocode.Mutable)
+        def unwrap_immutable(a: qp.ArgParameter):
+            if getattr(a.parameter_type, '__origin__', None) is qp.Mutable:
+                assert isinstance(a.arg, qp.Mutable)
                 return a.arg
-            if isinstance(a.arg, quantumpseudocode.Mutable):
+            if isinstance(a.arg, qp.Mutable):
                 return a.arg.val
             else:
                 return a.arg
@@ -43,8 +43,8 @@ class SignatureOperation(Operation):
             self.gate.emulate(forward, *args, **kwargs)
         unwrapped.pass_into(f)
 
-    def do(self, controls: 'quantumpseudocode.QubitIntersection'):
-        with quantumpseudocode.HeldMultipleRValue(self.args, self.gate.register_name_prefix()) as args:
+    def do(self, controls: 'qp.QubitIntersection'):
+        with qp.HeldMultipleRValue(self.args, self.gate.alloc_prefix()) as args:
             try:
                 self.gate.do(controls, *args.args, **args.kwargs)
             except TypeError as ex:
@@ -64,5 +64,5 @@ class SignatureOperation(Operation):
         return self.args.pass_into(self.gate.describe)
 
     def __repr__(self):
-        return 'quantumpseudocode.SignatureOperation({!r}, {!r})'.format(
+        return 'qp.SignatureOperation({!r}, {!r})'.format(
             self.gate, self.args)

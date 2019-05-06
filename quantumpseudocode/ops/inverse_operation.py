@@ -1,26 +1,26 @@
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 from .operation import Operation
 
 
 @cirq.value_equality
 class InverseOperation(Operation):
-    def __init__(self, inverse: 'quantumpseudocode.Operation'):
+    def __init__(self, inverse: 'qp.Operation'):
         self.sub = inverse
 
     def _value_equality_values_(self):
         return self.sub
 
     def do(self, controls):
-        with quantumpseudocode.invert():
+        with qp.invert():
             self.sub.do(controls)
 
     def state_locations(self):
         return self.sub.state_locations()
 
-    def mutate_state(self, forward: bool, *args, **kwargs):
-        self.sub.mutate_state(not forward, *args, **kwargs)
+    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+        self.sub.mutate_state(not forward, args)
 
     def inverse(self):
         return self.sub
@@ -29,4 +29,4 @@ class InverseOperation(Operation):
         return 'inverse({})'.format(self.sub)
 
     def __repr__(self):
-        return 'quantumpseudocode.InverseOperation({!r})'.format(self.sub)
+        return 'qp.InverseOperation({!r})'.format(self.sub)

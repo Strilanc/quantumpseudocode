@@ -26,7 +26,7 @@ def test_raw_qureg_getitem_len():
 def test_raw_qureg_repr():
     cirq.testing.assert_equivalent_repr(
         quantumpseudocode.RawQureg([quantumpseudocode.Qubit()]),
-        setup_code='import quantumpseudocode'
+        setup_code='import quantumpseudocode as qp'
     )
 
 
@@ -62,7 +62,7 @@ def test_named_qureg_get_item_len():
 def test_named_qureg_repr():
     cirq.testing.assert_equivalent_repr(
         quantumpseudocode.NamedQureg('a', 3),
-        setup_code='import quantumpseudocode')
+        setup_code='import quantumpseudocode as qp')
 
 
 def test_range_qureg_init():
@@ -92,4 +92,4 @@ def test_range_qureg_repr():
     r = quantumpseudocode.RangeQureg(a, range(1, 3))
     cirq.testing.assert_equivalent_repr(
         r,
-        setup_code='import quantumpseudocode')
+        setup_code='import quantumpseudocode as qp')

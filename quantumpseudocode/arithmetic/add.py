@@ -1,27 +1,26 @@
 from typing import List, Union
 
-import quantumpseudocode
-from quantumpseudocode.ops.signature_gate import SignatureGate
+import quantumpseudocode as qp
+from quantumpseudocode.ops import SimpleOp
 
 
-class _PlusEqualGateClass(SignatureGate):
-    def register_name_prefix(self):
+class PlusEqual(SimpleOp):
+    def alloc_prefix(self):
         return '_add_'
 
     def emulate(self,
-                forward: bool,
                 *,
-                lvalue: 'quantumpseudocode.Mutable[int]',
+                lvalue: 'qp.Mutable[int]',
                 offset: int,
                 carry_in: bool):
-        lvalue.val += (offset + carry_in) * (1 if forward else -1)
+        lvalue.val += offset + carry_in
 
-    def do(self,
-           controls: 'quantumpseudocode.QubitIntersection',
-           *,
-           lvalue: quantumpseudocode.Quint,
-           offset: quantumpseudocode.Quint,
-           carry_in: quantumpseudocode.Qubit):
+    def sigdo(self,
+              controls: 'qp.QubitIntersection',
+              *,
+              lvalue: qp.Quint,
+              offset: qp.Quint,
+              carry_in: qp.Qubit):
         out_len = len(lvalue)
 
         # Special cases.
@@ -33,7 +32,7 @@ class _PlusEqualGateClass(SignatureGate):
             lvalue[0] ^= carry_in
             return
 
-        with quantumpseudocode.pad(offset, min_len=out_len - 1) as offset:
+        with qp.pad(offset, min_len=out_len - 1) as offset:
             in_len = min(out_len, len(offset))
 
             # Propagate carry.
@@ -46,16 +45,42 @@ class _PlusEqualGateClass(SignatureGate):
             # Apply and uncompute carries.
             uma_sweep(lvalue, carry_in, offset, controls)
 
-    def describe(self, lvalue, offset, carry_in):
-        return 'ADD {} += {} + {}'.format(lvalue, offset, carry_in)
+    def describe(self, *, lvalue, offset, carry_in):
+        return '{} += {} + {}'.format(lvalue, offset, carry_in)
 
-    def __repr__(self):
-        return 'quantumpseudocode.PlusEqualGate'
+    def inv_type(self):
+        return MinusEqual
 
 
-def maj_sweep(lvalue: Union[quantumpseudocode.Quint, List[quantumpseudocode.Qubit], quantumpseudocode.Qureg],
-              carry: quantumpseudocode.Qubit,
-              offset: Union[quantumpseudocode.Quint, List[quantumpseudocode.Qubit], quantumpseudocode.Qureg]):
+class MinusEqual(SimpleOp):
+    def inv_type(self):
+        return PlusEqual
+
+    def alloc_prefix(self):
+        return '_sub_'
+
+    def emulate(self,
+                *,
+                lvalue: 'qp.Mutable[int]',
+                offset: int,
+                carry_in: bool):
+        lvalue.val -= offset + carry_in
+
+    def sigdo(self,
+              controls: 'qp.QubitIntersection',
+              *,
+              lvalue: qp.Quint,
+              offset: qp.Quint,
+              carry_in: qp.Qubit):
+        qp.emit(qp.InverseOperation(self.inverse()))
+
+    def describe(self, *, lvalue, offset, carry_in):
+        return '{} -= {} + {}'.format(lvalue, offset, carry_in)
+
+
+def maj_sweep(lvalue: Union[qp.Quint, List[qp.Qubit], qp.Qureg],
+              carry: qp.Qubit,
+              offset: Union[qp.Quint, List[qp.Qubit], qp.Qureg]):
     out_len = len(lvalue)
     carry_then_offset = [carry] + list(offset)
     in_len = min(out_len, len(offset))
@@ -71,10 +96,10 @@ def maj_sweep(lvalue: Union[quantumpseudocode.Quint, List[quantumpseudocode.Qubi
         c ^= a & b
 
 
-def uma_sweep(lvalue: Union[quantumpseudocode.Quint, List[quantumpseudocode.Qubit], quantumpseudocode.Qureg],
-              carry: quantumpseudocode.Qubit,
-              offset: Union[quantumpseudocode.Quint, List[quantumpseudocode.Qubit], quantumpseudocode.Qureg],
-              controls: quantumpseudocode.QubitIntersection):
+def uma_sweep(lvalue: Union[qp.Quint, List[qp.Qubit], qp.Qureg],
+              carry: qp.Qubit,
+              offset: Union[qp.Quint, List[qp.Qubit], qp.Qureg],
+              controls: qp.QubitIntersection):
     out_len = len(lvalue)
     carry_then_offset = [carry] + list(offset)
     in_len = min(out_len, len(offset))
@@ -89,6 +114,3 @@ def uma_sweep(lvalue: Union[quantumpseudocode.Quint, List[quantumpseudocode.Qubi
         b ^= a & controls
         b ^= c
         a ^= c
-
-
-PlusEqualGate = _PlusEqualGateClass()

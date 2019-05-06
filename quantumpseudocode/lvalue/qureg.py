@@ -2,7 +2,7 @@ from typing import Optional, Iterable, Union
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 class Qureg:
@@ -15,7 +15,7 @@ class Qureg:
 
 @cirq.value_equality
 class RawQureg(Qureg):
-    def __init__(self, qubits: Iterable['quantumpseudocode.Qubit']):
+    def __init__(self, qubits: Iterable['qp.Qubit']):
         self.qubits = tuple(qubits)
 
     def _value_equality_values_(self):
@@ -34,13 +34,13 @@ class RawQureg(Qureg):
         return '[{}]'.format(', '.join(str(e) for e in self.qubits))
 
     def __repr__(self):
-        return 'quantumpseudocode.RawQureg({!r})'.format(self.qubits)
+        return 'qp.RawQureg({!r})'.format(self.qubits)
 
 
 @cirq.value_equality
 class NamedQureg(Qureg):
-    def __init__(self, name: 'Union[quantumpseudocode.UniqueHandle, str]', length: int):
-        self.name = name if isinstance(name, quantumpseudocode.UniqueHandle) else quantumpseudocode.UniqueHandle(name)
+    def __init__(self, name: 'Union[qp.UniqueHandle, str]', length: int):
+        self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
         self.length = length
 
     def _value_equality_values_(self):
@@ -52,13 +52,13 @@ class NamedQureg(Qureg):
     def __getitem__(self, item):
         r = range(self.length)[item]
         if isinstance(r, int):
-            return quantumpseudocode.Qubit(self.name, r)
+            return qp.Qubit(self.name, r)
         if isinstance(r, range):
             return RangeQureg(self, r)
         return NotImplemented
 
     def __repr__(self):
-        return 'quantumpseudocode.NamedQureg({!r}, {!r})'.format(self.name, self.length)
+        return 'qp.NamedQureg({!r}, {!r})'.format(self.name, self.length)
 
     def __str__(self):
         return str(self.name)
@@ -92,7 +92,7 @@ class RangeQureg(Qureg):
         return NotImplemented
 
     def __repr__(self):
-        return 'quantumpseudocode.RangeQureg({!r}, {!r})'.format(self.sub, self.range)
+        return 'qp.RangeQureg({!r}, {!r})'.format(self.sub, self.range)
 
     def __str__(self):
         return '{}[{}:{}{}]'.format(

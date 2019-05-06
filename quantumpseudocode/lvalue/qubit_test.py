@@ -78,8 +78,8 @@ def test_ixor():
 def test_repr():
     cirq.testing.assert_equivalent_repr(
         quantumpseudocode.Qubit('test'),
-        setup_code='import quantumpseudocode')
+        setup_code='import quantumpseudocode as qp')
 
     cirq.testing.assert_equivalent_repr(
         quantumpseudocode.Qubit('test', 10),
-        setup_code='import quantumpseudocode')
+        setup_code='import quantumpseudocode as qp')

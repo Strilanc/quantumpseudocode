@@ -2,7 +2,7 @@ from typing import Union, Tuple, Any, TypeVar, Generic
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 from .signature_gate import SignatureGateArgTypes
 
 T = TypeVar('T')
@@ -20,34 +20,34 @@ class Mutable(Generic[T]):
         return 'mutable({})'.format(self.val)
 
     def __repr__(self):
-        return 'quantumpseudocode.Mutable({!r})'.format(self.val)
+        return 'qp.Mutable({!r})'.format(self.val)
 
 
 class SubEffect:
-    def __init__(self, *, op: 'quantumpseudocode.Operation', args: 'quantumpseudocode.ArgsAndKwargs'):
+    def __init__(self, *, op: 'qp.Operation', args: 'qp.ArgsAndKwargs'):
         self.op = op
         self.args = args
 
 
 class HeldMultipleRValue:
     def __init__(self,
-                 args: quantumpseudocode.ArgsAndKwargs[SignatureGateArgTypes],
+                 args: qp.ArgsAndKwargs[SignatureGateArgTypes],
                  name_prefix: str = ''):
         def hold_map(key: Any,
                      e: SignatureGateArgTypes
                      ) -> Tuple[bool,
-                                Union['quantumpseudocode.Operation',
-                                      'quantumpseudocode.HeldRValueManager']]:
-            if isinstance(e, quantumpseudocode.RValue):
-                return True, quantumpseudocode.HeldRValueManager(
+                                Union['qp.Operation',
+                                      'qp.HeldRValueManager']]:
+            if isinstance(e, qp.RValue):
+                return True, qp.HeldRValueManager(
                     e,
-                    controls=quantumpseudocode.QubitIntersection.EMPTY,
+                    controls=qp.QubitIntersection.EMPTY,
                     name=name_prefix + str(key))
             return False, e
 
         self.holders = args.key_map(hold_map)
 
-    def __enter__(self) -> quantumpseudocode.ArgsAndKwargs[Any]:
+    def __enter__(self) -> qp.ArgsAndKwargs[Any]:
         def enter_map(x):
             b, e = x
             if b:

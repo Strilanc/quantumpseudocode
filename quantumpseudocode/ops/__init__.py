@@ -27,3 +27,7 @@ from .signature_gate import (
     SignatureGate,
     SignatureGateArgTypes,
 )
+
+from .signature_decorator import (
+    SimpleOp,
+)

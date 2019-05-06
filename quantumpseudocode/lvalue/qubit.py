@@ -2,15 +2,15 @@ from typing import Optional, Tuple, Iterable, Union
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 @cirq.value_equality
 class Qubit:
     def __init__(self,
-                 name: 'Union[quantumpseudocode.UniqueHandle, str]' = '',
+                 name: 'Union[qp.UniqueHandle, str]' = '',
                  index: Optional[int] = None):
-        self.name = name if isinstance(name, quantumpseudocode.UniqueHandle) else quantumpseudocode.UniqueHandle(name)
+        self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
         self.index = index
 
     def _value_equality_values_(self):
@@ -22,11 +22,11 @@ class Qubit:
         return '{}[{}]'.format(self.name, self.index)
 
     def __repr__(self):
-        return 'quantumpseudocode.Qubit({!r}, {!r})'.format(self.name, self.index)
+        return 'qp.Qubit({!r}, {!r})'.format(self.name, self.index)
 
     def __and__(self, other):
         if isinstance(other, Qubit):
-            return quantumpseudocode.QubitIntersection((self, other))
+            return qp.QubitIntersection((self, other))
         return NotImplemented
 
     def __ixor__(self, other):
@@ -34,11 +34,11 @@ class Qubit:
             return self
 
         if other in [True, 1]:
-            quantumpseudocode.emit(quantumpseudocode.OP_TOGGLE(quantumpseudocode.RawQureg([self])))
+            qp.emit(qp.OP_TOGGLE(qp.RawQureg([self])))
             return self
 
-        if isinstance(other, (Qubit, quantumpseudocode.QubitIntersection)):
-            quantumpseudocode.emit(quantumpseudocode.OP_TOGGLE(quantumpseudocode.RawQureg([self])).controlled_by(other))
+        if isinstance(other, (Qubit, qp.QubitIntersection)):
+            qp.emit(qp.OP_TOGGLE(qp.RawQureg([self])).controlled_by(other))
             return self
 
         rev = getattr(other, '__rixor__', None)

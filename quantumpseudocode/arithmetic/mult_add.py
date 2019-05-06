@@ -5,7 +5,7 @@ from quantumpseudocode.ops.signature_gate import SignatureGate
 
 
 class _PlusEqualTimesGateClass(SignatureGate):
-    def register_name_prefix(self):
+    def alloc_prefix(self):
         return '_mult_add_'
 
     def emulate(self,

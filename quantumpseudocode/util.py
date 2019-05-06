@@ -28,7 +28,7 @@ class ArgParameter:
         self.parameter_type = parameter_type
 
     def __repr__(self):
-        return 'quantumpseudocode.ArgParameter({!r}, {!r}, {!r})'.format(
+        return 'qp.ArgParameter({!r}, {!r}, {!r})'.format(
             self.arg,
             self.parameter,
             self.parameter_type)
@@ -105,8 +105,16 @@ class ArgsAndKwargs(Generic[T]):
             parts.append('{}={}'.format(k, v))
         return '({})'.format(', '.join(parts))
 
+    def repr_args(self):
+        parts = []
+        for arg in self.args:
+            parts.append(repr(arg))
+        for k, v in self.kwargs.items():
+            parts.append('{}={!r}'.format(k, v))
+        return ', '.join(parts)
+
     def __repr__(self):
-        return 'quantumpseudocode.ArgsAndKwargs({!r}, {!r})'.format(
+        return 'qp.ArgsAndKwargs({!r}, {!r})'.format(
             self.args,
             self.kwargs)
 
