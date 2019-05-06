@@ -5,11 +5,12 @@ from quantumpseudocode.ops import Op
 
 
 class PlusEqual(Op):
-    def alloc_prefix(self):
+    @staticmethod
+    def alloc_prefix():
         return '_add_'
 
-    def biemulate(self,
-                  forward: bool,
+    @staticmethod
+    def biemulate(forward: bool,
                   *,
                   lvalue: 'qp.Mutable[int]',
                   offset: int,
@@ -17,8 +18,8 @@ class PlusEqual(Op):
         sign = 1 if forward else -1
         lvalue.val += (offset + carry_in) * sign
 
-    def do(self,
-           controls: 'qp.QubitIntersection',
+    @staticmethod
+    def do(controls: 'qp.QubitIntersection',
            *,
            lvalue: qp.Quint,
            offset: qp.Quint,
@@ -47,7 +48,8 @@ class PlusEqual(Op):
             # Apply and uncompute carries.
             uma_sweep(lvalue, carry_in, offset, controls)
 
-    def describe(self, *, lvalue, offset, carry_in):
+    @staticmethod
+    def describe(*, lvalue, offset, carry_in):
         return '{} += {} + {}'.format(lvalue, offset, carry_in)
 
 

@@ -1,24 +1,27 @@
-from typing import Optional, Union, Tuple, Iterable
+from typing import Optional, Union, Tuple, Iterable, Iterator
 
 import quantumpseudocode as qp
 from quantumpseudocode.ops import Op
 
 
-def _flatten(x):
+def _flatten(x: Union[int, Iterable]) -> Iterator[int]:
     if isinstance(x, int):
-        return [x]
-    return tuple(item
-                 for sub_list in x
-                 for item in _flatten(sub_list))
+        yield x
+    else:
+        for item in x:
+            yield from _flatten(item)
 
 
 class LookupTable:
-    def __init__(self, values: Union[Iterable[int], Iterable[Iterable[int]]]):
-        self.values = _flatten(values)
+    """A classical list that supports quantum addressing."""
+
+    def __init__(self,
+                 values: Union[Iterable[int], Iterable[Iterable[int]]]):
+        self.values = tuple(_flatten(values))
         assert len(self.values) > 0
         assert all(e >= 0 for e in self.values)
 
-    def output_len(self):
+    def output_len(self) -> int:
         return max(e.bit_length() for e in self.values)
 
     def __len__(self):
@@ -42,8 +45,8 @@ class LookupTable:
 
 
 class XorLookup(Op):
-    def emulate(self,
-                *,
+    @staticmethod
+    def emulate(*,
                 lvalue: 'qp.Mutable[int]',
                 table: 'qp.LookupTable',
                 address: 'int',
@@ -51,8 +54,8 @@ class XorLookup(Op):
         if not phase_instead_of_toggle:
             lvalue ^= table[address]
 
-    def do(self,
-           controls: 'qp.QubitIntersection',
+    @staticmethod
+    def do(controls: 'qp.QubitIntersection',
            *,
            lvalue: 'qp.Quint',
            table: 'qp.LookupTable',
@@ -89,7 +92,8 @@ class XorLookup(Op):
                            phase_instead_of_toggle=phase_instead_of_toggle)
             qp.emit(op.controlled_by(q))
 
-    def describe(self, *, lvalue, table, address, phase_instead_of_toggle):
+    @staticmethod
+    def describe(*, lvalue, table, address, phase_instead_of_toggle):
         return '{} ^{}= {}[{}]'.format(
             lvalue,
             'Z' if phase_instead_of_toggle else '',
