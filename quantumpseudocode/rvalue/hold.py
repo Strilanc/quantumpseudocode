@@ -1,48 +1,48 @@
 from typing import Optional, Any, Union, Generic, TypeVar, List, Tuple, Iterable, overload
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 T = TypeVar('T')
 
 
 @overload
-def hold(val: 'quantumpseudocode.Qubit',
+def hold(val: 'qp.Qubit',
          name: Optional[str] = None,
-         controls: 'Optional[quantumpseudocode.QubitIntersection]' = None) -> 'quantumpseudocode.HeldRValueManager[bool]':
+         controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[bool]':
     pass
 @overload
-def hold(val: 'quantumpseudocode.Quint',
+def hold(val: 'qp.Quint',
          name: Optional[str] = None,
-         controls: 'Optional[quantumpseudocode.QubitIntersection]' = None) -> 'quantumpseudocode.HeldRValueManager[int]':
+         controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[int]':
     pass
 @overload
 def hold(val: 'int',
          name: Optional[str] = None,
-         controls: 'Optional[quantumpseudocode.QubitIntersection]' = None) -> 'quantumpseudocode.HeldRValueManager[int]':
+         controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[int]':
     pass
 @overload
 def hold(val: 'bool',
          name: Optional[str] = None,
-         controls: 'Optional[quantumpseudocode.QubitIntersection]' = None) -> 'quantumpseudocode.HeldRValueManager[bool]':
+         controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[bool]':
     pass
 @overload
-def hold(val: 'quantumpseudocode.RValue[T]',
+def hold(val: 'qp.RValue[T]',
          name: Optional[str] = None,
-         controls: 'Optional[quantumpseudocode.QubitIntersection]' = None) -> 'quantumpseudocode.HeldRValueManager[T]':
+         controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[T]':
     pass
 
 
-def hold(val: Union[T, 'quantumpseudocode.RValue[T]', 'quantumpseudocode.Qubit', 'quantumpseudocode.Quint'],
+def hold(val: Union[T, 'qp.RValue[T]', 'qp.Qubit', 'qp.Quint'],
          *,
          name: str = '',
-         controls: 'Optional[quantumpseudocode.QubitIntersection]' = None
-         ) -> 'quantumpseudocode.HeldRValueManager[T]':
+         controls: 'Optional[qp.QubitIntersection]' = None
+         ) -> 'qp.HeldRValueManager[T]':
     """Returns a context manager that ensures the given rvalue is allocated.
 
     Usage:
         ```
-        with quantumpseudocode.hold(5) as reg:
+        with qp.hold(5) as reg:
             # reg is an allocated quint storing the value 5
             ...
         ```
@@ -54,18 +54,18 @@ def hold(val: Union[T, 'quantumpseudocode.RValue[T]', 'quantumpseudocode.Qubit',
             (e.g. False or 0) instead of the rvalue.
 
     Returns:
-        A quantumpseudocode.HeldRValueManager wrapping the given value.
+        A qp.HeldRValueManager wrapping the given value.
     """
-    return quantumpseudocode.HeldRValueManager(
-        quantumpseudocode.rval(val),
-        controls=controls or quantumpseudocode.QubitIntersection.EMPTY,
+    return qp.HeldRValueManager(
+        qp.rval(val),
+        controls=controls or qp.QubitIntersection.EMPTY,
         name=name)
 
 
 class HeldRValueManager(Generic[T]):
-    def __init__(self, rvalue: 'quantumpseudocode.RValue[T]',
+    def __init__(self, rvalue: 'qp.RValue[T]',
                  *,
-                 controls: 'quantumpseudocode.QubitIntersection',
+                 controls: 'qp.QubitIntersection',
                  name: str = ''):
         assert isinstance(name, str)
         self.name = name
@@ -75,7 +75,7 @@ class HeldRValueManager(Generic[T]):
         self.qalloc = None  # type: Optional[Any]
 
     def __repr__(self):
-        return 'quantumpseudocode.HeldRValueManager({!r}, {!r})'.format(
+        return 'qp.HeldRValueManager({!r}, {!r})'.format(
             self.rvalue, self.name)
 
     def __enter__(self):
@@ -83,14 +83,14 @@ class HeldRValueManager(Generic[T]):
         self.location = self.rvalue.existing_storage_location()
         if self.location is None:
             self.location = self.rvalue.make_storage_location(self.name)
-            self.qalloc = quantumpseudocode.qmanaged(self.location)
+            self.qalloc = qp.qmanaged(self.location)
             self.qalloc.__enter__()
-            quantumpseudocode.emit(quantumpseudocode.LetRValueOperation(
+            qp.emit(qp.LetRValueOperation(
                 self.rvalue, self.location).controlled_by(self.controls))
         return self.location
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.qalloc is not None and exc_type is None:
-            quantumpseudocode.emit(quantumpseudocode.DelRValueOperation(
+            qp.emit(qp.DelRValueOperation(
                 self.rvalue, self.location).controlled_by(self.controls))
             self.qalloc.__exit__(exc_type, exc_val, exc_tb)

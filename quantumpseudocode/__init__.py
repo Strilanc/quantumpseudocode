@@ -93,7 +93,7 @@ from quantumpseudocode.arithmetic import (
     phase_flip,
     PlusEqual,
     PlusEqualTimesGate,
-    XorLookupOperation,
+    XorLookup,
 )
 
 from quantumpseudocode.qalloc import (

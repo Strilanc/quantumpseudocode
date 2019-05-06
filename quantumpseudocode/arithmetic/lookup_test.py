@@ -1,16 +1,16 @@
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 def test_xor_lookup():
-    with quantumpseudocode.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=4, name='addr') as addr:
-                with quantumpseudocode.qmanaged_int(bits=8, name='out') as out:
-                    with quantumpseudocode.qmanaged(name='cnt') as cnt:
-                        with quantumpseudocode.condition(cnt):
-                            out ^= quantumpseudocode.LookupTable(range(1, 17))[addr]
+    with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=4, name='addr') as addr:
+                with qp.qmanaged_int(bits=8, name='out') as out:
+                    with qp.qmanaged(name='cnt') as cnt:
+                        with qp.condition(cnt):
+                            out ^= qp.LookupTable(range(1, 17))[addr]
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _lookup_prefix: -----X---X---@---@-------------------------------------------------------------------@-------------------------------------------------------------------@---X---@---@-------------------------------------------------------------------@-------------------------------------------------------------------@---X---
@@ -44,13 +44,13 @@ out[4]: ------------------------------------------------------------------------
 
 
 def test_redundant_lookup():
-    with quantumpseudocode.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=4, name='addr') as addr:
-                with quantumpseudocode.qmanaged_int(bits=8, name='out') as out:
-                    with quantumpseudocode.qmanaged(name='cnt') as cnt:
-                        with quantumpseudocode.condition(cnt):
-                            out ^= quantumpseudocode.LookupTable([3] * 16)[addr]
+    with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=4, name='addr') as addr:
+                with qp.qmanaged_int(bits=8, name='out') as out:
+                    with qp.qmanaged(name='cnt') as cnt:
+                        with qp.condition(cnt):
+                            out ^= qp.LookupTable([3] * 16)[addr]
 
     cirq.testing.assert_has_diagram(circuit, r"""
 addr[0]: ---X-------X---
@@ -70,11 +70,11 @@ out[1]: --------X-------
 
 
 def test_del_lookup():
-    with quantumpseudocode.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=4, name='addr') as addr:
-                    with quantumpseudocode.qmanaged(name='cnt'):
-                        with quantumpseudocode.hold(quantumpseudocode.LookupTable(range(1, 17))[addr], name='out'):
+    with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=4, name='addr') as addr:
+                    with qp.qmanaged(name='cnt'):
+                        with qp.hold(qp.LookupTable(range(1, 17))[addr], name='out'):
                             circuit[:] = []
 
     cirq.testing.assert_has_diagram(circuit, r"""

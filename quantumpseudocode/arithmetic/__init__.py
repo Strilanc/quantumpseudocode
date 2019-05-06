@@ -31,7 +31,7 @@ from .measure import (
 from .lookup import (
     LookupTable,
     LookupRValue,
-    XorLookupOperation,
+    XorLookup,
 )
 
 from .phase_flip import (

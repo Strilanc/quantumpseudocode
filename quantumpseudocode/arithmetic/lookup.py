@@ -1,5 +1,6 @@
 from typing import List, Optional, Union, Tuple, Callable, Any, Iterable
 
+import cirq
 import numpy as np
 
 import quantumpseudocode as qp
@@ -43,68 +44,66 @@ class LookupTable:
         return 'qp.LookupTable({!r})'.format(self.values)
 
 
-class XorLookupOperation(Operation):
-    def __init__(self,
-                 lvalue: 'qp.Quint',
-                 lookup: 'qp.LookupRValue',
-                 phase_instead_of_toggle: bool = False):
-        self.lvalue = lvalue
-        self.lookup = lookup
-        self.phase_instead_of_toggle = phase_instead_of_toggle
+class XorLookup(Op):
+    def emulate(self,
+                *,
+                lvalue: 'qp.Mutable[int]',
+                table: 'qp.LookupTable',
+                address: 'int',
+                phase_instead_of_toggle: bool):
+        if not phase_instead_of_toggle:
+            lvalue ^= table[address]
 
-    def __str__(self):
-        return '{} ^{}= {}'.format(
-            self.lvalue,
-            'Z' if self.phase_instead_of_toggle else '',
-            self.lookup)
-
-    def __repr__(self):
-        return 'qp.XorLookupOperation({!r}, {!r}, {!r})'.format(
-            self.lvalue,
-            self.lookup,
-            self.phase_instead_of_toggle)
-
-    def permutation_registers(self):
-        return self.lookup.address, self.lvalue.qureg
-
-    def permute(self, forward: bool, args: Tuple[int, ...]) -> Tuple[int, ...]:
-        return args[0], args[1] ^ self.lookup.table[args[0]]
-
-    def inverse(self):
-        return self
-
-    def emit_ops(self, controls: qp.QubitIntersection):
+    def do(self,
+           controls: 'qp.QubitIntersection',
+           *,
+           lvalue: 'qp.Quint',
+           table: 'qp.LookupTable',
+           address: 'qp.Quint',
+           phase_instead_of_toggle: bool):
         # Base case: single distinct value in table.
-        if all(e == self.lookup.table[0] for e in self.lookup.table):
-            self.lookup.address ^= -1
+        if all(e == table[0] for e in table):
+            address ^= -1
             with qp.condition(controls):
-                self.lvalue ^= self.lookup.table[0]
-            self.lookup.address ^= -1
+                lvalue ^= table[0]
+            address ^= -1
             return ()
 
         # Recursive case: divide and conquer.
-        high_bit = self.lookup.address[-1]
-        rest = self.lookup.address[:-1]
-        h = 1 << (len(self.lookup.address) - 1)
-        low_table = self.lookup.table[:h]
-        high_table = self.lookup.table[h:]
+        high_bit = address[-1]
+        rest = address[:-1]
+        h = 1 << (len(address) - 1)
+        low_table = table[:h]
+        high_table = table[h:]
         with qp.hold(controls & high_bit, name='_lookup_prefix') as q:
             # Do lookup for half of table where high_bit is 0.
             q ^= controls  # Flip q to storing 'controls & ~high_bit'.
-            op = XorLookupOperation(self.lvalue,
-                                    low_table[rest],
-                                    self.phase_instead_of_toggle)
+            op = XorLookup(lvalue=lvalue,
+                           table=low_table,
+                           address=rest,
+                           phase_instead_of_toggle=phase_instead_of_toggle)
             qp.emit(op.controlled_by(q))
             q ^= controls
 
             # Do lookup for half of table where high_bit is 1.
-            op = XorLookupOperation(self.lvalue,
-                                    high_table[rest],
-                                    self.phase_instead_of_toggle)
+            op = XorLookup(lvalue=lvalue,
+                           table=high_table,
+                           address=rest,
+                           phase_instead_of_toggle=phase_instead_of_toggle)
             qp.emit(op.controlled_by(q))
 
+    def describe(self, *, lvalue, table, address, phase_instead_of_toggle):
+        return '{} ^{}= {}[{}]'.format(
+            lvalue,
+            'Z' if phase_instead_of_toggle else '',
+            table,
+            address)
 
-class LookupRValue(qp.RValue):
+    def inverse(self):
+        return self
+
+
+class LookupRValue(qp.RValue[int]):
     """Represents the temporary result of a table lookup."""
 
     def __init__(self, table: LookupTable, address: 'qp.Quint'):
@@ -118,7 +117,10 @@ class LookupRValue(qp.RValue):
 
     def __rixor__(self, other):
         if isinstance(other, qp.Quint):
-            qp.emit(XorLookupOperation(other, self))
+            qp.emit(XorLookup(lvalue=other,
+                              table=self.table,
+                              address=self.address,
+                              phase_instead_of_toggle=False))
             return other
 
         return NotImplemented
@@ -156,9 +158,10 @@ class LookupRValue(qp.RValue):
         # Phase fixups.
         unary_storage = location[:1<<k]
         qp.emit(qp.LetUnary(lvalue=unary_storage, binary=low))
-        qp.emit(XorLookupOperation(
+        qp.emit(XorLookup(
             lvalue=unary_storage,
-            lookup=fixup_table[high],
+            table=fixup_table,
+            address=high,
             phase_instead_of_toggle=True
         ).controlled_by(controls))
         qp.emit(qp.LetUnary(lvalue=unary_storage, binary=low).inverse())

@@ -2,15 +2,15 @@ from typing import Union, Tuple, Iterable, Any
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 from .operation import Operation
 
 
 @cirq.value_equality
 class ControlledOperation(Operation):
     def __init__(self,
-                 uncontrolled: 'quantumpseudocode.Operation',
-                 controls: 'quantumpseudocode.QubitIntersection'):
+                 uncontrolled: 'qp.Operation',
+                 controls: 'qp.QubitIntersection'):
         self.controls = controls
         self.uncontrolled = uncontrolled
 
@@ -18,7 +18,7 @@ class ControlledOperation(Operation):
         return self.controls, self.uncontrolled
 
     def permutation_registers(self):
-        return (quantumpseudocode.RawQureg(self.controls),) + tuple(
+        return (qp.RawQureg(self.controls),) + tuple(
             self.uncontrolled.permutation_registers())
 
     def permute(self, forward, args):
@@ -31,7 +31,7 @@ class ControlledOperation(Operation):
     def inverse(self):
         return ControlledOperation(self.uncontrolled.inverse(), self.controls)
 
-    def emit_ops(self, controls: 'quantumpseudocode.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         return self.uncontrolled.emit_ops(self.controls & controls)
 
     def __str__(self):

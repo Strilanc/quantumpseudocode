@@ -1,12 +1,12 @@
 from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 lens_stack = []
 
 emit_indent = 0
-def emit(operation: 'quantumpseudocode.Operation'):
+def emit(operation: 'qp.Operation'):
     global emit_indent
     emit_indent += 1
 
@@ -21,11 +21,11 @@ def emit(operation: 'quantumpseudocode.Operation'):
         state = next_state
 
     for op in state:
-        op.emit_ops(quantumpseudocode.QubitIntersection.EMPTY)
+        op.emit_ops(qp.QubitIntersection.EMPTY)
     emit_indent -= 1
 
 
-def capture(out: 'Optional[List[quantumpseudocode.Operation]]' = None):
+def capture(out: 'Optional[List[qp.Operation]]' = None):
     return CaptureLens([] if out is None else out)
 
 
@@ -37,9 +37,9 @@ class EmptyManager:
         pass
 
 
-def condition(control: Union['quantumpseudocode.Qubit', 'quantumpseudocode.QubitIntersection']):
-    if isinstance(control, quantumpseudocode.Qubit):
-        control = quantumpseudocode.QubitIntersection((control,))
+def condition(control: Union['qp.Qubit', 'qp.QubitIntersection']):
+    if isinstance(control, qp.Qubit):
+        control = qp.QubitIntersection((control,))
     elif len(control) == 0:
         return EmptyManager()
     return _ControlLens(control)
@@ -53,8 +53,8 @@ class Lens:
     def __init__(self):
         self.used = False
 
-    def modify(self, operation: 'quantumpseudocode.Operation'
-               ) -> Iterable['quantumpseudocode.Operation']:
+    def modify(self, operation: 'qp.Operation'
+               ) -> Iterable['qp.Operation']:
         raise NotImplementedError()
 
     def _val(self):
@@ -77,7 +77,7 @@ class Lens:
 
 
 class CaptureLens(Lens):
-    def __init__(self, out: 'List[quantumpseudocode.Operation]'):
+    def __init__(self, out: 'List[qp.Operation]'):
         super().__init__()
         self.out = out
 
@@ -91,7 +91,7 @@ class CaptureLens(Lens):
 
 
 class _ControlLens(CaptureLens):
-    def __init__(self, controls: 'quantumpseudocode.QubitIntersection'):
+    def __init__(self, controls: 'qp.QubitIntersection'):
         super().__init__([])
         self.controls = controls
 
@@ -114,7 +114,7 @@ class Log(Lens):
         super().__init__()
         self.max_indent = max_indent
 
-    def modify(self, operation: 'quantumpseudocode.Operation'):
+    def modify(self, operation: 'qp.Operation'):
         if self.max_indent is None or self.max_indent >= emit_indent - 1:
             print(' ' * (emit_indent * 4 - 4) + str(operation))
         return [operation]

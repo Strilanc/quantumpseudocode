@@ -10,9 +10,10 @@ from .measure_pow_mod import measure_pow_mod, make_coset_register
 
 @pytest.mark.parametrize("exp_len,modulus_len,emulate_additions", [
     (3, 5, False),
-    (20, 40, True),
-    (25, 60, True),
-    (30, 15, True),
+    (6, 12, False),
+    # (20, 40, True),
+    # (25, 60, True),
+    # (30, 15, True),
 ])
 def test_integration(exp_len: int, modulus_len: int, emulate_additions: bool):
     with quantumpseudocode.Sim(emulate_additions=emulate_additions):
