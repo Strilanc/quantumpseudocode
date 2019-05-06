@@ -21,7 +21,7 @@ def emit(operation: 'quantumpseudocode.Operation'):
         state = next_state
 
     for op in state:
-        op.do(quantumpseudocode.QubitIntersection.EMPTY)
+        op.emit_ops(quantumpseudocode.QubitIntersection.EMPTY)
     emit_indent -= 1
 
 
@@ -35,6 +35,7 @@ class EmptyManager:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
 
 def condition(control: Union['quantumpseudocode.Qubit', 'quantumpseudocode.QubitIntersection']):
     if isinstance(control, quantumpseudocode.Qubit):

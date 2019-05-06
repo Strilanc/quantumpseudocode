@@ -1,26 +1,28 @@
 from typing import List, Union
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import SimpleOp
+from quantumpseudocode.ops import Op
 
 
-class PlusEqual(SimpleOp):
+class PlusEqual(Op):
     def alloc_prefix(self):
         return '_add_'
 
-    def emulate(self,
-                *,
-                lvalue: 'qp.Mutable[int]',
-                offset: int,
-                carry_in: bool):
-        lvalue.val += offset + carry_in
+    def biemulate(self,
+                  forward: bool,
+                  *,
+                  lvalue: 'qp.Mutable[int]',
+                  offset: int,
+                  carry_in: bool):
+        sign = 1 if forward else -1
+        lvalue.val += (offset + carry_in) * sign
 
-    def sigdo(self,
-              controls: 'qp.QubitIntersection',
-              *,
-              lvalue: qp.Quint,
-              offset: qp.Quint,
-              carry_in: qp.Qubit):
+    def do(self,
+           controls: 'qp.QubitIntersection',
+           *,
+           lvalue: qp.Quint,
+           offset: qp.Quint,
+           carry_in: qp.Qubit):
         out_len = len(lvalue)
 
         # Special cases.
@@ -47,35 +49,6 @@ class PlusEqual(SimpleOp):
 
     def describe(self, *, lvalue, offset, carry_in):
         return '{} += {} + {}'.format(lvalue, offset, carry_in)
-
-    def inv_type(self):
-        return MinusEqual
-
-
-class MinusEqual(SimpleOp):
-    def inv_type(self):
-        return PlusEqual
-
-    def alloc_prefix(self):
-        return '_sub_'
-
-    def emulate(self,
-                *,
-                lvalue: 'qp.Mutable[int]',
-                offset: int,
-                carry_in: bool):
-        lvalue.val -= offset + carry_in
-
-    def sigdo(self,
-              controls: 'qp.QubitIntersection',
-              *,
-              lvalue: qp.Quint,
-              offset: qp.Quint,
-              carry_in: qp.Qubit):
-        qp.emit(qp.InverseOperation(self.inverse()))
-
-    def describe(self, *, lvalue, offset, carry_in):
-        return '{} -= {} + {}'.format(lvalue, offset, carry_in)
 
 
 def maj_sweep(lvalue: Union[qp.Quint, List[qp.Qubit], qp.Qureg],

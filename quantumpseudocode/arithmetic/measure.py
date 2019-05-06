@@ -80,7 +80,7 @@ class _MeasureRValueOperation(Generic[T], Operation):
     def permute(self, forward: bool, args):
         pass
 
-    def do(self, controls: 'quantumpseudocode.QubitIntersection'):
+    def emit_ops(self, controls: 'quantumpseudocode.QubitIntersection'):
         assert len(controls) == 0, "Not allowed to control measurement."
 
         with quantumpseudocode.hold(self.target) as target:

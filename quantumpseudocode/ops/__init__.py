@@ -28,6 +28,6 @@ from .signature_gate import (
     SignatureGateArgTypes,
 )
 
-from .signature_decorator import (
-    SimpleOp,
+from .simple_op import (
+    Op,
 )

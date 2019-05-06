@@ -1,3 +1,4 @@
+import functools
 from typing import Union, Any, TypeVar
 
 import cirq
@@ -12,7 +13,7 @@ ArgTypes = Union[qp.RValue[Any], 'qp.Operation']
 
 
 @cirq.value_equality(distinct_child_types=True)
-class SimpleOp(Operation):
+class Op(Operation):
     def __init__(self, *args, **kwargs):
         self._args = qp.ArgsAndKwargs(args, kwargs)
 
@@ -24,9 +25,9 @@ class SimpleOp(Operation):
 
     def alloc_prefix(self):
         return ''
-    def emulate(self, *args, **kwargs):
-        raise NotImplemented()
-    def sigdo(self, *args, **kwargs):
+    def do(self, *args, **kwargs):
+        if self.inv_type() is not None:
+            qp.emit(qp.InverseOperation(self.inverse()))
         raise NotImplemented()
     def describe(self, *args, **kwargs):
         raise NotImplemented()
@@ -36,37 +37,13 @@ class SimpleOp(Operation):
     def state_locations(self):
         return self._args
 
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
-        if not forward:
-            return self.inverse().mutate_state(True, args)
-
-        matched = args.match_parameters(self.emulate)
-
-        def unwrap_immutable(a: qp.ArgParameter):
-            if getattr(a.parameter_type, '__origin__', None) is qp.Mutable:
-                assert isinstance(a.arg, qp.Mutable)
-                return a.arg
-            if isinstance(a.arg, qp.Mutable):
-                return a.arg.val
-            else:
-                return a.arg
-        unwrapped = matched.map(unwrap_immutable)
-
-        unwrapped.pass_into(self.emulate)
-
     def inverse(self):
         inv = self.inv_type()
         if inv is None:
             return super().inverse()
         return self._args.pass_into(inv)
 
-    def __pow__(self, power):
-        if power == 1:
-            return self
-        if power == -1:
-            return self.inverse()
-
-    def do(self, controls: 'qp.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         def f(x: qp.ArgParameter):
             if x.parameter_type == qp.Quint:
                 if isinstance(x.arg, int):
@@ -75,11 +52,11 @@ class SimpleOp(Operation):
                 if isinstance(x.arg, bool):
                     return qp.BoolRValue(x.arg)
             return x.arg
-        v = self._args.match_parameters(self.sigdo, skip=1).map(f)
+        v = self._args.match_parameters(self.do, skip=1).map(f)
 
         with qp.HeldMultipleRValue(v, self.alloc_prefix()) as args:
             try:
-                self.sigdo(controls, *args.args, **args.kwargs)
+                self.do(controls, *args.args, **args.kwargs)
             except TypeError as ex:
                 if 'do()' in str(ex):
                     raise TypeError(str(ex) + '\n\nWhile calling:\n{}\n\nrepr:\n{!r}'.format(self, self))
@@ -95,3 +72,31 @@ class SimpleOp(Operation):
         else:
             class_name = type(self).__name__
         return '{}({})'.format(class_name, self._args.repr_args())
+
+    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+        if hasattr(self, 'biemulate'):
+            matched = args.match_parameters(self.biemulate, skip=1)
+            unwrapped = matched.map(_unwrap_untagged_mutable)
+            unwrapped.pass_into(functools.partial(self.biemulate, forward))
+            return
+
+        if hasattr(self, 'emulate'):
+            if not forward:
+                self.inverse().mutate_state(True, args)
+                return
+            matched = args.match_parameters(self.emulate)
+            unwrapped = matched.map(_unwrap_untagged_mutable)
+            unwrapped.pass_into(self.emulate)
+            return
+
+        raise NotImplementedError(
+            '{} must implement emulate or biemulate.'.format(
+                type(self).__name__))
+
+
+def _unwrap_untagged_mutable(a: qp.ArgParameter):
+    # If it's not type tagged as mutable, don't expose it as mutable.
+    if (isinstance(a.arg, qp.Mutable) and
+            getattr(a.parameter_type, '__origin__', None) is not qp.Mutable):
+        return a.arg.val
+    return a.arg

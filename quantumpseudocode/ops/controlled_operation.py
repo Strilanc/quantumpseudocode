@@ -31,8 +31,8 @@ class ControlledOperation(Operation):
     def inverse(self):
         return ControlledOperation(self.uncontrolled.inverse(), self.controls)
 
-    def do(self, controls: 'quantumpseudocode.QubitIntersection'):
-        return self.uncontrolled.do(self.controls & controls)
+    def emit_ops(self, controls: 'quantumpseudocode.QubitIntersection'):
+        return self.uncontrolled.emit_ops(self.controls & controls)
 
     def __str__(self):
         return 'IF {}: {}'.format(self.controls, self.uncontrolled)

@@ -12,9 +12,9 @@ class InverseOperation(Operation):
     def _value_equality_values_(self):
         return self.sub
 
-    def do(self, controls):
+    def emit_ops(self, controls):
         with qp.invert():
-            self.sub.do(controls)
+            self.sub.emit_ops(controls)
 
     def state_locations(self):
         return self.sub.state_locations()

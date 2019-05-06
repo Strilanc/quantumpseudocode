@@ -101,9 +101,10 @@ def test_iadd_isub():
     with qp.capture() as out:
         q -= 3
     assert out == [
-        qp.MinusEqual(lvalue=q,
-                     offset=3,
-                     carry_in=False)
+        qp.InverseOperation(qp.PlusEqual(
+            lvalue=q,
+            offset=3,
+            carry_in=False))
     ]
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))

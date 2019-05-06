@@ -1,7 +1,7 @@
 from typing import Optional
 
-import quantumpseudocode
-from quantumpseudocode.ops.signature_gate import SignatureGate
+import quantumpseudocode as qp
+from quantumpseudocode.ops import SignatureGate
 
 
 class _PlusEqualTimesGateClass(SignatureGate):
@@ -10,18 +10,18 @@ class _PlusEqualTimesGateClass(SignatureGate):
 
     def emulate(self,
                 forward: bool,
-                lvalue: 'quantumpseudocode.Mutable[int]',
+                lvalue: 'qp.Mutable[int]',
                 quantum_factor: int,
                 const_factor: int):
         lvalue.val += quantum_factor * const_factor * (1 if forward else -1)
 
     def do(self,
-           controls: 'quantumpseudocode.QubitIntersection',
-           lvalue: 'quantumpseudocode.Quint',
-           quantum_factor: 'quantumpseudocode.Quint',
+           controls: 'qp.QubitIntersection',
+           lvalue: 'qp.Quint',
+           quantum_factor: 'qp.Quint',
            const_factor: int):
         for i, q in enumerate(quantum_factor):
-            lvalue += (const_factor << i) & quantumpseudocode.controlled_by(q)
+            lvalue += (const_factor << i) & qp.controlled_by(q)
 
     def describe(self, lvalue, quantum_factor, const_factor):
         return 'SCALE-ADD {} += {} * {}'.format(lvalue,
@@ -29,7 +29,7 @@ class _PlusEqualTimesGateClass(SignatureGate):
                                                 const_factor)
 
     def __repr__(self):
-        return 'quantumpseudocode.PlusEqualTimesGate'
+        return 'qp.PlusEqualTimesGate'
 
 
 PlusEqualTimesGate = _PlusEqualTimesGateClass()

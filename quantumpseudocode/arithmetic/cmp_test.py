@@ -1,20 +1,20 @@
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 
 
 def test_if_less_than_then_circuit():
-    with quantumpseudocode.Sim(enforce_release_at_zero=False):
-        with quantumpseudocode.LogCirqCircuit() as circuit:
-            with quantumpseudocode.qmanaged_int(bits=4, name='lhs') as lhs:
-                with quantumpseudocode.qmanaged_int(bits=4, name='rhs') as rhs:
-                    with quantumpseudocode.qmanaged(quantumpseudocode.Qubit(name='_or_eq')) as c:
-                        with quantumpseudocode.qmanaged(quantumpseudocode.Qubit(name='t')) as t:
-                            quantumpseudocode.emit(quantumpseudocode.IfLessThanThenGate(
+    with qp.Sim(enforce_release_at_zero=False):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=4, name='lhs') as lhs:
+                with qp.qmanaged_int(bits=4, name='rhs') as rhs:
+                    with qp.qmanaged(qp.Qubit(name='_or_eq')) as c:
+                        with qp.qmanaged(qp.Qubit(name='t')) as t:
+                            qp.emit(qp.EffectIfLessThan(
                                 lhs=lhs,
                                 rhs=rhs,
                                 or_equal=c,
-                                effect=quantumpseudocode.OP_TOGGLE(quantumpseudocode.RawQureg([t]))))
+                                effect=qp.OP_TOGGLE(qp.RawQureg([t]))))
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _or_eq: ---X-------@---@-------------------------------------------------------------------------------------------------------@---@-------X---

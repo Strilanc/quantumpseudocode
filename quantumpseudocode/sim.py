@@ -153,10 +153,7 @@ class Sim(qp.Lens):
             o = op
             if isinstance(op, qp.InverseOperation):
                 o = op.sub
-            if isinstance(o, qp.SignatureOperation):
-                if o.gate in [qp.IfLessThanThenGate]:
-                    emulate = True
-            elif isinstance(o, (qp.PlusEqual, qp.MinusEqual)):
+            elif isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
                 emulate = True
             if emulate:
                 self.apply_op_via_emulation(operation)

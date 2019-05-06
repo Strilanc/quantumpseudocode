@@ -4,7 +4,7 @@ import quantumpseudocode as qp
 
 
 class Operation:
-    def do(self, controls: 'qp.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
 
     def state_locations(self) -> 'qp.ArgsAndKwargs[Union[qp.Qureg, qp.Qubit, qp.Quint], Any]':
@@ -44,7 +44,7 @@ class LetRValueOperation(Operation):
     def inverse(self) -> 'qp.Operation':
         return DelRValueOperation(self.rvalue, self.loc)
 
-    def do(self, controls: 'qp.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         self.rvalue.init_storage_location(self.loc, controls)
 
     def __str__(self):
@@ -63,7 +63,7 @@ class DelRValueOperation(Operation):
     def inverse(self) -> 'qp.Operation':
         return LetRValueOperation(self.rvalue, self.loc)
 
-    def do(self, controls: 'qp.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         self.rvalue.init_storage_location(self.loc, controls)
 
     def __str__(self):

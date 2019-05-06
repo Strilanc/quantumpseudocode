@@ -43,7 +43,7 @@ class SignatureOperation(Operation):
             self.gate.emulate(forward, *args, **kwargs)
         unwrapped.pass_into(f)
 
-    def do(self, controls: 'qp.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         with qp.HeldMultipleRValue(self.args, self.gate.alloc_prefix()) as args:
             try:
                 self.gate.do(controls, *args.args, **args.kwargs)

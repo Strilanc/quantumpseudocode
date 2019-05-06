@@ -68,6 +68,14 @@ class ArgsAndKwargs(Generic[T]):
             t = type_hints.get(k, None)
             result_kwargs[k] = ArgParameter(a, p, t)
 
+        if len(result_args) + len(result_kwargs) + skip != len(sig.parameters):
+            raise AssertionError(
+                'Unmatched arguments.\n'
+                'Args: {}\nKwargs: {}\nSkip: {!r}\nSignature: {}'.format(
+                    result_args,
+                    sorted(result_kwargs.keys()),
+                    skip,
+                    sig.parameters))
         assert len(result_args) + len(result_kwargs) + skip == len(sig.parameters)
         return ArgsAndKwargs(result_args, result_kwargs)
 

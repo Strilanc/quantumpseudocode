@@ -1,7 +1,7 @@
 from typing import Union
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops.operation import Operation
+from quantumpseudocode.ops import Operation, Op
 
 
 class _PhaseFlipOp(Operation):
@@ -14,7 +14,7 @@ class _PhaseFlipOp(Operation):
     def permute(self, forward: bool, *args):
         pass
 
-    def do(self, controls: 'qp.QubitIntersection'):
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError("The phase flip gate is fundamental.")
 
     def inverse(self):

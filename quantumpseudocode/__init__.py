@@ -77,7 +77,7 @@ from quantumpseudocode.ops import (
 from quantumpseudocode.arithmetic import (
     DelAnd,
     IfLessThanRVal,
-    IfLessThanThenGate,
+    EffectIfLessThan,
     LetAnd,
     LetUnary,
     LookupRValue,
@@ -86,7 +86,6 @@ from quantumpseudocode.arithmetic import (
     measure_x_for_phase_fixup_and_reset,
     MeasureOperation,
     MeasureXForPhaseKickOperation,
-    MinusEqual,
     OP_PHASE_FLIP,
     OP_TOGGLE,
     OP_XOR,

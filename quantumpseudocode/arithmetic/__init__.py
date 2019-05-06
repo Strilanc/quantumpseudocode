@@ -4,13 +4,12 @@ from .xor import (
 )
 
 from .add import (
-    MinusEqual,
     PlusEqual,
 )
 
 from .cmp import (
     IfLessThanRVal,
-    IfLessThanThenGate,
+    EffectIfLessThan,
 )
 
 from .mult_add import (

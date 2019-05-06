@@ -1,8 +1,8 @@
 import quantumpseudocode as qp
-from quantumpseudocode.ops.signature_decorator import SimpleOp
+from quantumpseudocode.ops.simple_op import Op
 
 
-class LetAnd(SimpleOp):
+class LetAnd(Op):
     def emulate(self,
                 lvalue: 'qp.Mutable[bool]'):
         assert lvalue.val == 0
@@ -11,24 +11,24 @@ class LetAnd(SimpleOp):
     def inv_type(self):
         return DelAnd
 
-    def sigdo(self,
-              controls: 'qp.QubitIntersection',
-              lvalue: qp.Qubit):
+    def do(self,
+           controls: 'qp.QubitIntersection',
+           lvalue: qp.Qubit):
         lvalue ^= controls
 
     def describe(self, lvalue):
         return 'let {} := 1'.format(lvalue)
 
 
-class DelAnd(SimpleOp):
+class DelAnd(Op):
     def emulate(self,
                 lvalue: 'qp.Mutable[bool]'):
         assert lvalue.val == 1
         lvalue.val = 0
 
-    def sigdo(self,
-              controls: 'qp.QubitIntersection',
-              lvalue: qp.Qubit):
+    def do(self,
+           controls: 'qp.QubitIntersection',
+           lvalue: qp.Qubit):
         if qp.measure_x_for_phase_fixup_and_reset(lvalue):
             qp.phase_flip(controls)
 
