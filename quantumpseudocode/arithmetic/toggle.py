@@ -1,5 +1,5 @@
 import quantumpseudocode
-from quantumpseudocode.ops.signature_gate import SignatureGate
+from quantumpseudocode.ops import SignatureGate
 
 
 class _NotGateClass(SignatureGate):

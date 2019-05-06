@@ -92,7 +92,7 @@ from quantumpseudocode.arithmetic import (
     OP_XOR_C,
     phase_flip,
     PlusEqual,
-    PlusEqualTimesGate,
+    PlusEqualProduct,
     XorLookup,
 )
 

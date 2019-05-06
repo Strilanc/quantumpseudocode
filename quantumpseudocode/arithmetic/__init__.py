@@ -13,7 +13,7 @@ from .cmp import (
 )
 
 from .mult_add import (
-    PlusEqualTimesGate,
+    PlusEqualProduct,
 )
 
 from .let_and import (

@@ -2,7 +2,7 @@ from typing import Optional, Tuple, Iterable, Any
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 from .rvalue import RValue
 
 
@@ -10,7 +10,7 @@ from .rvalue import RValue
 class ScaledIntRValue(RValue[int]):
     """An rvalue for expressions like `quint * int`."""
 
-    def __init__(self, coherent: 'quantumpseudocode.Quint', constant: int):
+    def __init__(self, coherent: 'qp.Quint', constant: int):
         self.coherent = coherent
         self.constant = constant
 
@@ -21,12 +21,12 @@ class ScaledIntRValue(RValue[int]):
         return 'rval({} * {})'.format(self.coherent, self.constant)
 
     def __repr__(self):
-        return 'quantumpseudocode.ScaledIntRValue({!r}, {!r})'.format(
+        return 'qp.ScaledIntRValue({!r}, {!r})'.format(
             self.coherent, self.constant)
 
     def __riadd__(self, other):
-        if isinstance(other, quantumpseudocode.Quint):
-            quantumpseudocode.emit(quantumpseudocode.PlusEqualTimesGate(
+        if isinstance(other, qp.Quint):
+            qp.emit(qp.PlusEqualProduct(
                 lvalue=other,
                 quantum_factor=self.coherent,
                 const_factor=self.constant,
@@ -35,7 +35,7 @@ class ScaledIntRValue(RValue[int]):
 
         return NotImplemented
 
-    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['qp.Qureg']:
         return [self.coherent.qureg]
 
     def value_from_resolved_deps(self, args: Tuple[int, ...]
@@ -43,13 +43,13 @@ class ScaledIntRValue(RValue[int]):
         return args[0]
 
     def make_storage_location(self, name: Optional[str] = None):
-        return quantumpseudocode.Quint(quantumpseudocode.NamedQureg(
+        return qp.Quint(qp.NamedQureg(
             name, len(self.coherent) + self.constant.bit_length()))
 
     def init_storage_location(self,
-                              location: 'quantumpseudocode.Quint',
-                              controls: 'quantumpseudocode.QubitIntersection'):
-        quantumpseudocode.emit(quantumpseudocode.PlusEqualTimesGate(
+                              location: 'qp.Quint',
+                              controls: 'qp.QubitIntersection'):
+        qp.emit(qp.PlusEqualProduct(
             lvalue=location,
             quantum_factor=self.coherent,
             const_factor=self.constant,
@@ -62,7 +62,7 @@ class QubitIntersection(RValue[bool]):
 
     EMPTY = None # type: QubitIntersection
 
-    def __init__(self, qubits: Tuple['quantumpseudocode.Qubit', ...]):
+    def __init__(self, qubits: Tuple['qp.Qubit', ...]):
         self.qubits = tuple(qubits)
 
     def _value_equality_values_(self):
@@ -82,35 +82,35 @@ class QubitIntersection(RValue[bool]):
     def __and__(self, other):
         if isinstance(other, QubitIntersection):
             return QubitIntersection(self.qubits + other.qubits)
-        if isinstance(other, quantumpseudocode.Qubit):
+        if isinstance(other, qp.Qubit):
             return QubitIntersection(self.qubits + (other,))
         return NotImplemented
 
-    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
-        return quantumpseudocode.RawQureg(self.qubits)
+    def qureg_deps(self) -> Iterable['qp.Qureg']:
+        return qp.RawQureg(self.qubits)
 
     def value_from_resolved_deps(self, args: Tuple[int, ...]) -> bool:
         return all(args)
 
     def __rixor__(self, other):
-        if isinstance(other, quantumpseudocode.Qubit):
-            quantumpseudocode.emit(quantumpseudocode.OP_TOGGLE(quantumpseudocode.RawQureg([other])).controlled_by(self))
+        if isinstance(other, qp.Qubit):
+            qp.emit(qp.OP_TOGGLE(qp.RawQureg([other])).controlled_by(self))
             return self
         return NotImplemented
 
     def make_storage_location(self, name: Optional[str] = None):
-        return quantumpseudocode.Qubit(name)
+        return qp.Qubit(name)
 
     def init_storage_location(self,
-                              location: 'quantumpseudocode.Qubit',
-                              controls: 'quantumpseudocode.QubitIntersection'):
-        quantumpseudocode.emit(quantumpseudocode.LetAnd(lvalue=location).controlled_by(self & controls))
+                              location: 'qp.Qubit',
+                              controls: 'qp.QubitIntersection'):
+        qp.emit(qp.LetAnd(lvalue=location).controlled_by(self & controls))
 
     def __str__(self):
         return ' & '.join(str(e) for e in self)
 
     def __repr__(self):
-        return 'quantumpseudocode.QubitIntersection({!r})'.format(self.qubits)
+        return 'qp.QubitIntersection({!r})'.format(self.qubits)
 
 
 QubitIntersection.EMPTY = QubitIntersection(())
