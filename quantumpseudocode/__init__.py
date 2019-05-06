@@ -77,7 +77,7 @@ from quantumpseudocode.ops import (
 from quantumpseudocode.arithmetic import (
     IfLessThanRVal,
     EffectIfLessThan,
-    LetUnary,
+    UnaryRValue,
     LookupRValue,
     LookupTable,
     measure,

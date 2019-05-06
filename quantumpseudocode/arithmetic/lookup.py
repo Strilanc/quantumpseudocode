@@ -129,7 +129,7 @@ class LookupRValue(qp.RValue[int]):
         return NotImplemented
 
     def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return self.address.qureg
+        return [self.address.qureg]
 
     def value_from_resolved_deps(self, args: Tuple[int]) -> int:
         return self.table[args[0]]
@@ -179,14 +179,14 @@ class LookupRValue(qp.RValue[int]):
 
         # Phase fixups.
         unary_storage = location[:1<<k]
-        qp.emit(qp.LetUnary(lvalue=unary_storage, binary=low))
+        unary_storage.init(1 << low)
         qp.emit(XorLookup(
             lvalue=unary_storage,
             table=fixup_table,
             address=high,
             phase_instead_of_toggle=True
         ).controlled_by(controls))
-        qp.emit(qp.LetUnary(lvalue=unary_storage, binary=low).inverse())
+        unary_storage.clear(1 << low)
 
     def __str__(self):
         return 'T(len={})[{}]'.format(len(self.table), self.address)

@@ -19,6 +19,11 @@ class Quint:
             return self.qureg[item]
         return Quint(self.qureg[item])
 
+    def __rlshift__(self, other):
+        if other == 1:
+            return qp.UnaryRValue(self)
+        return NotImplemented
+
     def init(self,
              value: 'qp.RValue[int]',
              controls: 'qp.QubitIntersection' = None):

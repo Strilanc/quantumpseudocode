@@ -9,9 +9,7 @@ def test_let_unary_circuit():
             with qp.qmanaged_int(bits=3, name='b') as b:
                 with qp.qmanaged_int(bits=8, name='u') as u:
                     with qp.qmanaged(qp.Qubit(name='_c')) as c:
-                        qp.emit(qp.LetUnary(
-                            binary=b,
-                            lvalue=u).controlled_by(c))
+                        u.init(1 << b, c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _c: -----@-----------------------------------------------------------
@@ -46,9 +44,7 @@ def test_del_unary_circuit():
             with qp.qmanaged_int(bits=3, name='b') as b:
                 with qp.qmanaged_int(bits=8, name='u') as u:
                     with qp.qmanaged(qp.Qubit(name='_c')) as c:
-                        qp.emit(qp.LetUnary(
-                                binary=b,
-                                lvalue=u).inverse().controlled_by(c))
+                        u.clear(1 << b, c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _c: -------------------------------------------------------------------------------------------------------------Z---
@@ -84,9 +80,7 @@ u[7]: ---@---Mxc----------------------------------------------------------------
             with qp.qmanaged_int(bits=3, name='b') as b:
                 with qp.qmanaged_int(bits=8, name='u') as u:
                     with qp.qmanaged(qp.Qubit(name='_c')) as c:
-                            qp.emit(qp.LetUnary(
-                                binary=b,
-                                lvalue=u).inverse().controlled_by(c))
+                        u.clear(1 << b, c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 u[0]: ---------------------------------X-------------------X---------X---------Mxc---
