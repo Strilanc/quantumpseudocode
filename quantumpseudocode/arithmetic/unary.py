@@ -24,14 +24,12 @@ class _LetUnaryGate(SignatureGate):
            lvalue: qp.Quint,
            binary: qp.Quint):
         assert len(lvalue) >= 1 << len(binary)
-        qp.emit(qp.LetAnd(lvalue[0]).controlled_by(controls))
+        lvalue[0].init(controls)
         for i, q in enumerate(binary):
             s = 1 << i
             for j in range(s):
-                a = lvalue[j]
-                b = lvalue[j + s]
-                qp.emit(qp.LetAnd(b).controlled_by(a & q))
-                a ^= b
+                lvalue[j + s].init(lvalue[j] & q)
+                lvalue[j] ^= lvalue[j + s]
 
     def describe(self, lvalue, binary):
         return '{} := unary({})'.format(lvalue, binary)

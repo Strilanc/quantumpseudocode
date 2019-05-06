@@ -19,11 +19,23 @@ class Quint:
             return self.qureg[item]
         return Quint(self.qureg[item])
 
+    def init(self,
+             value: 'qp.RValue[int]',
+             controls: 'qp.QubitIntersection' = None):
+        value.init_storage_location(self,
+                                    controls or qp.QubitIntersection.EMPTY)
+
+    def clear(self,
+              value: 'qp.RValue[int]',
+              controls: 'qp.QubitIntersection' = None):
+        value.del_storage_location(self,
+                                   controls or qp.QubitIntersection.EMPTY)
+
     def __setitem__(self, key, value):
         if value != self[key]:
             raise NotImplementedError(
                 "quint.__setitem__ is only for syntax like q[0] ^= q[1]. "
-                "Don't know how to write {!r} into {!r}.".format(
+                "Don't know how to write {!r} into quint {!r}.".format(
                     value, key))
 
     def __mul__(self, other):
