@@ -1,0 +1,15 @@
+**/.vs/*
+**/obj/*
+**/bin/*
+**/.idea/*
+**/__pycache__/*
+**/.venv/*
+**/.cache/*
+
+main.aux
+main.bbl
+main.blg
+main.log
+main.out
+main.pdf
+mainNotes.bib
