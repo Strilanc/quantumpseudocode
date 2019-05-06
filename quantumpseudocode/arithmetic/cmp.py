@@ -56,9 +56,6 @@ class IfLessThanRVal(RValue[bool]):
         self.rhs = rhs
         self.or_equal = or_equal
 
-    def existing_storage_location(self) -> Any:
-        return None
-
     def make_storage_location(self, name: Optional[str] = None) -> Any:
         return qp.qmanaged(name='_cmp')
 

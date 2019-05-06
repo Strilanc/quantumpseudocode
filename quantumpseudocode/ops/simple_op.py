@@ -1,15 +1,9 @@
 import functools
-from typing import Union, Any, TypeVar
 
 import cirq
 
 import quantumpseudocode as qp
 from .operation import Operation
-
-T = TypeVar('T')
-
-
-ArgTypes = Union[qp.RValue[Any], 'qp.Operation']
 
 
 @cirq.value_equality(distinct_child_types=True)
@@ -25,7 +19,7 @@ class Op(Operation):
 
     def alloc_prefix(self):
         return ''
-    def do(self, *args, **kwargs):
+    def do(self, controls: 'qp.QubitIntersection', *args, **kwargs):
         if self.inv_type() is not None:
             qp.emit(qp.InverseOperation(self.inverse()))
         raise NotImplemented()
@@ -44,15 +38,7 @@ class Op(Operation):
         return self._args.pass_into(inv)
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
-        def f(x: qp.ArgParameter):
-            if x.parameter_type == qp.Quint:
-                if isinstance(x.arg, int):
-                    return qp.IntRValue(x.arg)
-            if x.parameter_type == qp.Qubit:
-                if isinstance(x.arg, bool):
-                    return qp.BoolRValue(x.arg)
-            return x.arg
-        v = self._args.match_parameters(self.do, skip=1).map(f)
+        v = self._args.match_parameters(self.do, skip=1).map(_rval_wrap)
 
         with qp.HeldMultipleRValue(v, self.alloc_prefix()) as args:
             try:
@@ -100,3 +86,13 @@ def _unwrap_untagged_mutable(a: qp.ArgParameter):
             getattr(a.parameter_type, '__origin__', None) is not qp.Mutable):
         return a.arg.val
     return a.arg
+
+
+def _rval_wrap(x: qp.ArgParameter):
+    if x.parameter_type == qp.Quint:
+        if isinstance(x.arg, int):
+            return qp.IntRValue(x.arg)
+    if x.parameter_type == qp.Qubit:
+        if isinstance(x.arg, bool):
+            return qp.BoolRValue(x.arg)
+    return x.arg
