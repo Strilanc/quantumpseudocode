@@ -99,6 +99,7 @@ from quantumpseudocode.arithmetic import (
     phase_flip,
     PlusEqual,
     PlusEqualProduct,
+    TimesEqual,
     XorLookup,
 )
 

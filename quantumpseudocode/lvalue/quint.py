@@ -90,7 +90,6 @@ class Quint:
         return NotImplemented
 
     def __iadd__(self, other):
-        assert other is not NotImplemented
         rev = getattr(other, '__riadd__', None)
         if rev is not None:
             result = rev(self)
@@ -109,6 +108,22 @@ class Quint:
                                  offset=other,
                                  carry_in=False))
             return self
+
+        return NotImplemented
+
+    def __imul__(self, other):
+        rev = getattr(other, '__rimul__', None)
+        if rev is not None:
+            result = rev(self)
+            if result is not NotImplemented:
+                return result
+
+        rval_other = qp.rval(other, None)
+        rev = getattr(rval_other, '__rimul__', None)
+        if rev is not None:
+            result = rev(self)
+            if result is not NotImplemented:
+                return result
 
         return NotImplemented
 

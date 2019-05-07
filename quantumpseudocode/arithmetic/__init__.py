@@ -12,6 +12,10 @@ from .cmp import (
     EffectIfLessThan,
 )
 
+from .mul import (
+    TimesEqual,
+)
+
 from .mult_add import (
     PlusEqualProduct,
 )

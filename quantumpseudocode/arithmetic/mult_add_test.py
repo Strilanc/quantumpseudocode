@@ -1,7 +1,5 @@
 import random
 
-import cirq
-
 import quantumpseudocode as qp
 
 

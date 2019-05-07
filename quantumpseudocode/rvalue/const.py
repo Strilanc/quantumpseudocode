@@ -85,6 +85,13 @@ class IntRValue(RValue[bool]):
             return other
         return NotImplemented
 
+    def __rimul__(self, other):
+        if isinstance(other, qp.Quint):
+            qp.emit(qp.TimesEqual(lvalue=other,
+                                  factor=self.val))
+            return other
+        return NotImplemented
+
     def __str__(self):
         return 'rval({})'.format(self.val)
 

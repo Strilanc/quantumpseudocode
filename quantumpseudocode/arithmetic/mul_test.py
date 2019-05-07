@@ -1,22 +1,11 @@
-import functools
-import itertools
 import random
 
 import pytest
 
 import quantumpseudocode as qp
-from .times_equal import *
 
 
-methods = [
-    times_equal_builtin,
-    times_equal_classic,
-    times_equal_windowed_2,
-    times_equal_windowed_4,
-    times_equal_windowed_lg,
-]
-
-cases = [
+@pytest.mark.parametrize('case', [
     {'n': 5, 't': 2, 'k': 3},
     {
         'n': 10,
@@ -28,23 +17,34 @@ cases = [
         't': random.randint(0, 2**20 - 1),
         'k': random.randint(0, 2**20 - 1) | 1,
     },
-]
-
-
-@pytest.mark.parametrize(
-    'method,case',
-    itertools.product(methods, cases)
-)
-def test_correct_result(method, case):
+])
+def test_correct_result(case):
     n = case['n']
     t = case['t']
     k = case['k']
 
+    def mul(target: qp.Quint, k: int):
+        target *= k
+
+    def inv_mul(target: qp.Quint, k: int):
+        with qp.invert():
+            target *= k
+
     final_state = qp.testing.sim_call(
-        method,
+        mul,
         target=qp.IntBuf.raw(val=t, length=n),
         k=k)
+    print('\nresu;t\n;', t, k, n, 'final', final_state.kwargs['target'], t * k % 2**n)
     assert final_state == qp.ArgsAndKwargs([], {
         'target': t * k % 2**n,
+        'k': k,
+    })
+
+    final_state = qp.testing.sim_call(
+        inv_mul,
+        target=qp.IntBuf.raw(val=t * k % 2**n, length=n),
+        k=k)
+    assert final_state == qp.ArgsAndKwargs([], {
+        'target': t,
         'k': k,
     })
