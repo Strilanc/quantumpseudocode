@@ -94,7 +94,7 @@ class QubitIntersection(RValue[bool]):
 
     def __rixor__(self, other):
         if isinstance(other, qp.Qubit):
-            qp.emit(qp.OP_TOGGLE(qp.RawQureg([other])).controlled_by(self))
+            qp.emit(qp.Toggle(qp.RawQureg([other])).controlled_by(self))
             return self
         return NotImplemented
 
@@ -105,7 +105,7 @@ class QubitIntersection(RValue[bool]):
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
         t = qp.RawQureg([location])
-        qp.emit(qp.OP_TOGGLE(t).controlled_by(self & controls))
+        qp.emit(qp.Toggle(t).controlled_by(self & controls))
 
     def del_storage_location(self,
                              location: Any,

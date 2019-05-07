@@ -1,9 +1,11 @@
+from typing import List
+
 import quantumpseudocode as qp
-from quantumpseudocode.ops import SignatureGate
+from quantumpseudocode.ops import Op
 
 
-class _NotGateClass(SignatureGate):
-    def emulate(self, forward: bool, lvalue: 'List[qp.Mutable[bool]]'):
+class Toggle(Op):
+    def emulate(self, lvalue: List['qp.Mutable[bool]']):
         for q in lvalue:
             q.val = not q.val
 
@@ -13,16 +15,8 @@ class _NotGateClass(SignatureGate):
         raise ValueError("The NOT gate is fundamental. "
                          "It must be handled by the simulator, not decomposed.")
 
-    def __pow__(self, power):
-        if power in [1, -1]:
-            return self
-        return NotImplemented
+    def inverse(self):
+        return self
 
     def describe(self, lvalue):
-        return 'OP_TOGGLE {}'.format(lvalue)
-
-    def __repr__(self):
-        return 'qp.OP_TOGGLE'
-
-
-OP_TOGGLE = _NotGateClass()
+        return 'Toggle {}'.format(lvalue)

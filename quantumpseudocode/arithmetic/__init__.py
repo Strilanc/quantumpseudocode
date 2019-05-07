@@ -39,7 +39,7 @@ from .phase_flip import (
 )
 
 from .toggle import (
-    OP_TOGGLE,
+    Toggle,
 )
 
 from .unary import (

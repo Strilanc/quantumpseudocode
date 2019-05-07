@@ -93,7 +93,7 @@ from quantumpseudocode.arithmetic import (
     MeasureOperation,
     MeasureXForPhaseKickOperation,
     OP_PHASE_FLIP,
-    OP_TOGGLE,
+    Toggle,
     phase_flip,
     PlusEqual,
     PlusEqualProduct,

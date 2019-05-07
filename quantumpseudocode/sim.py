@@ -186,14 +186,13 @@ class Sim(qp.Lens):
             self._write_qubit(op.target, False)
             return []
 
-        if isinstance(op, qp.SignatureOperation):
-            if op.gate == qp.OP_TOGGLE:
-                targets = op.args.pass_into(_toggle_targets)
-                assert set(targets).isdisjoint(cnt)
-                if all(self._read_qubit(q) for q in cnt):
-                    for t in targets:
-                        self._write_qubit(t, not self._read_qubit(t))
-                return []
+        if isinstance(op, qp.Toggle):
+            targets = op._args.pass_into(_toggle_targets)
+            assert set(targets).isdisjoint(cnt)
+            if all(self._read_qubit(q) for q in cnt):
+                for t in targets:
+                    self._write_qubit(t, not self._read_qubit(t))
+            return []
 
         if op == qp.OP_PHASE_FLIP:
             # skip

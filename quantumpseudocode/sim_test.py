@@ -21,7 +21,6 @@ def test_count():
     offset = 4
     bits = 100
     with qp.Sim():
-      with qp.Log():
         with qp.CountNots() as counts:
             with qp.hold(val=v1, name='a') as a:
                 with qp.qmanaged_int(bits=bits, name='out') as out:

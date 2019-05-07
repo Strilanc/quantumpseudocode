@@ -15,7 +15,7 @@ class XorEqualConst(Op):
         for i, q in enumerate(lvalue):
             if mask & (1 << i):
                 targets.append(q)
-        qp.emit(qp.OP_TOGGLE(qp.RawQureg(targets)).controlled_by(controls))
+        qp.emit(qp.Toggle(qp.RawQureg(targets)).controlled_by(controls))
 
     def inverse(self):
         return self
@@ -35,7 +35,7 @@ class XorEqual(Op):
            lvalue: 'qp.Quint',
            mask: 'qp.Quint'):
         for i, q in enumerate(lvalue):
-            qp.emit(qp.OP_TOGGLE(qp.RawQureg([q])).controlled_by(
+            qp.emit(qp.Toggle(qp.RawQureg([q])).controlled_by(
                 controls & mask[i]))
 
     def inverse(self):

@@ -76,16 +76,13 @@ class LogCirqCircuit(qp.Lens):
                 self.circuit.append(g(*ctrls),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
-        elif isinstance(op, qp.SignatureOperation):
-            if op.gate == qp.OP_TOGGLE:
-                ctrls = [cirq.NamedQubit(str(q)) for q in controls]
-                targets = op.args.pass_into(_toggle_targets)
-                if len(targets):
-                    targs = [cirq.NamedQubit(str(q)) for q in targets]
-                    self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
-                                        cirq.InsertStrategy.NEW_THEN_INLINE)
-            else:
-                unknown = True
+        elif isinstance(op, qp.Toggle):
+            ctrls = [cirq.NamedQubit(str(q)) for q in controls]
+            targets = op._args.pass_into(_toggle_targets)
+            if len(targets):
+                targs = [cirq.NamedQubit(str(q)) for q in targets]
+                self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
+                                    cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif isinstance(op, qp.AllocQuregOperation):
             pass
@@ -111,13 +108,12 @@ class CountNots(qp.Lens):
     def modify(self, operation: 'qp.Operation'):
         op, controls = separate_controls(operation)
 
-        if isinstance(op, qp.SignatureOperation):
-            if op.gate == qp.OP_TOGGLE:
-                targets = op.args.pass_into(_toggle_targets)
-                if len(controls) > 1:
-                    self.counts[1] += 2 * (len(targets) - 1)
-                    self.counts[len(controls)] += 1
-                else:
-                    self.counts[len(controls)] += len(targets)
+        if isinstance(op, qp.Toggle):
+            targets = op._args.pass_into(_toggle_targets)
+            if len(controls) > 1:
+                self.counts[1] += 2 * (len(targets) - 1)
+                self.counts[len(controls)] += 1
+            else:
+                self.counts[len(controls)] += len(targets)
 
         return [operation]

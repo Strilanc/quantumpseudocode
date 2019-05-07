@@ -40,7 +40,7 @@ def test_set_item():
 
     with qp.capture() as out:
         q[2] ^= q[3]
-    assert out == [qp.OP_TOGGLE(qp.RawQureg([q[2]])).controlled_by(q[3])]
+    assert out == [qp.Toggle(qp.RawQureg([q[2]])).controlled_by(q[3])]
 
     with qp.capture() as out:
         q[2:] += 5
