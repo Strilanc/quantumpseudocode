@@ -1,45 +1,46 @@
-import quantumpseudocode
-from quantumpseudocode.ops.signature_gate import SignatureGate
+import quantumpseudocode as qp
+from quantumpseudocode.ops import SignatureGate, Op
 
 
-class _XorConstGateClass(SignatureGate):
-    def emulate(self, forward: bool, lvalue: 'quantumpseudocode.Mutable[int]', mask: int):
+class XorEqualConst(Op):
+    @staticmethod
+    def emulate(lvalue: 'qp.Mutable[int]', mask: int):
         lvalue.val ^= mask
 
-    def do(self,
-           controls: 'quantumpseudocode.QubitIntersection',
-           lvalue: 'quantumpseudocode.Quint',
+    @staticmethod
+    def do(controls: 'qp.QubitIntersection',
+           lvalue: 'qp.Quint',
            mask: int):
         targets = []
         for i, q in enumerate(lvalue):
             if mask & (1 << i):
                 targets.append(q)
-        quantumpseudocode.emit(quantumpseudocode.OP_TOGGLE(quantumpseudocode.RawQureg(targets)).controlled_by(controls))
+        qp.emit(qp.OP_TOGGLE(qp.RawQureg(targets)).controlled_by(controls))
 
-    def describe(self, lvalue, mask):
-        return 'OP_XOR_C {} ^= {}'.format(lvalue, mask)
+    def inverse(self):
+        return self
 
-    def __repr__(self):
-        return 'quantumpseudocode.OP_XOR_C'
+    @staticmethod
+    def describe(lvalue, mask):
+        return '{} ^= {}'.format(lvalue, mask)
 
 
-class _XorRegisterGateClass(SignatureGate):
-    def emulate(self, forward: bool, lvalue: 'quantumpseudocode.Mutable[int]', mask: int):
+class XorEqual(Op):
+    @staticmethod
+    def emulate(lvalue: 'qp.Mutable[int]', mask: int):
         lvalue.val ^= mask
 
-    def do(self,
-           controls: 'quantumpseudocode.QubitIntersection',
-           lvalue: 'quantumpseudocode.Quint',
-           mask: 'quantumpseudocode.Quint'):
+    @staticmethod
+    def do(controls: 'qp.QubitIntersection',
+           lvalue: 'qp.Quint',
+           mask: 'qp.Quint'):
         for i, q in enumerate(lvalue):
-            quantumpseudocode.emit(quantumpseudocode.OP_TOGGLE(quantumpseudocode.RawQureg([q])).controlled_by(controls & mask[i]))
+            qp.emit(qp.OP_TOGGLE(qp.RawQureg([q])).controlled_by(
+                controls & mask[i]))
 
-    def describe(self, lvalue, mask):
-        return 'OP_XOR {} ^= {}'.format(lvalue, mask)
+    def inverse(self):
+        return self
 
-    def __repr__(self):
-        return 'quantumpseudocode.OP_XOR'
-
-
-OP_XOR_C = _XorConstGateClass()
-OP_XOR = _XorRegisterGateClass()
+    @staticmethod
+    def describe(lvalue, mask):
+        return '{} ^= {}'.format(lvalue, mask)

@@ -63,12 +63,12 @@ def test_ixor():
 
     with qp.capture() as out:
         q ^= 5
-    assert out == [qp.OP_XOR_C(q, 5)]
+    assert out == [qp.XorEqualConst(q, 5)]
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
     with qp.capture() as out:
         q ^= q2
-    assert out == [qp.OP_XOR(q, q2)]
+    assert out == [qp.XorEqual(q, q2)]
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:

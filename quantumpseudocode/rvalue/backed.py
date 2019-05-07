@@ -68,12 +68,12 @@ class QuintRValue(RValue[int]):
     def init_storage_location(self,
                               location: Any,
                               controls: 'qp.QubitIntersection'):
-        qp.emit(qp.OP_XOR(location, self.val).controlled_by(controls))
+        qp.emit(qp.XorEqual(location, self.val).controlled_by(controls))
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        qp.emit(qp.OP_XOR(location, self.val).controlled_by(controls))
+        qp.emit(qp.XorEqual(location, self.val).controlled_by(controls))
 
     def __str__(self):
         return 'rval({})'.format(self.val)

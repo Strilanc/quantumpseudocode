@@ -76,11 +76,11 @@ class Quint:
 
     def __ixor__(self, other):
         if isinstance(other, int):
-            qp.emit(qp.OP_XOR_C(self, other))
+            qp.emit(qp.XorEqualConst(self, other))
             return self
 
         if isinstance(other, Quint):
-            qp.emit(qp.OP_XOR(self, other))
+            qp.emit(qp.XorEqual(self, other))
             return self
 
         rev = getattr(other, '__rixor__', None)

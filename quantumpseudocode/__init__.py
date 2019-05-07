@@ -94,12 +94,12 @@ from quantumpseudocode.arithmetic import (
     MeasureXForPhaseKickOperation,
     OP_PHASE_FLIP,
     OP_TOGGLE,
-    OP_XOR,
-    OP_XOR_C,
     phase_flip,
     PlusEqual,
     PlusEqualProduct,
     TimesEqual,
+    XorEqual,
+    XorEqualConst,
     XorLookup,
 )
 
