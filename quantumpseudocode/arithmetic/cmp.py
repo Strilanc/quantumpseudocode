@@ -79,5 +79,5 @@ class IfLessThanRVal(RValue[bool]):
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-     if qp.measure_x_for_phase_fixup_and_reset(location):
-         self.phase_flip_if(controls)
+        if qp.measure_x_for_phase_fixup_and_reset(location):
+            self.phase_flip_if(controls)

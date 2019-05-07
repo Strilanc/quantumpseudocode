@@ -19,15 +19,7 @@ from .misc import (
     HeldMultipleRValue,
 )
 
-from .signature_operation import (
-    SignatureOperation,
-)
-
-from .signature_gate import (
-    SignatureGate,
-    SignatureGateArgTypes,
-)
-
 from .simple_op import (
     Op,
+    SigHoldArgTypes,
 )

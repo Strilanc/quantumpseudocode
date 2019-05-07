@@ -76,9 +76,7 @@ from quantumpseudocode.ops import (
     Operation,
     LetRValueOperation,
     DelRValueOperation,
-    SignatureGate,
-    SignatureGateArgTypes,
-    SignatureOperation,
+    SigHoldArgTypes,
     SubEffect,
 )
 

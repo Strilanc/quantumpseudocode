@@ -1,9 +1,13 @@
 import functools
+from typing import Union, Any
 
 import cirq
 
 import quantumpseudocode as qp
 from .operation import Operation
+
+
+SigHoldArgTypes = Union[qp.RValue[Any], 'qp.Operation']
 
 
 @cirq.value_equality(distinct_child_types=True)

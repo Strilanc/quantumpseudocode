@@ -1,5 +1,5 @@
 import quantumpseudocode as qp
-from quantumpseudocode.ops import SignatureGate, Op
+from quantumpseudocode.ops import Op
 
 
 class XorEqualConst(Op):

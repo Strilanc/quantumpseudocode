@@ -3,7 +3,6 @@ from typing import Union, Tuple, Any, TypeVar, Generic
 import cirq
 
 import quantumpseudocode as qp
-from .signature_gate import SignatureGateArgTypes
 
 T = TypeVar('T')
 
@@ -37,10 +36,10 @@ class SubEffect:
 
 class HeldMultipleRValue:
     def __init__(self,
-                 args: qp.ArgsAndKwargs[SignatureGateArgTypes],
+                 args: qp.ArgsAndKwargs['qp.SigHoldArgTypes'],
                  name_prefix: str = ''):
         def hold_map(key: Any,
-                     e: SignatureGateArgTypes
+                     e: 'qp.SigHoldArgTypes'
                      ) -> Tuple[bool,
                                 Union['qp.Operation',
                                       'qp.HeldRValueManager']]:
