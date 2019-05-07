@@ -61,6 +61,9 @@ class IntRValue(RValue[bool]):
     def make_storage_location(self, name: str = ''):
         return qp.Quint(qp.NamedQureg(name, self.val.bit_length()))
 
+    def __int__(self):
+        return self.val
+
     def init_storage_location(self,
                               location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):

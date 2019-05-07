@@ -38,7 +38,7 @@ class FlagOperation(Operation):
 
 class LetRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
-        self.rvalue = rvalue
+        self.rvalue = qp.rval(rvalue)
         self.loc = loc
 
     def inverse(self) -> 'qp.Operation':
@@ -57,7 +57,7 @@ class LetRValueOperation(Operation):
 
 class DelRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
-        self.rvalue = rvalue
+        self.rvalue = qp.rval(rvalue)
         self.loc = loc
 
     def inverse(self) -> 'qp.Operation':

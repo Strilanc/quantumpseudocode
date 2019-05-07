@@ -34,7 +34,6 @@ def test_correct_result(case):
         mul,
         target=qp.IntBuf.raw(val=t, length=n),
         k=k)
-    print('\nresu;t\n;', t, k, n, 'final', final_state.kwargs['target'], t * k % 2**n)
     assert final_state == qp.ArgsAndKwargs([], {
         'target': t * k % 2**n,
         'k': k,

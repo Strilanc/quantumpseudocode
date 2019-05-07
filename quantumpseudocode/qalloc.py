@@ -24,7 +24,11 @@ def qmanaged(val: Union[None, int, 'qp.Qubit', 'qp.Qureg', 'qp.Quint'] = None, *
         assert name is None
         return QallocManager(val.qureg, val)
 
-    raise NotImplementedError()
+    if isinstance(val, qp.QuintMod):
+        assert name is None
+        return QallocManager(val.qureg, val)
+
+    raise NotImplementedError('Unrecognized value to manage: {!r}'.format(val))
 
 
 def qmanaged_int(*, bits: int, name: str = ''):
@@ -79,6 +83,8 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
         reg = target
     elif isinstance(target, qp.Quint):
         reg = target.qureg
+    elif isinstance(target, qp.QuintMod):
+        reg = target.qureg
     else:
         raise NotImplementedError()
     if len(reg):
@@ -89,6 +95,18 @@ def qalloc_int(*,
                bits: int,
                name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
     result = qp.Quint(qureg=qp.NamedQureg(length=bits, name=name or ''))
+    if bits:
+        qp.emit(AllocQuregOperation(result.qureg))
+    return result
+
+
+def qalloc_int_mod(*,
+                   modulus: int,
+                   name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
+    assert modulus > 0
+    bits = qp.ceil_lg2(modulus)
+    result = qp.QuintMod(qureg=qp.NamedQureg(length=bits, name=name or ''),
+                         modulus=modulus)
     if bits:
         qp.emit(AllocQuregOperation(result.qureg))
     return result

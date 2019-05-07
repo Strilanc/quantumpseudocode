@@ -56,23 +56,23 @@ class Quint:
 
     def __le__(self, other):
         return qp.IfLessThanRVal(qp.rval(self),
-                                    qp.rval(other),
-                                    qp.rval(True))
+                                 qp.rval(other),
+                                 qp.rval(True))
 
     def __lt__(self, other):
         return qp.IfLessThanRVal(qp.rval(self),
-                                    qp.rval(other),
-                                    qp.rval(False))
+                                 qp.rval(other),
+                                 qp.rval(False))
 
     def __ge__(self, other):
         return qp.IfLessThanRVal(qp.rval(other),
-                                    qp.rval(self),
-                                    qp.rval(False))
+                                 qp.rval(self),
+                                 qp.rval(True))
 
     def __gt__(self, other):
         return qp.IfLessThanRVal(qp.rval(other),
-                                    qp.rval(self),
-                                    qp.rval(True))
+                                 qp.rval(self),
+                                 qp.rval(False))
 
     def __ixor__(self, other):
         if isinstance(other, int):

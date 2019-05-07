@@ -38,6 +38,7 @@ from quantumpseudocode.lvalue import (
     PaddedQureg,
     Qubit,
     Quint,
+    QuintMod,
     Qureg,
     UniqueHandle,
 )
@@ -105,11 +106,16 @@ from quantumpseudocode.qalloc import (
     AllocQuregOperation,
     qalloc,
     qalloc_int,
+    qalloc_int_mod,
     QallocManager,
     qmanaged,
     qfree,
     qmanaged_int,
     ReleaseQuregOperation,
+)
+
+from quantumpseudocode.arithmetic_mod import (
+    PlusEqualConstMod,
 )
 
 import quantumpseudocode.testing as testing

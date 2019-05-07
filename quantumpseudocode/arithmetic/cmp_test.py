@@ -3,6 +3,21 @@ import cirq
 import quantumpseudocode as qp
 
 
+def test_cmp():
+    with qp.Sim():
+        with qp.qmanaged_int(bits=4) as t:
+            t.init(2)
+            with qp.hold(t >= 2) as q:
+                assert qp.measure(q, reset=True)
+            with qp.hold(t > 2) as q:
+                assert not qp.measure(q, reset=True)
+            with qp.hold(t <= 2) as q:
+                assert qp.measure(q, reset=True)
+            with qp.hold(t < 2) as q:
+                assert not qp.measure(q, reset=True)
+            assert qp.measure(t, reset=True) == 2
+
+
 def test_if_less_than_then_circuit():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:

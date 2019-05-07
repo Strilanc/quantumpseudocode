@@ -30,6 +30,9 @@ class EffectIfLessThan(Op):
            or_equal: 'qp.Qubit',
            effect: 'qp.Operation'):
         n = max(len(lhs), len(rhs))
+        if n == 0:
+            qp.emit(qp.ControlledOperation(effect, controls & or_equal))
+            return
 
         with qp.pad_all(lhs, rhs, min_len=n) as (lhs, rhs):
             # Propagate carries.
@@ -58,7 +61,7 @@ class IfLessThanRVal(RValue[bool]):
         self.or_equal = or_equal
 
     def make_storage_location(self, name: Optional[str] = None) -> Any:
-        return qp.qmanaged(name='_cmp')
+        return qp.Qubit(name)
 
     def phase_flip_if(self, controls: 'qp.QubitIntersection'):
         qp.emit(EffectIfLessThan(
@@ -74,10 +77,24 @@ class IfLessThanRVal(RValue[bool]):
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=qp.Toggle(location).controlled_by(controls)))
+            effect=qp.Toggle(qp.RawQureg([location])).controlled_by(controls)))
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
         if qp.measure_x_for_phase_fixup_and_reset(location):
             self.phase_flip_if(controls)
+
+    def __str__(self):
+        if isinstance(self.or_equal, qp.BoolRValue):
+            return '{} {} {}'.format(
+                self.lhs,
+                '<=' if self.or_equal else '<',
+                self.rhs)
+
+        return '{} <= {} if {} else {} < {}'.format(
+            self.lhs,
+            self.rhs,
+            self.or_equal,
+            self.lhs,
+            self.rhs)

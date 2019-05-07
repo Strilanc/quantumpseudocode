@@ -56,7 +56,10 @@ def rval(val: 'qp.RValue[T]') -> 'qp.RValue[T]':
 def rval(val: Any, default: Any) -> 'qp.RValue[T]':
     pass
 
+
 _raise_on_fail=([],)
+
+
 def rval(val: Any, default: Any = _raise_on_fail) -> 'qp.RValue[Any]':
     """Wraps the given candidate value into a `qp.RValue`, if needed.
 
@@ -70,6 +73,8 @@ def rval(val: Any, default: Any = _raise_on_fail) -> 'qp.RValue[Any]':
         return qp.BoolRValue(val)
     if isinstance(val, int):
         return qp.IntRValue(val)
+    if isinstance(val, qp.IntBuf):
+        return qp.IntRValue(int(val))
     if isinstance(val, qp.Qubit):
         return qp.QubitRValue(val)
     if isinstance(val, qp.Quint):

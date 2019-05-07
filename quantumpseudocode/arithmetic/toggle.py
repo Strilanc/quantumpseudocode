@@ -19,4 +19,5 @@ class Toggle(Op):
         return self
 
     def describe(self, lvalue):
+        assert not isinstance(lvalue, qp.Qubit)
         return 'Toggle {}'.format(lvalue)

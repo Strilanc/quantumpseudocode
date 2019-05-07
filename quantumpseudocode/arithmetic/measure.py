@@ -50,15 +50,8 @@ def _measure_op(
     if isinstance(val, qp.Qureg):
         return MeasureOperation(val, lambda e: e, reset)
 
-    if isinstance(val, qp.Quint):
-        def little_endian_int(e: List[bool]):
-            t = 0
-            for b in reversed(e):
-                t <<= 1
-                if b:
-                    t |= 1
-            return t
-        return MeasureOperation(val.qureg, little_endian_int, reset)
+    if isinstance(val, (qp.Quint, qp.QuintMod)):
+        return MeasureOperation(val.qureg, _little_endian_int, reset)
 
     if isinstance(val, qp.RValue):
         return _MeasureRValueOperation(val, reset)
@@ -118,3 +111,12 @@ class MeasureXForPhaseKickOperation(FlagOperation):
     def __repr__(self):
         return 'qp.MeasureXForPhaseKickOperation({!r})'.format(
             self.target)
+
+
+def _little_endian_int(e: List[bool]):
+    t = 0
+    for b in reversed(e):
+        t <<= 1
+        if b:
+            t |= 1
+    return t
