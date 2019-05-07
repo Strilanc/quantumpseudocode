@@ -31,8 +31,8 @@ class PlusEqual(Op):
             return
         if out_len == 1:
             if len(offset):
-                lvalue[0] ^= offset[0]
-            lvalue[0] ^= carry_in
+                lvalue[0] ^= offset[0] & controls
+            lvalue[0] ^= carry_in & controls
             return
 
         with qp.pad(offset, min_len=out_len - 1) as offset:

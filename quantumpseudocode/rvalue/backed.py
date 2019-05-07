@@ -2,20 +2,20 @@ from typing import Optional, Any, Tuple, Iterable
 
 import cirq
 
-import quantumpseudocode
+import quantumpseudocode as qp
 from .rvalue import RValue
 
 
 @cirq.value_equality
 class QubitRValue(RValue[bool]):
-    def __init__(self, val: 'quantumpseudocode.Qubit'):
+    def __init__(self, val: 'qp.Qubit'):
         self.val = val
 
     def _value_equality_values_(self):
         return self.val
 
-    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
-        return [quantumpseudocode.RawQureg([self.val])]
+    def qureg_deps(self) -> Iterable['qp.Qureg']:
+        return [qp.RawQureg([self.val])]
 
     def value_from_resolved_deps(self, args: Tuple[int, ...]
                                  ) -> bool:
@@ -29,30 +29,30 @@ class QubitRValue(RValue[bool]):
 
     def init_storage_location(self,
                               location: Any,
-                              controls: 'quantumpseudocode.QubitIntersection'):
+                              controls: 'qp.QubitIntersection'):
         raise ValueError('existing storage')
 
     def del_storage_location(self,
                              location: Any,
-                             controls: 'quantumpseudocode.QubitIntersection'):
+                             controls: 'qp.QubitIntersection'):
         raise ValueError('existing storage')
 
     def __str__(self):
         return 'rval({})'.format(self.val)
 
     def __repr__(self):
-        return 'quantumpseudocode.QubitRValue({!r})'.format(self.val)
+        return 'qp.QubitRValue({!r})'.format(self.val)
 
 
 @cirq.value_equality
 class QuintRValue(RValue[int]):
-    def __init__(self, val: 'quantumpseudocode.Quint'):
+    def __init__(self, val: 'qp.Quint'):
         self.val = val
 
     def _value_equality_values_(self):
         return self.val
 
-    def qureg_deps(self) -> Iterable['quantumpseudocode.Qureg']:
+    def qureg_deps(self) -> Iterable['qp.Qureg']:
         return [self.val.qureg]
 
     def value_from_resolved_deps(self, args: Tuple[int, ...]
@@ -63,20 +63,20 @@ class QuintRValue(RValue[int]):
         return self.val
 
     def make_storage_location(self, name: Optional[str] = None):
-        raise ValueError('existing storage')
+        return qp.Quint(qp.NamedQureg(name, len(self.val)))
 
     def init_storage_location(self,
                               location: Any,
-                              controls: 'quantumpseudocode.QubitIntersection'):
-        raise ValueError('existing storage')
+                              controls: 'qp.QubitIntersection'):
+        qp.emit(qp.OP_XOR(location, self.val).controlled_by(controls))
 
     def del_storage_location(self,
                              location: Any,
-                             controls: 'quantumpseudocode.QubitIntersection'):
-        raise ValueError('existing storage')
+                             controls: 'qp.QubitIntersection'):
+        qp.emit(qp.OP_XOR(location, self.val).controlled_by(controls))
 
     def __str__(self):
         return 'rval({})'.format(self.val)
 
     def __repr__(self):
-        return 'quantumpseudocode.QuintRValue({!r})'.format(self.val)
+        return 'qp.QuintRValue({!r})'.format(self.val)

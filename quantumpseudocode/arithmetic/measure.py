@@ -74,7 +74,7 @@ class _MeasureRValueOperation(Generic[T], Operation):
         self.reset = reset
         self.results = None
 
-    def permutation_registers(self):
+    def state_locations(self):
         return []
 
     def permute(self, forward: bool, args):

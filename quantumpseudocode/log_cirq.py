@@ -55,7 +55,7 @@ class LogCirqCircuit(qp.Lens):
         if isinstance(op, qp.MeasureOperation):
             qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
             if op.reset:
-                self.circuit.append(MeasureResetGate()(*qubits),
+                self.circuit.append(MeasureResetGate().on_each(*qubits),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
             else:
                 self.circuit.append(cirq.measure(*qubits),

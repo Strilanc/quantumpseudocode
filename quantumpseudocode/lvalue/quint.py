@@ -44,6 +44,7 @@ class Quint:
                 "quint.__setitem__ is only for syntax like q[0] ^= q[1]. "
                 "Don't know how to write {!r} into quint {!r}.".format(
                     value, key))
+        return value
 
     def __mul__(self, other):
         if isinstance(other, int):
@@ -91,21 +92,18 @@ class Quint:
     def __iadd__(self, other):
         rev = getattr(other, '__riadd__', None)
         if rev is not None:
-            return rev(self)
+            result = rev(self)
+            if result is not NotImplemented:
+                return result
 
-        # Constant addition.
-        if isinstance(other, (int, qp.IntRValue)):
-            known = other.val if isinstance(other, qp.IntRValue) else other
-            if known == 0:
-                return self
-            k = qp.leading_zero_bit_count(known)
-            qp.emit(qp.PlusEqual(lvalue=self[k:],
-                                 offset=known >> k,
-                                 carry_in=False))
-            return self
+        rval_other = qp.rval(other, None)
+        rev = getattr(rval_other, '__riadd__', None)
+        if rev is not None:
+            result = rev(self)
+            if result is not NotImplemented:
+                return result
 
-        # Register addition.
-        if isinstance(other, (Quint, qp.RValue)):
+        if isinstance(other, (qp.RValue, qp.Quint)):
             qp.emit(qp.PlusEqual(lvalue=self,
                                  offset=other,
                                  carry_in=False))

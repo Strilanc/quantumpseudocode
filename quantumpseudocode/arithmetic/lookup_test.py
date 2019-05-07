@@ -9,7 +9,7 @@ def test_xor_lookup():
             with qp.qmanaged_int(bits=4, name='addr') as addr:
                 with qp.qmanaged_int(bits=8, name='out') as out:
                     with qp.qmanaged(name='cnt') as cnt:
-                        with qp.condition(cnt):
+                        with qp.controlled_by(cnt):
                             out ^= qp.LookupTable(range(1, 17))[addr]
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -49,7 +49,7 @@ def test_redundant_lookup():
             with qp.qmanaged_int(bits=4, name='addr') as addr:
                 with qp.qmanaged_int(bits=8, name='out') as out:
                     with qp.qmanaged(name='cnt') as cnt:
-                        with qp.condition(cnt):
+                        with qp.controlled_by(cnt):
                             out ^= qp.LookupTable([3] * 16)[addr]
 
     cirq.testing.assert_has_diagram(circuit, r"""

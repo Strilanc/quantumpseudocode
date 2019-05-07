@@ -11,8 +11,8 @@ class EffectIfLessThan(Op):
     def alloc_prefix(self):
         return '_cmp_'
 
-    def biemulate(self,
-                  forward: bool,
+    @staticmethod
+    def biemulate(forward: bool,
                   *,
                   lhs: int,
                   rhs: int,
@@ -22,8 +22,8 @@ class EffectIfLessThan(Op):
         if condition:
             effect.op.mutate_state(forward, effect.args)
 
-    def do(self,
-           controls: 'qp.QubitIntersection',
+    @staticmethod
+    def do(controls: 'qp.QubitIntersection',
            *,
            lhs: 'qp.Quint',
            rhs: 'qp.Quint',
@@ -42,7 +42,8 @@ class EffectIfLessThan(Op):
             # Uncompute carries.
             uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.EMPTY)
 
-    def describe(self, lhs, rhs, or_equal, effect):
+    @staticmethod
+    def describe(lhs, rhs, or_equal, effect):
         return 'IF {} < {} + {} THEN {}'.format(
             lhs, rhs, or_equal, effect)
 

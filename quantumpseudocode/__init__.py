@@ -8,6 +8,14 @@ from quantumpseudocode.lens import (
     Log,
 )
 
+from quantumpseudocode.buf import (
+    Buffer,
+    IntBuf,
+    RawConcatBuffer,
+    RawIntBuffer,
+    RawWindowBuffer,
+)
+
 from quantumpseudocode.rvalue import (
     BoolRValue,
     HeldRValueManager,
@@ -104,3 +112,5 @@ from quantumpseudocode.qalloc import (
     qmanaged_int,
     ReleaseQuregOperation,
 )
+
+import quantumpseudocode.testing as testing

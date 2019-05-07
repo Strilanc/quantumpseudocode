@@ -52,7 +52,12 @@ def rval(val: 'bool') -> 'qp.RValue[bool]':
 @overload
 def rval(val: 'qp.RValue[T]') -> 'qp.RValue[T]':
     pass
-def rval(val: Any) -> 'qp.RValue[Any]':
+@overload
+def rval(val: Any, default: Any) -> 'qp.RValue[T]':
+    pass
+
+_raise_on_fail=([],)
+def rval(val: Any, default: Any = _raise_on_fail) -> 'qp.RValue[Any]':
     """Wraps the given candidate value into a `qp.RValue`, if needed.
 
     Args:
@@ -71,6 +76,8 @@ def rval(val: Any) -> 'qp.RValue[Any]':
         return qp.QuintRValue(val)
     if isinstance(val, qp.RValue):
         return val
+    if default is not _raise_on_fail:
+        return default
     raise NotImplementedError(
         "Don't know how to wrap type {} (value {!r}).".format(
             type(val),

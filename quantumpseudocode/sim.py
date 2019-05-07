@@ -141,7 +141,8 @@ class Sim(qp.Lens):
         if isinstance(op, qp.AllocQuregOperation):
             assert len(cnt) == 0
             for q in op.qureg:
-                assert q not in self._bool_state
+                assert q not in self._bool_state, "Double allocated {}".format(
+                    q)
                 if op.x_basis:
                     self._write_qubit(q, random.random() < 0.5)
                 else:
@@ -153,7 +154,7 @@ class Sim(qp.Lens):
             o = op
             if isinstance(op, qp.InverseOperation):
                 o = op.sub
-            elif isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
+            if isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
                 emulate = True
             if emulate:
                 self.apply_op_via_emulation(operation)

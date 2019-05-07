@@ -34,14 +34,20 @@ class ControlledRValue(qp.RValue):
 class _ControlledByWithoutRValue:
     def __init__(self, controls: qp.QubitIntersection):
         self.controls = controls
+        self._cond = qp.condition(self.controls)
+
+    def __enter__(self):
+        return self._cond.__enter__()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self._cond.__exit__(exc_type, exc_val, exc_tb)
 
     def __and__(self, other):
         if isinstance(other, ControlledRValue):
-            return ControlledRValue(self.controls & other.controls, other.rvalue)
-        if isinstance(other, qp.RValue):
-            return ControlledRValue(self.controls, other)
-        if isinstance(other, int):
-            return ControlledRValue(self.controls, qp.IntRValue(other))
+            return ControlledRValue(self.controls & other.controls,
+                                    other.rvalue)
+        if isinstance(other, (int, qp.Quint, qp.RValue)):
+            return ControlledRValue(self.controls, qp.rval(other))
         return NotImplemented
 
     def __rand__(self, other):

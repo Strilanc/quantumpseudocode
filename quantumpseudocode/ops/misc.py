@@ -22,6 +22,12 @@ class Mutable(Generic[T]):
     def __repr__(self):
         return 'qp.Mutable({!r})'.format(self.val)
 
+    def __int__(self):
+        return int(self.val)
+
+    def __bool__(self):
+        return bool(self.val)
+
 
 class SubEffect:
     def __init__(self, *, op: 'qp.Operation', args: 'qp.ArgsAndKwargs'):

@@ -10,7 +10,7 @@ class Operation:
     def state_locations(self) -> 'qp.ArgsAndKwargs[Union[qp.Qureg, qp.Qubit, qp.Quint], Any]':
         raise NotImplementedError('state_locations not implemented by {!r}'.format(self))
 
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
 
     def inverse(self) -> 'Operation':

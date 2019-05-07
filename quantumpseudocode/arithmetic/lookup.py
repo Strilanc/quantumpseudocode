@@ -66,7 +66,7 @@ class XorLookup(Op):
         # Base case: single distinct value in table.
         if all(e == table[0] for e in table):
             address ^= -1
-            with qp.condition(controls):
+            with qp.controlled_by(controls):
                 lvalue ^= table[0]
             address ^= -1
             return ()

@@ -17,16 +17,18 @@ class ControlledOperation(Operation):
     def _value_equality_values_(self):
         return self.controls, self.uncontrolled
 
-    def permutation_registers(self):
-        return (qp.RawQureg(self.controls),) + tuple(
-            self.uncontrolled.permutation_registers())
+    def state_locations(self) -> 'qp.ArgsAndKwargs':
+        return qp.ArgsAndKwargs([
+            qp.RawQureg(self.controls),
+            self.uncontrolled.state_locations()
+        ], {})
 
-    def permute(self, forward, args):
-        n = len(self.controls)
-        for i in range(n):
-            if args[i] != (1 << len(self.controls[i])) - 1:
-                return args
-        return args[:n] + self.uncontrolled.permute(forward, args[n:])
+    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
+        c, v = args.args
+        if isinstance(c, qp.Mutable):
+            c = c.val
+        if all(c):
+            self.uncontrolled.mutate_state(forward, v)
 
     def inverse(self):
         return ControlledOperation(self.uncontrolled.inverse(), self.controls)
