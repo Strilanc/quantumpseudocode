@@ -63,6 +63,12 @@ class QuintMod:
                                          modulus=self.modulus))
             return self
 
+        if isinstance(other, (qp.Quint, qp.RValue)):
+            qp.emit(qp.PlusEqualMod(lvalue=self[:],
+                                    offset=other,
+                                    modulus=self.modulus))
+            return self
+
         return NotImplemented
 
     def __isub__(self, other):

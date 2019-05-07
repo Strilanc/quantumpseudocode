@@ -116,6 +116,7 @@ from quantumpseudocode.qalloc import (
 
 from quantumpseudocode.arithmetic_mod import (
     PlusEqualConstMod,
+    PlusEqualMod,
 )
 
 import quantumpseudocode.testing as testing
