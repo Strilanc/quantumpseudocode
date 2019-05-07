@@ -90,6 +90,7 @@ class Quint:
         return NotImplemented
 
     def __iadd__(self, other):
+        assert other is not NotImplemented
         rev = getattr(other, '__riadd__', None)
         if rev is not None:
             result = rev(self)

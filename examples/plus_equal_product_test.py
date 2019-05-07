@@ -1,16 +1,21 @@
+import functools
 import itertools
 import random
 
 import pytest
 
 import quantumpseudocode as qp
-from .windowed import *
+from .plus_equal_product import *
 
 
 methods = [
     plus_equal_product_builtin,
     plus_equal_product_iter_classical,
     plus_equal_product_iter_quantum,
+    plus_equal_product_single_lookup,
+    plus_equal_product_windowed_2,
+    plus_equal_product_windowed_4,
+    plus_equal_product_windowed_lg,
 ]
 
 cases = [

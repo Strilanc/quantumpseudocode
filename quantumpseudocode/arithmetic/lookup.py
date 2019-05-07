@@ -28,6 +28,8 @@ class LookupTable:
         return len(self.values)
 
     def __getitem__(self, item):
+        if isinstance(item, bool):
+            return self.values[int(item)]
         if isinstance(item, int):
             return self.values[item]
         if isinstance(item, slice):
@@ -38,7 +40,9 @@ class LookupTable:
                 return LookupRValue(self, qp.Quint(reg))
         if isinstance(item, qp.Quint):
             return LookupRValue(self, item)
-        return NotImplemented
+        if isinstance(item, qp.Qubit):
+            return LookupRValue(self, qp.Quint(qp.RawQureg([item])))
+        raise NotImplementedError('Strange index: {}'.format(item))
 
     def __repr__(self):
         return 'qp.LookupTable({!r})'.format(self.values)
