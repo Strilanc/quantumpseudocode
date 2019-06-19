@@ -3,9 +3,9 @@ Quantum Pseudo Code
 
 When attempting to do arithmetic with quantum computing languages, one is struck
 by the lack of basic built-in constructs such as addition.
-For example, it is rate to be able to type `a += b` instead of
+For example, it is rare to be able to type `a += b` instead of
 `CuccaroLittleEndianAdder(b, a)`.
-Cosim's goal is to be like the former, instead of the latter.
+This library's goal is to be like the former, instead of the latter.
 
 For example, assuming `a`, `b`, and `c` are quantum values, the line
 
@@ -15,7 +15,7 @@ a += table[b] & controlled_by(c)
 
 will perform the following steps:
 
-1. Allocate a temporary register.
+1. Allocate a temporary quantum register.
 2. Initialize the temporary register using a controlled QROM lookup with address `b` and control `c`. 
 3. Add the temporary register's value into `a`.
 4. Uncompute the controlled QROM lookup.
