@@ -34,9 +34,10 @@ class XorEqual(Op):
     def do(controls: 'qp.QubitIntersection',
            lvalue: 'qp.Quint',
            mask: 'qp.Quint'):
-        for i, q in enumerate(lvalue):
+        assert len(mask) <= len(lvalue)
+        for q, m in zip(lvalue, mask):
             qp.emit(qp.Toggle(qp.RawQureg([q])).controlled_by(
-                controls & mask[i]))
+                controls & m))
 
     def inverse(self):
         return self

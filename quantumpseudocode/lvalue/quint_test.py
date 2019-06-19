@@ -70,6 +70,12 @@ def test_ixor():
         q ^= q2
     assert out == [qp.XorEqual(q, q2)]
 
+    q3 = qp.Quint(qp.NamedQureg('test3', 5))
+    c = qp.Qubit('c')
+    with qp.capture() as out:
+        q ^= q3 & qp.controlled_by(c)
+    assert out == [qp.XorEqual(q, q3).controlled_by(c)]
+
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
         def __rixor__(self, other):
