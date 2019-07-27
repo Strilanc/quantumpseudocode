@@ -10,12 +10,13 @@ class PlusEqualConstMod(Op):
     @staticmethod
     def biemulate(forward: bool,
                   *,
-                  lvalue: 'qp.Mutable[int]',
+                  lvalue: 'qp.IntBuf',
                   offset: int,
                   modulus: int):
-        assert lvalue.val < modulus
+        v = int(lvalue)
+        assert v < modulus
         sign = 1 if forward else -1
-        lvalue.val = (lvalue.val + offset * sign) % modulus
+        lvalue[:] = (v + offset * sign) % modulus
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',
@@ -44,12 +45,13 @@ class PlusEqualMod(Op):
     @staticmethod
     def biemulate(forward: bool,
                   *,
-                  lvalue: 'qp.Mutable[int]',
+                  lvalue: 'qp.IntBuf',
                   offset: int,
                   modulus: int):
-        assert lvalue.val < modulus
+        v = int(lvalue)
+        assert v < modulus
         sign = 1 if forward else -1
-        lvalue.val = (lvalue.val + offset * sign) % modulus
+        lvalue[:] = (v + offset * sign) % modulus
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',

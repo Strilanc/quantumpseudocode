@@ -14,7 +14,6 @@ from .controlled_operation import (
 )
 
 from .misc import (
-    Mutable,
     SubEffect,
     HeldMultipleRValue,
 )

@@ -7,27 +7,6 @@ import quantumpseudocode as qp
 T = TypeVar('T')
 
 
-@cirq.value_equality(unhashable=True)
-class Mutable(Generic[T]):
-    def __init__(self, val: T):
-        self.val = val
-
-    def _value_equality_values_(self):
-        return self.val
-
-    def __str__(self):
-        return 'mutable({})'.format(self.val)
-
-    def __repr__(self):
-        return 'qp.Mutable({!r})'.format(self.val)
-
-    def __int__(self):
-        return int(self.val)
-
-    def __bool__(self):
-        return bool(self.val)
-
-
 class SubEffect:
     def __init__(self, *, op: 'qp.Operation', args: 'qp.ArgsAndKwargs'):
         self.op = op

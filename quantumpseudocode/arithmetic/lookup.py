@@ -51,7 +51,7 @@ class LookupTable:
 class XorLookup(Op):
     @staticmethod
     def emulate(*,
-                lvalue: 'qp.Mutable[int]',
+                lvalue: 'qp.IntBuf',
                 table: 'qp.LookupTable',
                 address: 'int',
                 phase_instead_of_toggle: bool):

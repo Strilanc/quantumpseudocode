@@ -85,10 +85,13 @@ class Op(Operation):
 
 
 def _unwrap_untagged_mutable(a: qp.ArgParameter):
-    # If it's not type tagged as mutable, don't expose it as mutable.
-    if (isinstance(a.arg, qp.Mutable) and
-            getattr(a.parameter_type, '__origin__', None) is not qp.Mutable):
-        return a.arg.val
+    assert a.parameter_type is not None, (
+        f'Parameter "{a.parameter.name}" must have a type annotation.')
+    assert isinstance(a.arg, a.parameter_type), (
+        f'Parameter "{a.parameter.name}" has '
+        f'type annotation "{a.parameter_type}" '
+        f'but was passed an argument of type {type(a.arg)}.\n'
+        f'Arg: {a.arg}.')
     return a.arg
 
 

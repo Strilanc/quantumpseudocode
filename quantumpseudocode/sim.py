@@ -49,20 +49,18 @@ class Sim(qp.Lens):
 
     def resolve_location(self, loc: Union[qp.Quint, qp.Qubit, qp.Qureg, qp.ArgsAndKwargs, qp.IntRValue, qp.BoolRValue], allow_mutate: bool = True):
         if isinstance(loc, qp.Qubit):
-            val = self._read_qubit(loc)
             if allow_mutate:
-                return qp.Mutable(val)
-            return val
+                return self._quint_buf(qp.Quint(qp.RawQureg([loc])))
+            return self._read_qubit(loc)
         if isinstance(loc, qp.Qureg):
-            val = [self._read_qubit(q) for q in loc]
             if allow_mutate:
-                return qp.Mutable(val)
-            return val
+                return self._quint_buf(qp.Quint(loc))
+            return [self._read_qubit(q) for q in loc]
         if isinstance(loc, qp.QubitIntersection):
             return all(self._read_qubit(q) for q in loc)
         if isinstance(loc, qp.Quint):
             buf = self._quint_buf(loc)
-            return qp.Mutable(int(buf)) if allow_mutate else int(buf)
+            return buf if allow_mutate else int(buf)
         if isinstance(loc, qp.ArgsAndKwargs):
             return loc.map(self.resolve_location)
         if isinstance(loc, (qp.IntRValue, qp.BoolRValue)):
@@ -102,14 +100,15 @@ class Sim(qp.Lens):
             raise NotImplementedError(
                 "Unrecognized type for randomize_location {!r}".format(loc))
 
-    def overwrite_location(self, loc: Union[qp.Quint, qp.Qubit, qp.Qureg, qp.ArgsAndKwargs], val: Union['qp.Mutable', Any]):
+    def overwrite_location(self,
+                           loc: Union[qp.Quint, qp.Qubit, qp.Qureg, qp.ArgsAndKwargs],
+                           val: Any):
         if isinstance(loc, qp.Qubit):
-            self._write_qubit(loc, val.val)
+            assert int(self._quint_buf(qp.Quint(qp.RawQureg([loc])))) == int(val)
         elif isinstance(loc, qp.Qureg):
-            for q, v in zip(loc, val.val):
-                self._write_qubit(q, v)
+            assert int(self._quint_buf(qp.Quint(loc))) == int(val)
         elif isinstance(loc, qp.Quint):
-            self._quint_buf(loc)[:] = val.val
+            assert int(self._quint_buf(loc)) == int(val)
         elif isinstance(loc, qp.ArgsAndKwargs):
             loc.zip_map(val, self.overwrite_location)
         elif isinstance(loc, (qp.IntRValue, qp.BoolRValue)):
@@ -136,15 +135,15 @@ class Sim(qp.Lens):
             assert len(cnt) == 0
             if isinstance(op.qureg, qp.NamedQureg):
                 assert op.qureg.name not in self._int_state, "Double allocated {}".format(op.qureg.name)
-                self._int_state[op.qureg.name] = qp.IntBuf(qp.RawIntBuffer(
-                    random.randint(0, (1 << len(op.qureg)) - 1) if op.x_basis else 0,
-                    len(op.qureg)))
+                self._int_state[op.qureg.name] = qp.IntBuf.raw(
+                    val=random.randint(0, (1 << len(op.qureg)) - 1) if op.x_basis else 0,
+                    length=len(op.qureg))
             else:
                 for q in op.qureg:
                     assert q.name not in self._int_state, "Double allocated {}".format(q.name)
-                    self._int_state[q.name] = qp.IntBuf(qp.RawIntBuffer(
-                        random.randint(0, 1) if op.x_basis else 0,
-                        1))
+                    self._int_state[q.name] = qp.IntBuf.raw(
+                        val=random.randint(0, 1) if op.x_basis else 0,
+                        length=1)
             return []
 
         if self.emulate_additions:

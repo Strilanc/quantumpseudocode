@@ -4,8 +4,8 @@ from quantumpseudocode.ops import Op
 
 class XorEqualConst(Op):
     @staticmethod
-    def emulate(lvalue: 'qp.Mutable[int]', mask: int):
-        lvalue.val ^= mask
+    def emulate(lvalue: 'qp.IntBuf', mask: int):
+        lvalue ^= mask
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',
@@ -27,8 +27,8 @@ class XorEqualConst(Op):
 
 class XorEqual(Op):
     @staticmethod
-    def emulate(lvalue: 'qp.Mutable[int]', mask: int):
-        lvalue.val ^= mask
+    def emulate(lvalue: 'qp.IntBuf', mask: int):
+        lvalue ^= mask
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',

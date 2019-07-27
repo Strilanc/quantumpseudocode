@@ -5,7 +5,7 @@ from quantumpseudocode.ops import Op
 
 
 class Toggle(Op):
-    def emulate(self, lvalue: List['qp.Mutable[bool]']):
+    def emulate(self, lvalue: 'qp.IntBuf'):
         for q in lvalue:
             q.val = not q.val
 

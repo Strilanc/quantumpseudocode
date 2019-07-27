@@ -25,8 +25,6 @@ class ControlledOperation(Operation):
 
     def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
         c, v = args.args
-        if isinstance(c, qp.Mutable):
-            c = c.val
         if all(c):
             self.uncontrolled.mutate_state(forward, v)
 

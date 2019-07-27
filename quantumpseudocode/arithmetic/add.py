@@ -12,11 +12,11 @@ class PlusEqual(Op):
     @staticmethod
     def biemulate(forward: bool,
                   *,
-                  lvalue: 'qp.Mutable[int]',
+                  lvalue: 'qp.IntBuf',
                   offset: int,
                   carry_in: bool):
         sign = 1 if forward else -1
-        lvalue.val += (offset + carry_in) * sign
+        lvalue += (offset + carry_in) * sign
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',
