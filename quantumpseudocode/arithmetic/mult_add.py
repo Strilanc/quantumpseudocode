@@ -26,7 +26,7 @@ class PlusEqualProduct(Op):
         for i, q in enumerate(quantum_factor):
             lvalue += (const_factor << i) & qp.controlled_by(q)
 
-    def describe(self, lvalue, quantum_factor, const_factor):
+    def describe(self, *, lvalue, quantum_factor, const_factor):
         return '{} += {} * {}'.format(lvalue,
                                       quantum_factor,
                                       const_factor)

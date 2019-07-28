@@ -17,16 +17,11 @@ class ControlledOperation(Operation):
     def _value_equality_values_(self):
         return self.controls, self.uncontrolled
 
-    def state_locations(self) -> 'qp.ArgsAndKwargs':
-        return qp.ArgsAndKwargs([
-            qp.RawQureg(self.controls),
-            self.uncontrolled.state_locations()
-        ], {})
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
-        c, v = args.args
-        if all(c):
-            self.uncontrolled.mutate_state(forward, v)
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        c = sim_state.quint_buf(qp.Quint(qp.RawQureg(self.controls.qubits)))
+        controls_satisfied = int(c) == (1 << len(c)) - 1
+        if controls_satisfied:
+            self.uncontrolled.mutate_state(sim_state, forward)
 
     def inverse(self):
         return ControlledOperation(self.uncontrolled.inverse(), self.controls)

@@ -43,11 +43,6 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             self._int_state[k][s] for k, s in _fuse(quint.qureg)
         ]))
 
-    def apply_op_via_emulation(self, op: 'qp.Operation', *, forward: bool = True):
-        locs = op.state_locations()
-        args = self.resolve_location(locs)
-        op.mutate_state(forward, args)
-
     def resolve_location(self, loc: Any, allow_mutate: bool = True):
         resolver = getattr(loc, 'resolve', None)
         if resolver is not None:
@@ -99,7 +94,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             if isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
                 emulate = True
             if emulate:
-                self.apply_op_via_emulation(operation)
+                operation.mutate_state(self, True)
                 return []
 
         if isinstance(op, qp.ReleaseQuregOperation):

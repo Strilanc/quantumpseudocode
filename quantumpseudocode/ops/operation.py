@@ -14,19 +14,10 @@ class ClassicalSimState:
 
 
 class Operation:
-    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
-        return qp.SubEffect(
-            op=self,
-            args=sim_state.resolve_location(self.state_locations(),
-                                            allow_mutate))
-
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
 
-    def state_locations(self) -> 'qp.ArgsAndKwargs[Union[qp.Qureg, qp.Qubit, qp.Quint], Any]':
-        raise NotImplementedError('state_locations not implemented by {!r}'.format(self))
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
 
     def inverse(self) -> 'Operation':
@@ -42,10 +33,7 @@ class Operation:
 
 
 class FlagOperation(Operation):
-    def state_locations(self):
-        return ()
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
 
     def inverse(self):
