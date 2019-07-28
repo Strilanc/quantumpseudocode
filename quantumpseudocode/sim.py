@@ -47,7 +47,6 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         locs = op.state_locations()
         args = self.resolve_location(locs)
         op.mutate_state(forward, args)
-        self.overwrite_location(locs, args)
 
     def resolve_location(self, loc: Any, allow_mutate: bool = True):
         resolver = getattr(loc, 'resolve', None)
@@ -73,34 +72,6 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         else:
             raise NotImplementedError(
                 "Unrecognized type for randomize_location {!r}".format(loc))
-
-    def overwrite_location(self,
-                           loc: Union[qp.Quint, qp.Qubit, qp.Qureg, qp.ArgsAndKwargs],
-                           val: Any):
-        if isinstance(loc, qp.Qubit):
-            assert int(self.quint_buf(qp.Quint(qp.RawQureg([loc])))) == int(val)
-        elif isinstance(loc, qp.Qureg):
-            assert int(self.quint_buf(qp.Quint(loc))) == int(val)
-        elif isinstance(loc, qp.Quint):
-            assert int(self.quint_buf(loc)) == int(val)
-        elif isinstance(loc, qp.ArgsAndKwargs):
-            loc.zip_map(val, self.overwrite_location)
-        elif isinstance(loc, (qp.IntRValue, qp.BoolRValue)):
-            assert self.resolve_location(loc) == loc.val
-        elif isinstance(loc, (bool, int)):
-            assert self.resolve_location(loc) == val
-        elif isinstance(loc, qp.ControlledRValue):
-            if self.resolve_location(loc.controls):
-                self.overwrite_location(loc.rvalue, val)
-        elif isinstance(loc, qp.LookupRValue):
-            assert self.resolve_location(loc) == val
-        elif isinstance(loc, qp.QuintRValue):
-            assert self.resolve_location(loc) == val
-        elif isinstance(loc, qp.Operation):
-            self.overwrite_location(loc.state_locations(), val.args)
-        else:
-            raise NotImplementedError(
-                "Unrecognized type for overwrite_location {!r}".format(loc))
 
     def modify(self, operation: 'qp.Operation'):
         op, cnt = separate_controls(operation)
