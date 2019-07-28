@@ -55,15 +55,15 @@ def test_ixor():
     assert out == []
     with qp.capture() as out:
         q ^= True
-    assert out == [qp.Toggle(qp.RawQureg([q]))]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q]))]
 
     # Qubit and qubit intersection cause controlled toggle.
     with qp.capture() as out:
         q ^= c
-    assert out == [qp.Toggle(qp.RawQureg([q])).controlled_by(c)]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(c)]
     with qp.capture() as out:
         q ^= c & d
-    assert out == [qp.Toggle(qp.RawQureg([q])).controlled_by(c & d)]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(c & d)]
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:

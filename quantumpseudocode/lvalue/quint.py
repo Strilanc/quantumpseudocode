@@ -80,16 +80,16 @@ class Quint:
 
     def __ixor__(self, other):
         if isinstance(other, int):
-            qp.emit(qp.XorEqualConst(self, other))
+            qp.emit(qp.XorEqualConst(lvalue=self, mask=other))
             return self
 
         if isinstance(other, Quint):
-            qp.emit(qp.XorEqual(self, other))
+            qp.emit(qp.XorEqual(lvalue=self, mask=other))
             return self
 
         if (isinstance(other, qp.ControlledRValue)
                 and isinstance(other.rvalue, qp.QuintRValue)):
-            qp.emit(qp.XorEqual(self, other.rvalue.val
+            qp.emit(qp.XorEqual(lvalue=self, mask=other.rvalue.val
                                 ).controlled_by(other.controls))
             return self
 

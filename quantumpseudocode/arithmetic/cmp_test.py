@@ -29,7 +29,7 @@ def test_if_less_than_then_circuit():
                                 lhs=lhs,
                                 rhs=rhs,
                                 or_equal=c,
-                                effect=qp.Toggle(qp.RawQureg([t]))))
+                                effect=qp.Toggle(lvalue=qp.RawQureg([t]))))
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _or_eq: ---X-------@---@-------------------------------------------------------------------------------------------------------@---@-------X---

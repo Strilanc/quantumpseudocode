@@ -28,5 +28,6 @@ class TimesEqual(Op):
             c = controls & lvalue[i]
             lvalue[i+1:] += (factor >> 1) & qp.controlled_by(c)
 
-    def describe(self, lvalue, factor):
+    @staticmethod
+    def describe(*, lvalue, factor):
         return '{} *= {}'.format(lvalue, factor)

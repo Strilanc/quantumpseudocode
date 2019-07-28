@@ -17,7 +17,7 @@ class InverseOperation(Operation):
             self.sub.emit_ops(controls)
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        self.sub.mutate_state(sim_state, not forward)
+        self.sub.mutate_state(sim_state=sim_state, forward=not forward)
 
     def inverse(self):
         return self.sub

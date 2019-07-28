@@ -77,7 +77,7 @@ class IfLessThanRVal(RValue[bool]):
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=qp.Toggle(qp.RawQureg([location])).controlled_by(controls)))
+            effect=qp.Toggle(lvalue=qp.RawQureg([location])).controlled_by(controls)))
 
     def del_storage_location(self,
                              location: Any,

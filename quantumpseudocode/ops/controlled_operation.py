@@ -21,7 +21,7 @@ class ControlledOperation(Operation):
         c = sim_state.quint_buf(qp.Quint(qp.RawQureg(self.controls.qubits)))
         controls_satisfied = int(c) == (1 << len(c)) - 1
         if controls_satisfied:
-            self.uncontrolled.mutate_state(sim_state, forward)
+            self.uncontrolled.mutate_state(sim_state=sim_state, forward=forward)
 
     def inverse(self):
         return ControlledOperation(self.uncontrolled.inverse(), self.controls)

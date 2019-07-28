@@ -94,7 +94,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             if isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
                 emulate = True
             if emulate:
-                operation.mutate_state(self, True)
+                operation.mutate_state(sim_state=self, forward=True)
                 return []
 
         if isinstance(op, qp.ReleaseQuregOperation):

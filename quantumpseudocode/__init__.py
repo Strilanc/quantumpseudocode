@@ -73,6 +73,7 @@ from quantumpseudocode.ops import (
     FlagOperation,
     HeldMultipleRValue,
     InverseOperation,
+    Op,
     Operation,
     LetRValueOperation,
     DelRValueOperation,

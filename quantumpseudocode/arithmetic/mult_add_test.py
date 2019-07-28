@@ -16,5 +16,5 @@ def test_vs_emulation():
                     quantum_factor=random.randint(0, 1 << bits),
                     const_factor=random.randint(0, 1 << bits))
                 qp.emit(op)
-                op.mutate_state(sim, forward=False)
+                op.mutate_state(sim_state=sim, forward=False)
                 assert sim.snapshot() == old_state
