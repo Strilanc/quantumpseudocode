@@ -11,6 +11,9 @@ class QubitRValue(RValue[bool]):
     def __init__(self, val: 'qp.Qubit'):
         self.val = val
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.val.resolve(sim_state, False)
+
     def _value_equality_values_(self):
         return self.val
 
@@ -48,6 +51,9 @@ class QubitRValue(RValue[bool]):
 class QuintRValue(RValue[int]):
     def __init__(self, val: 'qp.Quint'):
         self.val = val
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.val.resolve(sim_state, False)
 
     def _value_equality_values_(self):
         return self.val

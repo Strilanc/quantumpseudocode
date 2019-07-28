@@ -122,6 +122,10 @@ class LookupRValue(qp.RValue[int]):
         self.table = table[:max_table_len]
         self.address = address[:max_address_len]
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        address = self.address.resolve(sim_state, False)
+        return self.table.values[address]
+
     def __rixor__(self, other):
         if isinstance(other, qp.Quint):
             qp.emit(XorLookup(lvalue=other,

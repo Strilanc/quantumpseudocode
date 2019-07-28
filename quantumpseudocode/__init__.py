@@ -76,6 +76,7 @@ from quantumpseudocode.ops import (
     Operation,
     LetRValueOperation,
     DelRValueOperation,
+    ClassicalSimState,
     SigHoldArgTypes,
     SubEffect,
 )

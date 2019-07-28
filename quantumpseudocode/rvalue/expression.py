@@ -60,10 +60,14 @@ class ScaledIntRValue(RValue[int]):
 class QubitIntersection(RValue[bool]):
     """The logical-and of several qubits."""
 
-    EMPTY = None # type: QubitIntersection
+    EMPTY: 'QubitIntersection' = None
 
     def __init__(self, qubits: Tuple['qp.Qubit', ...]):
         self.qubits = tuple(qubits)
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        v = qp.Quint(qp.RawQureg(self.qubits)).resolve(sim_state, False)
+        return v == (1 << len(self.qubits)) - 1
 
     def _value_equality_values_(self):
         return frozenset(self.qubits)

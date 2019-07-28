@@ -13,6 +13,10 @@ class Qubit:
         self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
         self.index = index
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
+        return buf if allow_mutate else bool(int(buf))
+
     def _value_equality_values_(self):
         return self.name, self.index
 

@@ -3,7 +3,23 @@ from typing import Union, Any
 import quantumpseudocode as qp
 
 
+class ClassicalSimState:
+    phase_degrees: float
+
+    def quint_buf(self, quint: 'qp.Quint') -> 'qp.IntBuf':
+        raise NotImplementedError()
+
+    def resolve_location(self, loc: Any, allow_mutate: bool) -> Any:
+        pass
+
+
 class Operation:
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return qp.SubEffect(
+            op=self,
+            args=sim_state.resolve_location(self.state_locations(),
+                                            allow_mutate))
+
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
 

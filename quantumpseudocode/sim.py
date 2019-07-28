@@ -2,6 +2,8 @@ import random
 from typing import List, Union, Callable, Any, Optional, Tuple, Set, Dict, Iterable
 
 import quantumpseudocode as qp
+import quantumpseudocode.ops.operation
+import quantumpseudocode.lens
 
 
 def separate_controls(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
@@ -14,7 +16,7 @@ def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
     return lvalue
 
 
-class Sim(qp.Lens):
+class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.ClassicalSimState):
     def __init__(self,
                  enforce_release_at_zero: bool = True,
                  phase_fixup_bias: Optional[bool] = None,
@@ -34,7 +36,7 @@ class Sim(qp.Lens):
     def _write_qubit(self, qubit: 'qp.Qubit', new_val: bool):
         self._int_state[qubit.name][qubit.index or 0] = new_val
 
-    def _quint_buf(self, quint: 'qp.Quint') -> qp.IntBuf:
+    def quint_buf(self, quint: 'qp.Quint') -> qp.IntBuf:
         if isinstance(quint.qureg, qp.NamedQureg):
             return self._int_state[quint.qureg.name]
         return qp.IntBuf(qp.RawConcatBuffer.balanced_concat([
@@ -47,42 +49,14 @@ class Sim(qp.Lens):
         op.mutate_state(forward, args)
         self.overwrite_location(locs, args)
 
-    def resolve_location(self, loc: Union[qp.Quint, qp.Qubit, qp.Qureg, qp.ArgsAndKwargs, qp.IntRValue, qp.BoolRValue], allow_mutate: bool = True):
-        if isinstance(loc, qp.Qubit):
-            if allow_mutate:
-                return self._quint_buf(qp.Quint(qp.RawQureg([loc])))
-            return self._read_qubit(loc)
-        if isinstance(loc, qp.Qureg):
-            if allow_mutate:
-                return self._quint_buf(qp.Quint(loc))
-            return [self._read_qubit(q) for q in loc]
-        if isinstance(loc, qp.QubitIntersection):
-            return all(self._read_qubit(q) for q in loc)
-        if isinstance(loc, qp.Quint):
-            buf = self._quint_buf(loc)
-            return buf if allow_mutate else int(buf)
-        if isinstance(loc, qp.ArgsAndKwargs):
-            return loc.map(self.resolve_location)
-        if isinstance(loc, (qp.IntRValue, qp.BoolRValue)):
-            return loc.val
+    def resolve_location(self, loc: Any, allow_mutate: bool = True):
+        resolver = getattr(loc, 'resolve', None)
+        if resolver is not None:
+            return resolver(self, allow_mutate)
         if isinstance(loc, (int, bool)):
             return loc
-        if isinstance(loc, qp.ControlledRValue):
-            if self.resolve_location(loc.controls):
-                return self.resolve_location(loc.rvalue, allow_mutate=False)
-            else:
-                return 0
-        if isinstance(loc, qp.LookupRValue):
-            address = self.resolve_location(loc.address, allow_mutate=False)
-            return loc.table.values[address]
-        if isinstance(loc, qp.QuintRValue):
-            return self.resolve_location(loc.val, allow_mutate=False)
-        if isinstance(loc, qp.Operation):
-            return qp.SubEffect(
-                op=loc,
-                args=self.resolve_location(loc.state_locations()))
         raise NotImplementedError(
-            "Unrecognized type for resolve_location ({!r}): {!r}".format(type(loc), loc))
+            "Don't know how to resolve type {!r}. Value: {!r}".format(type(loc), loc))
 
     def randomize_location(self, loc: Union[qp.Quint, qp.Qubit, qp.Qureg]):
         if isinstance(loc, qp.Qubit):
@@ -104,11 +78,11 @@ class Sim(qp.Lens):
                            loc: Union[qp.Quint, qp.Qubit, qp.Qureg, qp.ArgsAndKwargs],
                            val: Any):
         if isinstance(loc, qp.Qubit):
-            assert int(self._quint_buf(qp.Quint(qp.RawQureg([loc])))) == int(val)
+            assert int(self.quint_buf(qp.Quint(qp.RawQureg([loc])))) == int(val)
         elif isinstance(loc, qp.Qureg):
-            assert int(self._quint_buf(qp.Quint(loc))) == int(val)
+            assert int(self.quint_buf(qp.Quint(loc))) == int(val)
         elif isinstance(loc, qp.Quint):
-            assert int(self._quint_buf(loc)) == int(val)
+            assert int(self.quint_buf(loc)) == int(val)
         elif isinstance(loc, qp.ArgsAndKwargs):
             loc.zip_map(val, self.overwrite_location)
         elif isinstance(loc, (qp.IntRValue, qp.BoolRValue)):

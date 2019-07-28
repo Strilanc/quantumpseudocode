@@ -3,6 +3,7 @@ from .operation import (
     FlagOperation,
     LetRValueOperation,
     DelRValueOperation,
+    ClassicalSimState,
 )
 
 from .inverse_operation import (

@@ -8,6 +8,10 @@ class Quint:
     def __init__(self, qureg: 'qp.Qureg'):
         self.qureg = qureg
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        buf = sim_state.quint_buf(self)
+        return buf if allow_mutate else int(buf)
+
     def _value_equality_values_(self):
         return self.qureg
 
