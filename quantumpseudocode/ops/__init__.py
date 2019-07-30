@@ -23,3 +23,7 @@ from .simple_op import (
     Op,
     SigHoldArgTypes,
 )
+
+from .semi_quantum import (
+    semi_quantum,
+)

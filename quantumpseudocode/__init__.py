@@ -77,6 +77,7 @@ from quantumpseudocode.ops import (
     Mutable,
     Operation,
     LetRValueOperation,
+    semi_quantum,
     DelRValueOperation,
     SigHoldArgTypes,
     SubEffect,

@@ -1,3 +1,5 @@
+from typing import Union
+
 import cirq
 
 import quantumpseudocode as qp
@@ -5,6 +7,8 @@ import quantumpseudocode as qp
 
 @cirq.value_equality
 class Quint:
+    Borrowed = Union[int, 'qp.Quint', 'qp.RValue[int]']
+
     def __init__(self, qureg: 'qp.Qureg'):
         self.qureg = qureg
 
