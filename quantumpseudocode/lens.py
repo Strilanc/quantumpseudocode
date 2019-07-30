@@ -25,7 +25,7 @@ def emit(operation: 'qp.Operation'):
     emit_indent -= 1
 
 
-def capture(out: 'Optional[List[qp.Operation]]' = None) -> ContextManager:
+def capture(out: 'Optional[List[qp.Operation]]' = None) -> ContextManager[List['qp.Operation']]:
     return cast(ContextManager, CaptureLens([] if out is None else out))
 
 
@@ -40,16 +40,16 @@ class EmptyManager:
         pass
 
 
-def condition(control: Union['qp.Qubit', 'qp.QubitIntersection']) -> ContextManager:
+def condition(control: Union['qp.Qubit', 'qp.QubitIntersection']) -> ContextManager[None]:
     if isinstance(control, qp.Qubit):
         control = qp.QubitIntersection((control,))
     elif control == qp.QubitIntersection.ALWAYS:
         return EmptyManager()
-    return cast(ContextManager, _ControlLens(control))
+    return cast(ContextManager[None], _ControlLens(control))
 
 
-def invert() -> ContextManager:
-    return cast(ContextManager, _InvertLens())
+def invert() -> ContextManager[None]:
+    return cast(ContextManager[None], _InvertLens())
 
 
 class Lens:
@@ -98,6 +98,10 @@ class _ControlLens(CaptureLens):
         super().__init__([])
         self.controls = controls
 
+    def __enter__(self):
+        super().__enter__()
+        return None
+
     def _succeeded(self):
         if self.controls.bit:
             for op in self.out:
@@ -107,6 +111,10 @@ class _ControlLens(CaptureLens):
 class _InvertLens(CaptureLens):
     def __init__(self):
         super().__init__([])
+
+    def __enter__(self):
+        super().__enter__()
+        return None
 
     def _succeeded(self):
         for op in reversed(self.out):

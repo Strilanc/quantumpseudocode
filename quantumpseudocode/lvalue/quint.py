@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, ContextManager
 
 import cirq
 
@@ -18,6 +18,9 @@ class Quint:
 
     def _value_equality_values_(self):
         return self.qureg
+
+    def hold_padded_to(self, min_len: int) -> ContextManager['qp.Quint']:
+        return qp.pad(self, min_len=min_len)
 
     def __len__(self):
         return len(self.qureg)

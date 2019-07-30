@@ -35,7 +35,7 @@ class PlusEqual(Op):
             lvalue[0] ^= carry_in & controls
             return
 
-        with qp.pad(offset, min_len=out_len - 1) as offset:
+        with offset.hold_padded_to(out_len - 1) as offset:
             in_len = min(out_len, len(offset))
 
             # Propagate carry.

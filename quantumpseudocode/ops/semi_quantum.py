@@ -82,7 +82,7 @@ def semi_quantum(func: Callable) -> Callable:
     return result
 
 
-def _rval_quint_manager(val: 'qp.Quint.Borrowed', name: str) -> ContextManager:
+def _rval_quint_manager(val: 'qp.Quint.Borrowed', name: str) -> ContextManager['qp.Quint']:
     if isinstance(val, qp.Quint):
         return qp.EmptyManager(val)
     if isinstance(val, (bool, int)):
@@ -99,7 +99,7 @@ def _lval_quint_checker(val: 'qp.Quint') -> 'qp.Quint':
     return val
 
 
-def _rval_qubit_manager(val: 'qp.Qubit.Borrowed', name: str) -> ContextManager:
+def _rval_qubit_manager(val: 'qp.Qubit.Borrowed', name: str) -> ContextManager['qp.Qubit']:
     if isinstance(val, qp.Qubit):
         return qp.EmptyManager(val)
     if val in [False, True]:
@@ -116,7 +116,7 @@ def _lval_qubit_checker(val: 'qp.Qubit') -> 'qp.Qubit':
     return val
 
 
-def _control_qubit_manager(val: 'qp.Qubit.Control', name: str) -> ContextManager:
+def _control_qubit_manager(val: 'qp.Qubit.Control', name: str) -> ContextManager['qp.QubitIntersection']:
     if val is None or val in [True, 1, qp.QubitIntersection.ALWAYS]:
         return qp.EmptyManager(qp.QubitIntersection.ALWAYS)
     if val in [False, 0, qp.QubitIntersection.NEVER]:
