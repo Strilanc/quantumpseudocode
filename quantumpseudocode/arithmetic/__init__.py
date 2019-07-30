@@ -29,9 +29,9 @@ from .measure import (
 )
 
 from .lookup import (
-    LookupTable,
     LookupRValue,
     XorLookup,
+    do_xor_lookup,
 )
 
 from .phase_flip import (

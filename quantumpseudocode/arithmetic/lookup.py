@@ -1,110 +1,110 @@
+import math
+import random
 from typing import Optional, Union, Tuple, Iterable, Iterator
 
+import cirq
+
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Op
+from quantumpseudocode.ops import Operation, semi_quantum
 
 
-def _flatten(x: Union[int, Iterable]) -> Iterator[int]:
-    if isinstance(x, int):
-        yield x
+def do_classical_xor_lookup(sim_state: 'qp.ClassicalSimState',
+                            *,
+                            lvalue: 'qp.IntBuf',
+                            table: 'qp.LookupTable',
+                            address: int,
+                            phase_instead_of_toggle: bool = False):
+    mask = table.values[address]
+    assert 0 <= address < len(table)
+    if phase_instead_of_toggle:
+        if popcnt(int(lvalue) & mask) & 1:
+            sim_state.phase_degrees += 180
     else:
-        for item in x:
-            yield from _flatten(item)
+        lvalue ^= mask
 
 
-class LookupTable:
-    """A classical list that supports quantum addressing."""
+@semi_quantum(classical=do_classical_xor_lookup, alloc_prefix='_qrom_')
+def do_xor_lookup(*,
+                  lvalue: 'qp.Quint',
+                  table: 'qp.LookupTable',
+                  address: 'qp.Quint.Borrowed',
+                  phase_instead_of_toggle: bool = False,
+                  control: 'qp.Qubit.Control' = True):
+    assert isinstance(lvalue, qp.Quint)
+    assert isinstance(address, qp.Quint)
+    assert isinstance(control, qp.QubitIntersection) and len(control.qubits) <= 1
+    table = table[:1 << len(address)]
+    max_active_address_bits = qp.ceil_lg2(len(table))
+    address = address[:max_active_address_bits]
 
-    def __init__(self,
-                 values: Union[Iterable[int], Iterable[Iterable[int]]]):
-        self.values = tuple(_flatten(values))
-        assert len(self.values) > 0
-        assert all(e >= 0 for e in self.values)
+    # Base case: single distinct value in table.
+    if all(e == table[0] for e in table):
+        if phase_instead_of_toggle:
+            for k in range(len(lvalue)):
+                if table[0] & (1 << k):
+                    qp.emit(qp.OP_PHASE_FLIP.controlled_by(control & lvalue[k]))
+        else:
+            lvalue ^= table[0] & qp.controlled_by(control)
+        return
 
-    def output_len(self) -> int:
-        return max(e.bit_length() for e in self.values)
+    # Recursive case: divide and conquer.
+    high_bit = address[-1]
+    rest = address[:-1]
+    h = 1 << (len(address) - 1)
+    low_table = table[:h]
+    high_table = table[h:]
+    with qp.hold(control & high_bit, name='_lookup_prefix') as q:
+        # Do lookup for half of table where high_bit is 0.
+        q ^= control  # Flip q to storing 'controls & ~high_bit'.
+        op = XorLookup(lvalue=lvalue,
+                       table=low_table,
+                       address=rest,
+                       phase_instead_of_toggle=phase_instead_of_toggle)
+        qp.emit(op.controlled_by(q))
+        q ^= control
 
-    def __len__(self):
-        return len(self.values)
+        # Do lookup for half of table where high_bit is 1.
+        op = XorLookup(lvalue=lvalue,
+                       table=high_table,
+                       address=rest,
+                       phase_instead_of_toggle=phase_instead_of_toggle)
+        qp.emit(op.controlled_by(q))
 
-    def __getitem__(self, item):
-        if isinstance(item, bool):
-            return self.values[int(item)]
-        if isinstance(item, int):
-            return self.values[item]
-        if isinstance(item, slice):
-            return LookupTable(self.values[item])
-        if isinstance(item, tuple):
-            if all(isinstance(e, qp.Quint) for e in item):
-                reg = qp.RawQureg(q for e in item[::-1] for q in e)
-                return LookupRValue(self, qp.Quint(reg))
-        if isinstance(item, qp.Quint):
-            return LookupRValue(self, item)
-        if isinstance(item, qp.Qubit):
-            return LookupRValue(self, qp.Quint(qp.RawQureg([item])))
-        raise NotImplementedError('Strange index: {}'.format(item))
+
+@cirq.value_equality
+class XorLookup(Operation):
+    def __init__(self, lvalue: 'qp.Quint', table: 'qp.LookupTable', address: 'qp.Quint.Borrowed', phase_instead_of_toggle: bool):
+        self.lvalue = lvalue
+        self.table = table
+        self.address = address
+        self.phase_instead_of_toggle = phase_instead_of_toggle
+
+    def _value_equality_values_(self):
+        return self.lvalue, self.table, self.address, self.phase_instead_of_toggle
+
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
+        do_xor_lookup(lvalue=self.lvalue,
+                      table=self.table,
+                      address=self.address,
+                      phase_instead_of_toggle=self.phase_instead_of_toggle,
+                      control=controls)
+
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        do_xor_lookup.classical(
+            lvalue=self.lvalue,
+            table=self.table,
+            address=self.address,
+            phase_instead_of_toggle=self.phase_instead_of_toggle)
+
+    def __str__(self):
+        return '{} ^{}= {}[{}]'.format(
+            self.lvalue,
+            'Z' if self.phase_instead_of_toggle else '',
+            self.table,
+            self.address)
 
     def __repr__(self):
-        return 'qp.LookupTable({!r})'.format(self.values)
-
-
-class XorLookup(Op):
-    @staticmethod
-    def emulate(*,
-                lvalue: 'qp.IntBuf',
-                table: 'qp.LookupTable',
-                address: 'int',
-                phase_instead_of_toggle: bool):
-        if not phase_instead_of_toggle:
-            lvalue ^= table[address]
-
-    @staticmethod
-    def do(controls: 'qp.QubitIntersection',
-           *,
-           lvalue: 'qp.Quint',
-           table: 'qp.LookupTable',
-           address: 'qp.Quint',
-           phase_instead_of_toggle: bool):
-        table = table[:1 << len(address)]
-
-        # Base case: single distinct value in table.
-        if all(e == table[0] for e in table):
-            address ^= -1
-            with qp.controlled_by(controls):
-                lvalue ^= table[0]
-            address ^= -1
-            return ()
-
-        # Recursive case: divide and conquer.
-        high_bit = address[-1]
-        rest = address[:-1]
-        h = 1 << (len(address) - 1)
-        low_table = table[:h]
-        high_table = table[h:]
-        with qp.hold(controls & high_bit, name='_lookup_prefix') as q:
-            # Do lookup for half of table where high_bit is 0.
-            q ^= controls  # Flip q to storing 'controls & ~high_bit'.
-            op = XorLookup(lvalue=lvalue,
-                           table=low_table,
-                           address=rest,
-                           phase_instead_of_toggle=phase_instead_of_toggle)
-            qp.emit(op.controlled_by(q))
-            q ^= controls
-
-            # Do lookup for half of table where high_bit is 1.
-            op = XorLookup(lvalue=lvalue,
-                           table=high_table,
-                           address=rest,
-                           phase_instead_of_toggle=phase_instead_of_toggle)
-            qp.emit(op.controlled_by(q))
-
-    @staticmethod
-    def describe(*, lvalue, table, address, phase_instead_of_toggle):
-        return '{} ^{}= {}[{}]'.format(
-            lvalue,
-            'Z' if phase_instead_of_toggle else '',
-            table,
-            address)
+        return 'qp.XorTableLookup({!r}, {!r}, {!r}, {!r})'.format(self.lvalue, self.table, self.address, self.phase_instead_of_toggle)
 
     def inverse(self):
         return self
@@ -113,7 +113,7 @@ class XorLookup(Op):
 class LookupRValue(qp.RValue[int]):
     """Represents the temporary result of a table lookup."""
 
-    def __init__(self, table: LookupTable, address: 'qp.Quint'):
+    def __init__(self, table: qp.LookupTable, address: 'qp.Quint'):
         # Drop high bits that would place us beyond the range of the table.
         max_address_len = qp.ceil_lg2(len(table))
         # Drop inaccessible parts of table.
@@ -183,7 +183,7 @@ class LookupRValue(qp.RValue[int]):
                         fixup_index = j >> k
                         fixup_bit = j & ((1 << k) - 1)
                         fixups[fixup_index] ^= 1 << fixup_bit
-        fixup_table = LookupTable(fixups)
+        fixup_table = qp.LookupTable(fixups)
 
         # Phase fixups.
         unary_storage = location[:1<<k]
@@ -201,3 +201,12 @@ class LookupRValue(qp.RValue[int]):
 
     def __repr__(self):
         return 'qp.LookupRValue({!r}, {!r})'.format(self.table, self.address)
+
+
+def popcnt(v: int) -> int:
+    assert v >= 0
+    t = 0
+    while v:
+        v &= v - 1
+        t += 1
+    return t

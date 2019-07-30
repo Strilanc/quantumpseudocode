@@ -88,7 +88,8 @@ class RawConcatBuffer(Buffer):
 
         Arranges RawConcatBuffer instances into a balanced search tree.
         """
-        assert len(parts)
+        if len(parts) == 0:
+            return RawIntBuffer(val=0, length=0)
         if len(parts) == 1:
             return parts[0]
         middle = len(parts) >> 1

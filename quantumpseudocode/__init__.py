@@ -19,6 +19,7 @@ from quantumpseudocode.buf import (
 
 from quantumpseudocode.rvalue import (
     BoolRValue,
+    LookupTable,
     HeldRValueManager,
     hold,
     IntRValue,
@@ -89,7 +90,6 @@ from quantumpseudocode.arithmetic import (
     EffectIfLessThan,
     UnaryRValue,
     LookupRValue,
-    LookupTable,
     measure,
     measure_x_for_phase_fixup_and_reset,
     MeasureOperation,

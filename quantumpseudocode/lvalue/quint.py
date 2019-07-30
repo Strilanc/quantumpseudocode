@@ -94,11 +94,13 @@ class Quint:
             qp.emit(qp.XorEqual(lvalue=self, mask=other))
             return self
 
-        if (isinstance(other, qp.ControlledRValue)
-                and isinstance(other.rvalue, qp.QuintRValue)):
-            qp.emit(qp.XorEqual(lvalue=self, mask=other.rvalue.val
-                                ).controlled_by(other.controls))
-            return self
+        if isinstance(other, qp.ControlledRValue):
+            if isinstance(other.rvalue, qp.QuintRValue):
+                qp.emit(qp.XorEqual(lvalue=self, mask=other.rvalue.val).controlled_by(other.controls))
+                return self
+            elif isinstance(other.rvalue, qp.IntRValue):
+                qp.emit(qp.XorEqualConst(lvalue=self, mask=other.rvalue.val).controlled_by(other.controls))
+                return self
 
         rev = getattr(other, '__rixor__', None)
         if rev is not None:

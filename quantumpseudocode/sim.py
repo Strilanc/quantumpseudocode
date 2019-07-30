@@ -26,6 +26,15 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         self.enforce_release_at_zero = enforce_release_at_zero
         self.phase_fixup_bias = phase_fixup_bias
         self.emulate_additions = emulate_additions
+        self._phase_degrees = 0
+
+    @property
+    def phase_degrees(self):
+        return self._phase_degrees
+
+    @phase_degrees.setter
+    def phase_degrees(self, new_value):
+        self._phase_degrees = new_value % 360
 
     def __enter__(self):
         # HACK: Prevent name pollution across simulation runs.
@@ -136,6 +145,8 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             if r is None:
                 r = random.random() < 0.5
             op.result = r
+            if self._read_qubit(op.target) and r:
+                self.phase_degrees += 180
             self._write_qubit(op.target, False)
             return []
 
@@ -148,7 +159,8 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             return []
 
         if op == qp.OP_PHASE_FLIP:
-            # skip
+            if self.resolve_location(cnt, False):
+                self.phase_degrees += 180
             return []
 
         return [operation]

@@ -141,3 +141,30 @@ def test_bad_control():
             't': qp.IntBuf.raw(length=1, val=0),
             'control': lambda: 1
         })
+
+
+def test_phase_match():
+    def cf(sim_state: qp.ClassicalSimState):
+        sim_state.phase_degrees += 180
+
+    @qp.semi_quantum(classical=cf)
+    def qf():
+        qp.emit(qp.OP_PHASE_FLIP)
+
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qf,
+        fixed=[{}])
+
+
+def test_phase_mismatch():
+    def cf(sim_state: qp.ClassicalSimState):
+        sim_state.phase_degrees += 90
+
+    @qp.semi_quantum(classical=cf)
+    def qf():
+        qp.emit(qp.OP_PHASE_FLIP)
+
+    with pytest.raises(AssertionError, match='disagreed'):
+        qp.testing.assert_semi_quantum_func_is_consistent(
+            qf,
+            fixed=[{}])

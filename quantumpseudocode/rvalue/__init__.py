@@ -22,3 +22,7 @@ from .rvalue import (
     rval,
     RValue,
 )
+
+from .lookup import (
+    LookupTable,
+)

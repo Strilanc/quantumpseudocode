@@ -124,13 +124,17 @@ def semi_quantum(func: Callable = None,
             resolve_lines.insert(0, '    if not sim_state.resolve_location(control):')
             resolve_lines.insert(1, '        return')
 
-        new_args = list(classical_type_hints.keys() - type_hints.keys())
+        new_args = list(classical_type_hints.keys() - type_hints.keys() - {'sim_state'})
         if new_args:
-            raise TypeError('classical function cannot introduce new parameters, but introduced {!r}'.format(new_args))
+            raise TypeError('classical function cannot introduce new parameters (besides sim+state), '
+                            'but introduced {!r}'.format(new_args))
         missing_args = list(set(type_hints.keys()) - classical_type_hints.keys() - {'control'})
         if missing_args:
-            raise TypeError('classical function cannot omit parameters (except control), but missed {!r}'.format(
-                missing_args))
+            raise TypeError('classical function cannot omit parameters (except control), '
+                            'but missed {!r}'.format(missing_args))
+
+        if 'sim_state' in classical_type_hints:
+            resolve_arg_strings.insert(0, 'sim_state')
 
         resolve_body = '\n'.join([
             f'def sim(sim_state: qp.ClassicalSimState, {", ".join(param_strings)}):',

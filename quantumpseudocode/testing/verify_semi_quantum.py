@@ -53,7 +53,7 @@ def _assert_semi_quantum_func_is_consistent(
 
 
 def _apply_quantum(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
-    with qp.Sim():
+    with qp.Sim() as sim:
         type_hints = get_type_hints(func)
         mapped = {}
         for k, v in kwargs.items():
@@ -75,22 +75,32 @@ def _apply_quantum(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
         for k, v in kwargs.items():
             if type_hints[k] in [qp.Quint, qp.Qubit]:
                 result[k] = qp.measure(mapped[k], reset=True)
+        result['sim_state.phase_degrees'] = sim.phase_degrees
     return result
 
 
 def _apply_classical(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
     kwargs = {k: v.copy() if hasattr(v, 'copy') else v for k, v in kwargs.items()}
 
-    if 'control' in kwargs and 'control' not in get_type_hints(func):
+    type_hints = get_type_hints(func)
+    if 'control' in kwargs and 'control' not in type_hints:
         run = kwargs['control']
         del kwargs['control']
     else:
         run = True
 
     if run:
+        if 'sim_state' in type_hints:
+            kwargs['sim_state'] = qp.Sim()
         func(**kwargs)
 
-    return {k: int(v) for k, v in kwargs.items() if isinstance(v, qp.IntBuf)}
+    result = {'sim_state.phase_degrees': 0}
+    for k, v in kwargs.items():
+        if isinstance(v, qp.IntBuf):
+            result[k] = int(v)
+        elif isinstance(v, qp.Sim):
+            result['sim_state.phase_degrees'] = v.phase_degrees
+    return result
 
 
 def _sample(kwargs: Dict[str, Any]) -> Dict[str, Any]:

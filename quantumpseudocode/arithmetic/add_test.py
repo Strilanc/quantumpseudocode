@@ -95,6 +95,8 @@ def test_do():
             'lvalue': qp.IntBuf.raw(val=3, length=3),
             'offset': 2
         }])
+
+
 def test_vs_emulation():
     with qp.Sim(enforce_release_at_zero=False) as sim:
         bits = 4

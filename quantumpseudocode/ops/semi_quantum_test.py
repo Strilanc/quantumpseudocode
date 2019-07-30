@@ -282,6 +282,22 @@ def test_optional():
         qp.qfree(q)
 
 
+def test_with_sim_state():
+    def cf(sim_state: qp.ClassicalSimState):
+        sim_state.phase_degrees += 180
+
+    @qp.semi_quantum(classical=cf)
+    def qf():
+        qp.emit(qp.OP_PHASE_FLIP)
+
+    with qp.Sim() as sim_state:
+        assert sim_state.phase_degrees == 0
+        qf()
+        assert sim_state.phase_degrees == 180
+        qf.sim(sim_state)
+        assert sim_state.phase_degrees == 0
+
+
 def test_inconsistent_optional():
     with pytest.raises(TypeError, match='Inconsistent default'):
         def cf(x: qp.IntBuf, y: bool):
