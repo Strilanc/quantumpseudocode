@@ -7,7 +7,7 @@ import quantumpseudocode as qp
 def separate_controls(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
      if isinstance(op, qp.ControlledOperation):
          return op.uncontrolled, op.controls
-     return op, qp.QubitIntersection.EMPTY
+     return op, qp.QubitIntersection.ALWAYS
 
 
 def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
@@ -139,7 +139,7 @@ class Sim(qp.Lens):
         op, cnt = separate_controls(operation)
 
         if isinstance(op, qp.AllocQuregOperation):
-            assert len(cnt) == 0
+            assert cnt == qp.QubitIntersection.ALWAYS
             for q in op.qureg:
                 assert q not in self._bool_state, "Double allocated {}".format(
                     q)
@@ -161,7 +161,7 @@ class Sim(qp.Lens):
                 return []
 
         if isinstance(op, qp.ReleaseQuregOperation):
-            assert len(cnt) == 0
+            assert cnt == qp.QubitIntersection.ALWAYS
             for q in op.qureg:
                 if self.enforce_release_at_zero and not op.dirty:
                     assert self._read_qubit(q) == 0, 'Failed to uncompute {}'.format(q)
@@ -169,7 +169,7 @@ class Sim(qp.Lens):
             return []
 
         if isinstance(op, qp.MeasureOperation):
-            assert len(cnt) == 0
+            assert cnt == qp.QubitIntersection.ALWAYS
             assert op.raw_results is None
             results = [self._read_qubit(q) for q in op.targets]
             if op.reset:
@@ -188,8 +188,8 @@ class Sim(qp.Lens):
 
         if isinstance(op, qp.Toggle):
             targets = op._args.pass_into(_toggle_targets)
-            assert set(targets).isdisjoint(cnt)
-            if all(self._read_qubit(q) for q in cnt):
+            assert set(targets).isdisjoint(cnt.qubits)
+            if cnt.bit and all(self._read_qubit(q) for q in cnt.qubits):
                 for t in targets:
                     self._write_qubit(t, not self._read_qubit(t))
             return []

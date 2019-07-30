@@ -27,21 +27,28 @@ class Qubit:
     def __and__(self, other):
         if isinstance(other, Qubit):
             return qp.QubitIntersection((self, other))
+        if other in [False, 0]:
+            return qp.QubitIntersection.NEVER
+        if other in [True, 1]:
+            return self
         return NotImplemented
+
+    def __rand__(self, other):
+        return self.__and__(other)
 
     def init(self,
              value: 'qp.RValue[bool]',
              controls: 'qp.QubitIntersection' = None):
         qp.emit(
             qp.LetRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.EMPTY))
+                controls or qp.QubitIntersection.ALWAYS))
 
     def clear(self,
               value: 'qp.RValue[bool]',
               controls: 'qp.QubitIntersection' = None):
         qp.emit(
             qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.EMPTY))
+                controls or qp.QubitIntersection.ALWAYS))
 
     def __ixor__(self, other):
         if other in [False, 0]:
@@ -51,7 +58,7 @@ class Qubit:
             qp.emit(qp.Toggle(qp.RawQureg([self])))
             return self
 
-        if isinstance(other, (Qubit, qp.QubitIntersection)):
+        if isinstance(other, Qubit):
             qp.emit(qp.Toggle(qp.RawQureg([self])).controlled_by(other))
             return self
 

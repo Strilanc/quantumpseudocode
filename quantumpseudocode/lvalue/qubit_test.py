@@ -34,6 +34,10 @@ def test_and():
     assert a & b == qp.QubitIntersection((a, b))
     assert a & b & c == qp.QubitIntersection((a, b, c))
     assert a & s == qp.QubitIntersection((a, c, d))
+    assert a & False == qp.QubitIntersection.NEVER
+    assert a & True is a
+    assert False & a == qp.QubitIntersection.NEVER
+    assert True & a is a
 
 
 def test_ixor():

@@ -1,5 +1,7 @@
 from typing import Union, Any
 
+import cirq
+
 import quantumpseudocode as qp
 
 
@@ -20,7 +22,7 @@ class Operation:
                                             'qp.QubitIntersection']):
         if isinstance(controls, qp.Qubit):
             return qp.ControlledOperation(self, qp.QubitIntersection((controls,)))
-        if len(controls) == 0:
+        if controls.is_always():
             return self
         return qp.ControlledOperation(self, controls)
 
@@ -36,6 +38,7 @@ class FlagOperation(Operation):
         raise NotImplementedError('{!r} has no defined inverse'.format(self))
 
 
+@cirq.value_equality
 class LetRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
         self.rvalue = qp.rval(rvalue)
@@ -43,6 +46,9 @@ class LetRValueOperation(Operation):
 
     def inverse(self) -> 'qp.Operation':
         return DelRValueOperation(self.rvalue, self.loc)
+
+    def _value_equality_values_(self):
+        return self.rvalue, self.loc
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         self.rvalue.init_storage_location(self.loc, controls)
@@ -55,10 +61,14 @@ class LetRValueOperation(Operation):
                                                              self.loc)
 
 
+@cirq.value_equality
 class DelRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
         self.rvalue = qp.rval(rvalue)
         self.loc = loc
+
+    def _value_equality_values_(self):
+        return self.rvalue, self.loc
 
     def inverse(self) -> 'qp.Operation':
         return LetRValueOperation(self.rvalue, self.loc)

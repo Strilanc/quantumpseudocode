@@ -1,5 +1,7 @@
 from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable, Any
 
+import cirq
+
 import quantumpseudocode as qp
 
 
@@ -75,7 +77,7 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
 
     if equivalent_expression is not None:
         qp.rval(equivalent_expression).del_storage_location(
-            target, qp.QubitIntersection.EMPTY)
+            target, qp.QubitIntersection.ALWAYS)
 
     if isinstance(target, qp.Qubit):
         reg = qp.RawQureg([target])
@@ -112,6 +114,7 @@ def qalloc_int_mod(*,
     return result
 
 
+@cirq.value_equality
 class AllocQuregOperation(qp.FlagOperation):
     def __init__(self,
                  qureg: 'qp.Qureg',
@@ -121,6 +124,9 @@ class AllocQuregOperation(qp.FlagOperation):
 
     def inverse(self):
         return ReleaseQuregOperation(self.qureg, self.x_basis)
+
+    def _value_equality_values_(self):
+        return self.qureg, self.x_basis
 
     def __str__(self):
         return 'ALLOC[{}, {}] {}'.format(
@@ -133,6 +139,7 @@ class AllocQuregOperation(qp.FlagOperation):
         raise ValueError("Can't control allocation.")
 
 
+@cirq.value_equality
 class ReleaseQuregOperation(qp.FlagOperation):
     def __init__(self,
                  qureg: 'qp.Qureg',
@@ -141,6 +148,9 @@ class ReleaseQuregOperation(qp.FlagOperation):
         self.qureg = qureg
         self.x_basis = x_basis
         self.dirty = dirty
+
+    def _value_equality_values_(self):
+        return self.qureg, self.x_basis, self.dirty
 
     def inverse(self):
         if self.dirty:

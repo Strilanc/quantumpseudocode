@@ -37,13 +37,13 @@ class EffectIfLessThan(Op):
         with qp.pad_all(lhs, rhs, min_len=n) as (lhs, rhs):
             # Propagate carries.
             with qp.invert():
-                uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.EMPTY)
+                uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
 
             # Apply effect.
             qp.emit(qp.ControlledOperation(effect, controls & rhs[-1]))
 
             # Uncompute carries.
-            uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.EMPTY)
+            uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
 
     @staticmethod
     def describe(lhs, rhs, or_equal, effect):

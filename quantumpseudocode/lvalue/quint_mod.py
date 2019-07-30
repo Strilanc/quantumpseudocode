@@ -26,14 +26,14 @@ class QuintMod:
              controls: 'qp.QubitIntersection' = None):
         qp.emit(
             qp.LetRValueOperation(value, self[:]).controlled_by(
-                controls or qp.QubitIntersection.EMPTY))
+                controls or qp.QubitIntersection.ALWAYS))
 
     def clear(self,
               value: 'qp.RValue[int]',
               controls: 'qp.QubitIntersection' = None):
         qp.emit(
             qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.EMPTY))
+                controls or qp.QubitIntersection.ALWAYS))
 
     def __setitem__(self, key, value):
         if value != self[key]:

@@ -46,7 +46,7 @@ class HeldMultipleRValue:
             if isinstance(e, qp.RValue):
                 return True, qp.HeldRValueManager(
                     e,
-                    controls=qp.QubitIntersection.EMPTY,
+                    controls=qp.QubitIntersection.ALWAYS,
                     name=name_prefix + str(key))
             return False, e
 
