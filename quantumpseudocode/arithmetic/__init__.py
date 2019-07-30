@@ -5,6 +5,7 @@ from .xor import (
 
 from .add import (
     PlusEqual,
+    do_addition,
 )
 
 from .cmp import (

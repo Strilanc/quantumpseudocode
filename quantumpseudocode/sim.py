@@ -27,6 +27,12 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         self.phase_fixup_bias = phase_fixup_bias
         self.emulate_additions = emulate_additions
 
+    def __enter__(self):
+        # HACK: Prevent name pollution across simulation runs.
+        qp.UniqueHandle._free_handles = {}
+        qp.UniqueHandle._next_handle = {}
+        return super().__enter__()
+
     def snapshot(self):
         return dict(self._int_state)
 

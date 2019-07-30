@@ -79,6 +79,22 @@ t[3]: ---------------------------------------X----------------------------------
         """, use_unicode_characters=False)
 
 
+def test_do():
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_addition,
+        fuzz_space={
+            'lvalue': lambda: qp.IntBuf.random(range(0, 6)),
+            'offset': lambda: random.randint(0, 511),
+            'carry_in': [False, True],
+        },
+        fuzz_count=100)
+
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_addition,
+        fixed=[{
+            'lvalue': qp.IntBuf.raw(val=3, length=3),
+            'offset': 2
+        }])
 def test_vs_emulation():
     with qp.Sim(enforce_release_at_zero=False) as sim:
         bits = 4

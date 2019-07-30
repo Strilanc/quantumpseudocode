@@ -136,6 +136,8 @@ class AllocQuregOperation(qp.FlagOperation):
         return 'qp.AllocQuregOperation({!r})'.format(self.qureg)
 
     def controlled_by(self, controls):
+        if controls.ALWAYS:
+            return self
         raise ValueError("Can't control allocation.")
 
 
@@ -164,4 +166,6 @@ class ReleaseQuregOperation(qp.FlagOperation):
             ', dirty' if self.dirty else '')
 
     def controlled_by(self, controls):
+        if controls.ALWAYS:
+            return self
         raise ValueError("Can't control deallocation.")
