@@ -5,14 +5,21 @@ import cirq
 import quantumpseudocode as qp
 
 
+class ClassicalSimState:
+    phase_degrees: float
+
+    def quint_buf(self, quint: 'qp.Quint') -> 'qp.IntBuf':
+        raise NotImplementedError()
+
+    def resolve_location(self, loc: Any, allow_mutate: bool) -> Any:
+        pass
+
+
 class Operation:
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
 
-    def state_locations(self) -> 'qp.ArgsAndKwargs[Union[qp.Qureg, qp.Qubit, qp.Quint], Any]':
-        raise NotImplementedError('state_locations not implemented by {!r}'.format(self))
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
 
     def inverse(self) -> 'Operation':
@@ -22,16 +29,13 @@ class Operation:
                                             'qp.QubitIntersection']):
         if isinstance(controls, qp.Qubit):
             return qp.ControlledOperation(self, qp.QubitIntersection((controls,)))
-        if controls.is_always():
+        if controls == qp.QubitIntersection.ALWAYS:
             return self
         return qp.ControlledOperation(self, controls)
 
 
 class FlagOperation(Operation):
-    def state_locations(self):
-        return ()
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
 
     def inverse(self):

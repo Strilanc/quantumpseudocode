@@ -10,6 +10,11 @@ class ControlledRValue(qp.RValue):
         self.controls = controls
         self.rvalue = rvalue
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        if not self.controls.resolve(sim_state, False):
+            return 0
+        return sim_state.resolve_location(self.rvalue, False)
+
     def make_storage_location(self, name: Optional[str] = None):
         return self.rvalue.make_storage_location(name)
 

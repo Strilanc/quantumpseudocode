@@ -68,14 +68,9 @@ class QubitIntersection(RValue[bool]):
         self.qubits = tuple(qubits) if bit else ()
         self.bit = bool(bit)
 
-    def is_always(self) -> bool:
-        return self.bit and not self.qubits
-
-    def is_never(self) -> bool:
-        return not self.bit
-
-    def is_definite(self) -> bool:
-        return not self.qubits
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool) -> bool:
+        v = qp.Quint(qp.RawQureg(self.qubits)).resolve(sim_state, False)
+        return self.bit and v == (1 << len(self.qubits)) - 1
 
     def _value_equality_values_(self):
         return self.bit and frozenset(self.qubits)
@@ -103,7 +98,7 @@ class QubitIntersection(RValue[bool]):
     def __rixor__(self, other):
         if isinstance(other, qp.Qubit):
             if self.bit:
-                qp.emit(qp.Toggle(qp.RawQureg([other])).controlled_by(self))
+                qp.emit(qp.Toggle(lvalue=qp.RawQureg([other])).controlled_by(self))
             return other
         return NotImplemented
 
@@ -114,7 +109,7 @@ class QubitIntersection(RValue[bool]):
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
         t = qp.RawQureg([location])
-        qp.emit(qp.Toggle(t).controlled_by(self & controls))
+        qp.emit(qp.Toggle(lvalue=t).controlled_by(self & controls))
 
     def del_storage_location(self,
                              location: Any,

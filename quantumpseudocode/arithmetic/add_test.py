@@ -91,5 +91,5 @@ def test_vs_emulation():
                                   offset=random.randint(0, 1 << bits),
                                   carry_in=random.random() < 0.5)
                 qp.emit(op)
-                sim.apply_op_via_emulation(op, forward=False)
+                op.mutate_state(sim_state=sim, forward=False)
                 assert sim.snapshot() == old_state

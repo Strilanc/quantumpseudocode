@@ -64,6 +64,27 @@ def test_concat():
     assert int(e) == 0b0011111000
 
 
+def test_raw_concat_buffer_many():
+    a = qp.RawIntBuffer(0, 5)
+    b = qp.RawIntBuffer(0, 5)
+    c = qp.RawIntBuffer(0, 5)
+    d = qp.RawIntBuffer(0, 5)
+    e = qp.RawIntBuffer(0, 5)
+    assert qp.RawConcatBuffer.balanced_concat([a]) is a
+    assert qp.RawConcatBuffer.balanced_concat([a, b]) == qp.RawConcatBuffer(
+        a, b)
+    assert qp.RawConcatBuffer.balanced_concat([a, b, c]) == qp.RawConcatBuffer(
+        a, qp.RawConcatBuffer(b, c))
+    assert qp.RawConcatBuffer.balanced_concat(
+        [a, b, c, d]) == qp.RawConcatBuffer(
+            qp.RawConcatBuffer(a, b),
+            qp.RawConcatBuffer(c, d))
+    assert qp.RawConcatBuffer.balanced_concat(
+        [a, b, c, d, e]) == qp.RawConcatBuffer(
+            qp.RawConcatBuffer(a, b),
+            qp.RawConcatBuffer(c, qp.RawConcatBuffer(d, e)))
+
+
 def test_window_flatten():
     a = qp.RawIntBuffer(0b101101, 6)
     b = qp.RawWindowBuffer(a, 1, 5)

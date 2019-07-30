@@ -74,11 +74,12 @@ from quantumpseudocode.ops import (
     FlagOperation,
     HeldMultipleRValue,
     InverseOperation,
-    Mutable,
+    Op,
     Operation,
     LetRValueOperation,
     semi_quantum,
     DelRValueOperation,
+    ClassicalSimState,
     SigHoldArgTypes,
     SubEffect,
 )

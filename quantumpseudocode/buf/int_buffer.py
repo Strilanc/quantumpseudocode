@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Sequence
 
 
 class Buffer:
@@ -80,6 +80,20 @@ class RawConcatBuffer(Buffer):
         assert buf0 is not buf1
         self.buf0 = buf0
         self.buf1 = buf1
+
+    @staticmethod
+    def balanced_concat(parts: Sequence[Buffer]) -> 'Buffer':
+        """Creates a buffer over many concatenated parts.
+
+        Arranges RawConcatBuffer instances into a balanced search tree.
+        """
+        assert len(parts)
+        if len(parts) == 1:
+            return parts[0]
+        middle = len(parts) >> 1
+        return RawConcatBuffer(
+            RawConcatBuffer.balanced_concat(parts[:middle]),
+            RawConcatBuffer.balanced_concat(parts[middle:]))
 
     def __getitem__(self, item):
         n = len(self.buf0)

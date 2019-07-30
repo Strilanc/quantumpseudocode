@@ -1,6 +1,7 @@
 import cirq
 import inspect
 from typing import Callable, TypeVar, Generic, List, Dict, Iterable, Any, get_type_hints, Optional, Tuple
+import quantumpseudocode as qp
 
 T = TypeVar('T')
 T2 = TypeVar('T2')
@@ -39,6 +40,9 @@ class ArgsAndKwargs(Generic[T]):
     def __init__(self, args: List[T], kwargs: Dict[str, T]):
         self.args = args
         self.kwargs = kwargs
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.map(lambda e: sim_state.resolve_location(e, allow_mutate))
 
     def _value_equality_values_(self):
         return self.args, self.kwargs

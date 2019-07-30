@@ -12,6 +12,10 @@ class Quint:
     def __init__(self, qureg: 'qp.Qureg'):
         self.qureg = qureg
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        buf = sim_state.quint_buf(self)
+        return buf if allow_mutate else int(buf)
+
     def _value_equality_values_(self):
         return self.qureg
 
@@ -80,16 +84,16 @@ class Quint:
 
     def __ixor__(self, other):
         if isinstance(other, int):
-            qp.emit(qp.XorEqualConst(self, other))
+            qp.emit(qp.XorEqualConst(lvalue=self, mask=other))
             return self
 
         if isinstance(other, Quint):
-            qp.emit(qp.XorEqual(self, other))
+            qp.emit(qp.XorEqual(lvalue=self, mask=other))
             return self
 
         if (isinstance(other, qp.ControlledRValue)
                 and isinstance(other.rvalue, qp.QuintRValue)):
-            qp.emit(qp.XorEqual(self, other.rvalue.val
+            qp.emit(qp.XorEqual(lvalue=self, mask=other.rvalue.val
                                 ).controlled_by(other.controls))
             return self
 

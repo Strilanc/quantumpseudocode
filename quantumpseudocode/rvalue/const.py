@@ -11,6 +11,9 @@ class BoolRValue(RValue[bool]):
     def __init__(self, val: bool):
         self.val = val
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.val
+
     def _value_equality_values_(self):
         return self.val
 
@@ -47,6 +50,9 @@ class BoolRValue(RValue[bool]):
 class IntRValue(RValue[bool]):
     def __init__(self, val: int):
         self.val = val
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.val
 
     def _value_equality_values_(self):
         return self.val

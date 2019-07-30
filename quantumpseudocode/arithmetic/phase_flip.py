@@ -5,11 +5,9 @@ from quantumpseudocode.ops import Operation, Op
 
 
 class _PhaseFlipOp(Operation):
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
-        pass
-
-    def state_locations(self):
-        return qp.ArgsAndKwargs([], {})
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        sim_state.phase_degrees += 180
+        sim_state.phase_degrees %= 360
 
     def permute(self, forward: bool, *args):
         pass

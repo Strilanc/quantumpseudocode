@@ -40,7 +40,7 @@ def test_set_item():
 
     with qp.capture() as out:
         q[2] ^= q[3]
-    assert out == [qp.Toggle(qp.RawQureg([q[2]])).controlled_by(q[3])]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q[2]])).controlled_by(q[3])]
 
     with qp.capture() as out:
         q[2:] += 5
@@ -63,18 +63,18 @@ def test_ixor():
 
     with qp.capture() as out:
         q ^= 5
-    assert out == [qp.XorEqualConst(q, 5)]
+    assert out == [qp.XorEqualConst(lvalue=q, mask=5)]
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
     with qp.capture() as out:
         q ^= q2
-    assert out == [qp.XorEqual(q, q2)]
+    assert out == [qp.XorEqual(lvalue=q, mask=q2)]
 
     q3 = qp.Quint(qp.NamedQureg('test3', 5))
     c = qp.Qubit('c')
     with qp.capture() as out:
         q ^= q3 & qp.controlled_by(c)
-    assert out == [qp.XorEqual(q, q3).controlled_by(c)]
+    assert out == [qp.XorEqual(lvalue=q, mask=q3).controlled_by(c)]
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:

@@ -16,6 +16,10 @@ class Qubit:
         self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
         self.index = index
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
+        return buf if allow_mutate else bool(int(buf))
+
     def _value_equality_values_(self):
         return self.name, self.index
 
@@ -58,11 +62,11 @@ class Qubit:
             return self
 
         if other in [True, 1]:
-            qp.emit(qp.Toggle(qp.RawQureg([self])))
+            qp.emit(qp.Toggle(lvalue=qp.RawQureg([self])))
             return self
 
         if isinstance(other, Qubit):
-            qp.emit(qp.Toggle(qp.RawQureg([self])).controlled_by(other))
+            qp.emit(qp.Toggle(lvalue=qp.RawQureg([self])).controlled_by(other))
             return self
 
         rev = getattr(other, '__rixor__', None)
