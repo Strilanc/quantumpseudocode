@@ -1,4 +1,5 @@
-from typing import Iterable, Sequence
+import random
+from typing import Iterable, Sequence, Union
 
 
 class Buffer:
@@ -251,6 +252,15 @@ class IntBuf:
         if self[len(self) - 1]:
             result -= 1 << len(self)
         return result
+
+    @staticmethod
+    def random(length: Union[int, range, Iterable[int]]) -> 'IntBuf':
+        """Generates an IntBuf with random contents and a length sampled from the given allowed value(s)."""
+        length = length if isinstance(length, int) else random.choice(length)
+        return IntBuf.raw(length=length, val=random.randint(0, 2**length-1))
+
+    def copy(self) -> 'IntBuf':
+        return IntBuf.raw(length=len(self), val=int(self))
 
     def __len__(self):
         """The number of bits in this fixed-width integer."""
