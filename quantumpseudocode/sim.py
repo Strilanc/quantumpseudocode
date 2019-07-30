@@ -39,8 +39,9 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
     def quint_buf(self, quint: 'qp.Quint') -> qp.IntBuf:
         if isinstance(quint.qureg, qp.NamedQureg):
             return self._int_state[quint.qureg.name]
+        fused = _fuse(quint.qureg)
         return qp.IntBuf(qp.RawConcatBuffer.balanced_concat([
-            self._int_state[k][s] for k, s in _fuse(quint.qureg)
+            self._int_state[name][rng]._buf for name, rng in fused
         ]))
 
     def resolve_location(self, loc: Any, allow_mutate: bool = True):

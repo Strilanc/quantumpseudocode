@@ -247,3 +247,62 @@ def test_classical():
         assert sim_state.resolve_location(q, False) == 6
         f.sim(sim_state, q, 6)
         qp.qfree(q)
+
+
+def test_optional():
+    def cf(x: qp.IntBuf, y: bool = True):
+        x ^= int(y)
+
+    @qp.semi_quantum(classical=cf)
+    def qf(x: qp.Qubit, y: qp.Qubit.Borrowed = True):
+        x ^= y
+
+    b = qp.IntBuf.raw(val=0, length=1)
+    qf.classical(b)
+    assert int(b) == 1
+    qf.classical(b)
+    assert int(b) == 0
+    qf.classical(b, True)
+    assert int(b) == 1
+    qf.classical(b, False)
+    assert int(b) == 1
+
+    with qp.Sim() as sim_state:
+        q = qp.qalloc()
+        assert not sim_state.resolve_location(q, False)
+        qf(q)
+        assert sim_state.resolve_location(q, False)
+        qf(q)
+        assert not sim_state.resolve_location(q, False)
+        qf(q, True)
+        assert sim_state.resolve_location(q, False)
+        qf(q, False)
+        assert sim_state.resolve_location(q, False)
+        assert qp.measure(q, reset=True)
+        qp.qfree(q)
+
+
+def test_inconsistent_optional():
+    with pytest.raises(TypeError, match='Inconsistent default'):
+        def cf(x: qp.IntBuf, y: bool):
+            pass
+
+        @qp.semi_quantum(classical=cf)
+        def qf(x: qp.Qubit, y: qp.Qubit.Borrowed = True):
+            pass
+
+    with pytest.raises(TypeError, match='Inconsistent default'):
+        def cf(x: qp.IntBuf, y: bool = False):
+            pass
+
+        @qp.semi_quantum(classical=cf)
+        def qf(x: qp.Qubit, y: qp.Qubit.Borrowed = True):
+            pass
+
+    with pytest.raises(TypeError, match='Inconsistent default'):
+        def cf(x: qp.IntBuf, y: bool = True):
+            pass
+
+        @qp.semi_quantum(classical=cf)
+        def qf(x: qp.Qubit, y: qp.Qubit.Borrowed):
+            pass

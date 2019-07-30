@@ -243,6 +243,7 @@ class IntBuf:
 
     def __init__(self, buffer: Buffer):
         self._buf = buffer
+        assert isinstance(buffer, Buffer), 'Not a Buffer: {!r}'.format(buffer)
 
     def signed_int(self) -> int:
         """Return value as a signed int instead of an unsigned int."""

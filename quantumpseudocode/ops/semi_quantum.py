@@ -51,19 +51,35 @@ def semi_quantum(func: Callable = None,
     resolve_arg_strings: List[str] = []
 
     classical_type_hints = get_type_hints(classical) if classical is not None else {}
+    quantum_sig = inspect.signature(func)
+    classical_sig = inspect.signature(classical) if classical is not None else None
 
     # Process each parameter individually.
-    for parameter in inspect.signature(func).parameters.values():
+    for parameter in quantum_sig.parameters.values():
         val = parameter.name
         t = type_hints[val]
         type_string = f'{getattr(t, "__name__", "type")}_{len(type_string_map)}'
         type_string_map[type_string] = t
+        if parameter.default is not inspect.Parameter.empty:
+            def_val = f'_default_val_{len(type_string_map)}'
+            def_str = f' = {def_val}'
+            type_string_map[def_val] = parameter.default
+        else:
+            def_str = ''
+        if classical_sig is not None and val in classical_sig.parameters:
+            if parameter.default != classical_sig.parameters[val].default:
+                raise TypeError('Inconsistent default value. Quantum has {}={!r} but classical has {}={!r}'.format(
+                    val,
+                    parameter.default,
+                    val,
+                    classical_sig.parameters[val].default))
+        parameter: inspect.Parameter
 
         # Sending and receiving arguments.
         if parameter.kind == inspect.Parameter.KEYWORD_ONLY and not forced_keywords:
             forced_keywords = True
             param_strings.append('*')
-        param_strings.append(f'{val}: {type_string}')
+        param_strings.append(f'{val}: {type_string}{def_str}')
         arg_string = f'{val}={val}' if forced_keywords else val
         arg_strings.append(arg_string)
 
