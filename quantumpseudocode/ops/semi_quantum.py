@@ -121,7 +121,7 @@ def semi_quantum(func: Callable = None,
         result.classical = classical
         if 'control' in type_hints and 'control' not in classical_type_hints:
             assert TYPE_TO_SEMI_DATA[type_hints['control']] is TYPE_TO_SEMI_DATA[qp.Qubit.Control]
-            resolve_lines.insert(0, '    if not sim_state.resolve(control):')
+            resolve_lines.insert(0, '    if not sim_state.resolve_location(control):')
             resolve_lines.insert(1, '        return')
 
         new_args = list(classical_type_hints.keys() - type_hints.keys())
@@ -135,7 +135,7 @@ def semi_quantum(func: Callable = None,
         resolve_body = '\n'.join([
             f'def sim(sim_state: qp.ClassicalSimState, {", ".join(param_strings)}):',
             *resolve_lines,
-            f'    return classical_func({", ".join(arg_strings)})'
+            f'    return classical_func({", ".join(resolve_arg_strings)})'
         ])
 
         result.sim = _eval_body_func(resolve_body,

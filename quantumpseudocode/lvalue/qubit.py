@@ -8,7 +8,7 @@ import quantumpseudocode as qp
 @cirq.value_equality
 class Qubit:
     Borrowed = Union[int, 'qp.Qubit', 'qp.RValue[bool]']
-    Control = Union[None, 'qp.QubitIntersection', 'qp.Qubit']
+    Control = Union[None, 'qp.QubitIntersection', 'qp.Qubit', bool, 'qp.RValue[bool]']
 
     def __init__(self,
                  name: 'Union[qp.UniqueHandle, str]' = '',
