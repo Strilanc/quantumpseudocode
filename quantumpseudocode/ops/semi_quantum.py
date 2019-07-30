@@ -1,11 +1,14 @@
 import functools
 import inspect
-from typing import Union, Callable, get_type_hints, ContextManager, Dict, List
+from typing import Union, Callable, get_type_hints, ContextManager, Dict, List, Optional, Any, NamedTuple
 
 import quantumpseudocode as qp
 
 
-def semi_quantum(func: Callable) -> Callable:
+def semi_quantum(func: Callable = None,
+                 *,
+                 alloc_prefix: Optional[str] = None,
+                 classical: Callable = None) -> Callable:
     """Decorator that allows sending classical values and RValues into a function expecting quantum values.
 
     Args:
@@ -13,9 +16,27 @@ def semi_quantum(func: Callable) -> Callable:
             annotations are used to define how incoming values are wrapped. For example, a `qp.Qubit.Borrowed` can
             accept a `qp.Qubit`, a raw `bool`, or any `qp.RValue[int]` (e.g. the expression `a > b` where `a` and `b`
             are both quints produces such an rvalue.
+        alloc_prefix: An optional string argument that determines how temporarily allocated qubits and quints are
+            named. Defaults to the name of the decorated function with underscores on either side.
+        classical: A function with the same arguments as `func` (except that a `control: qp.Qubit.Control` parameter
+            can be omitted), but with types such as `qp.Quint` replaced by `qp.IntBuf`. The understanding is that
+            the emulator's effect on mutable buffers should be equivalent to the quantum function's effect on
+            corresponding qubits and quints.
     """
 
-    sig = inspect.signature(func)
+    # If keyword arguments were specified, python invokes the decorator method
+    # without a `func` argument, then passes `func` into the result.
+    if func is None:
+        return lambda deferred_func: semi_quantum(deferred_func,
+                                                  alloc_prefix=alloc_prefix,
+                                                  classical=classical)
+
+    if alloc_prefix is None:
+        alloc_prefix = func.__name__
+        if not alloc_prefix.startswith('_'):
+            alloc_prefix = '_' + alloc_prefix
+        if not alloc_prefix.endswith('_'):
+            alloc_prefix = alloc_prefix + '_'
     type_hints = get_type_hints(func)
 
     # Empty state to be filled in with parameter handling information.
@@ -26,9 +47,13 @@ def semi_quantum(func: Callable) -> Callable:
     indent = '    '
     arg_strings: List[str] = []
     forced_keywords = False
+    resolve_lines: List[str] = []
+    resolve_arg_strings: List[str] = []
+
+    classical_type_hints = get_type_hints(classical) if classical is not None else {}
 
     # Process each parameter individually.
-    for parameter in sig.parameters.values():
+    for parameter in inspect.signature(func).parameters.values():
         val = parameter.name
         t = type_hints[val]
         type_string = f'{getattr(t, "__name__", "type")}_{len(type_string_map)}'
@@ -39,19 +64,28 @@ def semi_quantum(func: Callable) -> Callable:
             forced_keywords = True
             param_strings.append('*')
         param_strings.append(f'{val}: {type_string}')
-        arg_strings.append(f'{val}={val}' if forced_keywords else val)
+        arg_string = f'{val}={val}' if forced_keywords else val
+        arg_strings.append(arg_string)
 
         # Transforming arguments.
-        transform = _type_to_transform.get(t, None)
-        if transform is not None:
-            holder, exposer = transform
+        semi_data = TYPE_TO_SEMI_DATA.get(t, None)
+        if semi_data is not None:
+            holder = semi_data.context_manager_func
             if holder is not None:
                 remap_string_map[holder.__name__] = holder
-                assignment_strings.append(f'{indent}with {holder.__name__}({val}, {repr(val)}) as {val}:')
+                assignment_strings.append(
+                    f'{indent}with {holder.__name__}({val}, {repr(alloc_prefix + val)}) as {val}:')
                 indent += '    '
+
+            exposer = semi_data.transform_func
             if exposer is not None:
                 remap_string_map[exposer.__name__] = exposer
                 assignment_strings.append(f'{indent}{val} = {exposer.__name__}({val})')
+
+            if val in classical_type_hints:
+                remap_string_map[semi_data.resolve_func.__name__] = semi_data.resolve_func
+                resolve_lines.append(f'    {val} = {semi_data.resolve_func.__name__}(sim_state, {val})')
+                resolve_arg_strings.append(arg_string)
 
     # Assemble into a function body.
     func_name = f'_decorated_{func.__name__}'
@@ -63,22 +97,57 @@ def semi_quantum(func: Callable) -> Callable:
     body = '\n'.join(lines)
 
     # Evaluate generated function code.
+    result = _eval_body_func(body,
+                             func,
+                             func_name,
+                             exec_globals={**type_string_map, **remap_string_map, 'func': func, 'qp': qp})
+    if classical is not None:
+        result.classical = classical
+        if 'control' in type_hints and 'control' not in classical_type_hints:
+            assert TYPE_TO_SEMI_DATA[type_hints['control']] is TYPE_TO_SEMI_DATA[qp.Qubit.Control]
+            resolve_lines.insert(0, '    if not sim_state.resolve(control):')
+            resolve_lines.insert(1, '        return')
+
+        new_args = list(classical_type_hints.keys() - type_hints.keys())
+        if new_args:
+            raise TypeError('classical function cannot introduce new parameters, but introduced {!r}'.format(new_args))
+        missing_args = list(set(type_hints.keys()) - classical_type_hints.keys() - {'control'})
+        if missing_args:
+            raise TypeError('classical function cannot omit parameters (except control), but missed {!r}'.format(
+                missing_args))
+
+        resolve_body = '\n'.join([
+            f'def sim(sim_state: qp.ClassicalSimState, {", ".join(param_strings)}):',
+            *resolve_lines,
+            f'    return classical_func({", ".join(arg_strings)})'
+        ])
+
+        result.sim = _eval_body_func(resolve_body,
+                                     classical,
+                                     'sim',
+                                     {'classical_func': classical, 'qp': qp, **type_string_map, **remap_string_map})
+
+    return result
+
+
+def _eval_body_func(body: str, func: Callable, func_name_in_body: str, exec_globals: Dict[str, Any]) -> Callable:
+    # Evaluate the code.
     exec_locals = {}
-    exec_globals = {**type_string_map, **remap_string_map, 'func': func, 'qp': qp}
     try:
         exec(body, exec_globals, exec_locals)
     except Exception as ex:
         raise RuntimeError('Failed to build decorator transformation.\n'
                            '\n'
                            'Source:\n'
-                           '{body}\n'
+                           f'{body}\n'
                            '\n'
                            f'Globals: {exec_globals}\n'
                            f'Locals: {exec_locals}') from ex
 
-    # Make the decorated function look like the original function under inspection.
-    result = functools.wraps(func)(exec_locals[func_name])
+    # Make the decorated function look like the original function when inspected.
+    result = functools.wraps(func)(exec_locals[func_name_in_body])
     result.__doc__ = (result.__doc__ or '') + f'\n\n==== Decorator body ====\n{body}'
+
     return result
 
 
@@ -91,6 +160,14 @@ def _rval_quint_manager(val: 'qp.Quint.Borrowed', name: str) -> ContextManager['
         return qp.HeldRValueManager(val, name=name)
     raise TypeError('Expected a classical or quantum integer expression (a quint, int, or RVal[int]) '
                     'but got {!r}.'.format(val))
+
+
+def _mutable_resolve(sim_state: 'qp.ClassicalSimState', val: Any):
+    return sim_state.resolve_location(val, allow_mutate=True)
+
+
+def _immutable_resolve(sim_state: 'qp.ClassicalSimState', val: Any):
+    return sim_state.resolve_location(val, allow_mutate=False)
 
 
 def _lval_quint_checker(val: 'qp.Quint') -> 'qp.Quint':
@@ -138,13 +215,38 @@ def _control_qubit_exposer(val: Union['qp.Qubit', 'qp.QubitIntersection']) -> 'q
     return val
 
 
-def _generate_type_to_transform():
+SemiQuantumTypeData = NamedTuple(
+    'SemiQuantumType',
+    [
+        ('context_manager_func', Optional[Callable[[Any], ContextManager]]),
+        ('transform_func', Optional[Callable[[Any], Any]]),
+        ('resolve_func', Callable[[Any], Any]),
+    ]
+)
+
+
+def _generate_type_to_transform() -> Dict[type, SemiQuantumTypeData]:
     result = {
-        qp.Quint: (None, _lval_quint_checker),
-        qp.Quint.Borrowed: (_rval_quint_manager, None),
-        qp.Qubit: (None, _lval_qubit_checker),
-        qp.Qubit.Borrowed: (_rval_qubit_manager, None),
-        qp.Qubit.Control: (_control_qubit_manager, _control_qubit_exposer),
+        qp.Quint: SemiQuantumTypeData(
+            context_manager_func=None,
+            transform_func=_lval_quint_checker,
+            resolve_func=_mutable_resolve),
+        qp.Quint.Borrowed: SemiQuantumTypeData(
+            context_manager_func=_rval_quint_manager,
+            transform_func=None,
+            resolve_func=_immutable_resolve),
+        qp.Qubit: SemiQuantumTypeData(
+            context_manager_func=None,
+            transform_func=_lval_qubit_checker,
+            resolve_func=_mutable_resolve),
+        qp.Qubit.Borrowed: SemiQuantumTypeData(
+            context_manager_func=_rval_qubit_manager,
+            transform_func=None,
+            resolve_func=_immutable_resolve),
+        qp.Qubit.Control: SemiQuantumTypeData(
+            context_manager_func=_control_qubit_manager,
+            transform_func=_control_qubit_exposer,
+            resolve_func=_mutable_resolve),
     }
     for t, v in list(result.items()):
         def _f() -> t:
@@ -154,4 +256,4 @@ def _generate_type_to_transform():
     return result
 
 
-_type_to_transform = _generate_type_to_transform()
+TYPE_TO_SEMI_DATA = _generate_type_to_transform()

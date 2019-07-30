@@ -93,7 +93,7 @@ class QubitIntersection(RValue[bool]):
         return qp.RawQureg(self.qubits)
 
     def value_from_resolved_deps(self, args: Tuple[int, ...]) -> bool:
-        return all(args)
+        return self.bit and all(args)
 
     def __rixor__(self, other):
         if isinstance(other, qp.Qubit):

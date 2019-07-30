@@ -90,6 +90,23 @@ def test_qubit():
         _ = f(qp.BoolRValue(True))
 
 
+def test_qubit_parens():
+    @qp.semi_quantum()
+    def f(x: qp.Qubit):
+        return x
+    q = qp.Qubit('a', 10)
+    assert f(q) is q
+
+
+def test_prefix():
+    @qp.semi_quantum(alloc_prefix='_test_')
+    def f(x: qp.Qubit.Borrowed):
+        return x
+    with qp.capture():
+        q = f(False)
+    assert q.name.key == '_test_x'
+
+
 def test_qubit_borrowed():
     @qp.semi_quantum
     def f(x: qp.Qubit.Borrowed):
@@ -144,32 +161,21 @@ def test_qubit_control():
     q = qp.Qubit('a', 10)
     q2 = qp.Qubit('b', 8)
 
+    # Note: The lack of capture context means we are implicitly asserting the following invokations perform no
+    # quantum operations such as allocating a qubit.
+
     # Definitely false.
-    with qp.capture() as out:
-        assert f(False) == qp.QubitIntersection.NEVER
-    assert out == []
-    with qp.capture() as out:
-        assert f(qp.QubitIntersection.NEVER) == qp.QubitIntersection.NEVER
-    assert out == []
+    assert f(False) == qp.QubitIntersection.NEVER
+    assert f(qp.QubitIntersection.NEVER) == qp.QubitIntersection.NEVER
 
     # Definitely true.
-    with qp.capture() as out:
-        assert f(qp.QubitIntersection.ALWAYS) == qp.QubitIntersection.ALWAYS
-    assert out == []
-    with qp.capture() as out:
-        assert f(None) == qp.QubitIntersection.ALWAYS
-    assert out == []
-    with qp.capture() as out:
-        assert f(True) == qp.QubitIntersection.ALWAYS
-    assert out == []
+    assert f(qp.QubitIntersection.ALWAYS) == qp.QubitIntersection.ALWAYS
+    assert f(None) == qp.QubitIntersection.ALWAYS
+    assert f(True) == qp.QubitIntersection.ALWAYS
 
     # Single qubit.
-    with qp.capture() as out:
-        assert f(q) == qp.QubitIntersection((q,))
-    assert out == []
-    with qp.capture() as out:
-        assert f(qp.QubitIntersection((q,))) == qp.QubitIntersection((q,))
-    assert out == []
+    assert f(q) == qp.QubitIntersection((q,))
+    assert f(qp.QubitIntersection((q,))) == qp.QubitIntersection((q,))
 
     # Multi qubit intersection.
     with qp.capture() as out:
@@ -188,11 +194,13 @@ def test_qubit_control():
         rval = qp.Quint(qp.NamedQureg('a', 10)) > qp.Quint(qp.NamedQureg('b', 10))
         v = f(rval)
         assert isinstance(v, qp.QubitIntersection)
+        q = v.qubits[0]
+        assert q.name.key == '_f_x'
         assert out == [
-            qp.AllocQuregOperation(qp.RawQureg(v.qubits)),
+            qp.AllocQuregOperation(qp.RawQureg([q])),
             qp.LetRValueOperation(rval, v.qubits[0]),
             qp.DelRValueOperation(rval, v.qubits[0]),
-            qp.ReleaseQuregOperation(qp.RawQureg(v.qubits)),
+            qp.ReleaseQuregOperation(qp.RawQureg([q])),
         ]
     assert len(out) == 4
 
@@ -216,3 +224,26 @@ def test_multiple():
     with qp.capture() as out:
         add(a, 10, control=True)
     assert len(out) >= 5
+
+
+def test_classical():
+    def g(x: qp.IntBuf, y: int):
+        assert isinstance(x, qp.IntBuf)
+        assert isinstance(y, int)
+        x ^= y
+
+    @qp.semi_quantum(classical=g)
+    def f(x: qp.Quint, y: qp.Quint.Borrowed):
+        x ^= y
+
+    assert f.classical is g
+
+    with qp.Sim() as sim_state:
+        q = qp.qalloc_int(bits=5)
+        assert sim_state.resolve_location(q, False) == 0
+        f.sim(sim_state, q, 3)
+        assert sim_state.resolve_location(q, False) == 3
+        f.sim(sim_state, q, 5)
+        assert sim_state.resolve_location(q, False) == 6
+        f.sim(sim_state, q, 6)
+        qp.qfree(q)
