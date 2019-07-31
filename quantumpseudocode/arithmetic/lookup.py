@@ -117,45 +117,6 @@ def _chunk_bits(bits: List[bool], size: int) -> List[int]:
     ]
 
 
-@cirq.value_equality
-class XorLookup(Operation):
-    def __init__(self, lvalue: 'qp.Quint', table: 'qp.LookupTable', address: 'qp.Quint.Borrowed', phase_instead_of_toggle: bool):
-        self.lvalue = lvalue
-        self.table = table
-        self.address = address
-        self.phase_instead_of_toggle = phase_instead_of_toggle
-
-    def _value_equality_values_(self):
-        return self.lvalue, self.table, self.address, self.phase_instead_of_toggle
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        do_xor_lookup(lvalue=self.lvalue,
-                      table=self.table,
-                      address=self.address,
-                      phase_instead_of_toggle=self.phase_instead_of_toggle,
-                      control=controls)
-
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        do_xor_lookup.classical(
-            lvalue=self.lvalue,
-            table=self.table,
-            address=self.address,
-            phase_instead_of_toggle=self.phase_instead_of_toggle)
-
-    def __str__(self):
-        return '{} ^{}= {}[{}]'.format(
-            self.lvalue,
-            'Z' if self.phase_instead_of_toggle else '',
-            self.table,
-            self.address)
-
-    def __repr__(self):
-        return 'qp.XorTableLookup({!r}, {!r}, {!r}, {!r})'.format(self.lvalue, self.table, self.address, self.phase_instead_of_toggle)
-
-    def inverse(self):
-        return self
-
-
 class LookupRValue(qp.RValue[int]):
     """Represents the temporary result of a table lookup."""
 
@@ -178,10 +139,12 @@ class LookupRValue(qp.RValue[int]):
             return self
 
         if isinstance(other, qp.Quint):
-            qp.emit(XorLookup(lvalue=other,
-                              table=self.table,
-                              address=self.address,
-                              phase_instead_of_toggle=False).controlled_by(controls))
+            qp.arithmetic.do_xor_lookup(
+                lvalue=other,
+                table=self.table,
+                address=self.address,
+                phase_instead_of_toggle=False,
+                control=controls)
             return other
 
         return NotImplemented

@@ -44,8 +44,7 @@ def test_xor_unary_circuit():
             with qp.qmanaged_int(bits=3, name='b') as b:
                 with qp.qmanaged_int(bits=8, name='u') as u:
                     with qp.qmanaged(qp.Qubit(name='_c')) as c:
-                        with qp.controlled_by(c):
-                            u ^= 1 << b
+                        u ^= (1 << b) & qp.controlled_by(c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _c: -----------------@---@-------------------------------------------------------------------------------------@-------------------------------------------------------------------------------------------@---

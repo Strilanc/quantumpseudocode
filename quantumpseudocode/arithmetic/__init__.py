@@ -32,7 +32,6 @@ from .measure import (
 
 from .lookup import (
     LookupRValue,
-    XorLookup,
     do_xor_lookup,
     del_xor_lookup,
 )
