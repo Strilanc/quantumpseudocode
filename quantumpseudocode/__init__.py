@@ -60,6 +60,7 @@ from quantumpseudocode.util import (
 from quantumpseudocode.control import (
     controlled_by,
     ControlledRValue,
+    ControlledLValue,
 )
 
 from quantumpseudocode.sim import (

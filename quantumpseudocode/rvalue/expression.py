@@ -96,10 +96,15 @@ class QubitIntersection(RValue[bool]):
         return self.bit and all(args)
 
     def __rixor__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
         if isinstance(other, qp.Qubit):
             if self.bit:
-                qp.emit(qp.Toggle(lvalue=qp.RawQureg([other])).controlled_by(self))
+                qp.emit(qp.Toggle(lvalue=qp.RawQureg([other])).controlled_by(self & controls))
             return other
+
         return NotImplemented
 
     def make_storage_location(self, name: Optional[str] = None):

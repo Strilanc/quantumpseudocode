@@ -1,14 +1,23 @@
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, Tuple
+
+import cirq
 
 import quantumpseudocode as qp
 
 
+@cirq.value_equality
 class ControlledRValue(qp.RValue):
     def __init__(self,
-                 controls: qp.QubitIntersection,
-                 rvalue: qp.RValue):
+                 controls: 'qp.QubitIntersection',
+                 rvalue: 'qp.RValue'):
         self.controls = controls
         self.rvalue = rvalue
+
+    @staticmethod
+    def split(op: Any) -> Tuple[Any, 'qp.QubitIntersection']:
+        if isinstance(op, qp.ControlledRValue):
+            return op.rvalue, op.controls
+        return op, qp.QubitIntersection.ALWAYS
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         if not self.controls.resolve(sim_state, False):
@@ -31,9 +40,36 @@ class ControlledRValue(qp.RValue):
     def __str__(self):
         return 'controlled({}, {})'.format(self.rvalue, self.controls)
 
+    def _value_equality_values_(self):
+        return self.rvalue, self.controls
+
     def __repr__(self):
         return 'qp.ControlledRValue({!r}, {!r})'.format(self.controls,
                                                            self.rvalue)
+
+
+@cirq.value_equality
+class ControlledLValue:
+    def __init__(self,
+                 controls: 'qp.QubitIntersection',
+                 lvalue: Union['qp.Qubit', 'qp.Quint', 'qp.Qureg', 'qp.ControlledLValue']):
+        if isinstance(lvalue, ControlledLValue):
+            lvalue = lvalue.lvalue
+            controls = controls & lvalue.controls
+        self.lvalue = lvalue
+        self.controls = controls
+
+    @staticmethod
+    def split(op: Any) -> Tuple[Any, 'qp.QubitIntersection']:
+        if isinstance(op, qp.ControlledLValue):
+            return op.lvalue, op.controls
+        return op, qp.QubitIntersection.ALWAYS
+
+    def _value_equality_values_(self):
+        return self.lvalue, self.controls
+
+    def __repr__(self):
+        return 'qp.ControlledLValue({!r}, {!r})'.format(self.controls, self.lvalue)
 
 
 class _ControlledByWithoutRValue:

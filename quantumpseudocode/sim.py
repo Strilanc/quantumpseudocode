@@ -2,14 +2,8 @@ import random
 from typing import List, Union, Callable, Any, Optional, Tuple, Set, Dict, Iterable
 
 import quantumpseudocode as qp
-import quantumpseudocode.ops.operation
 import quantumpseudocode.lens
-
-
-def separate_controls(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
-     if isinstance(op, qp.ControlledOperation):
-         return op.uncontrolled, op.controls
-     return op, qp.QubitIntersection.ALWAYS
+import quantumpseudocode.ops.operation
 
 
 def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
@@ -92,7 +86,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         return lambda: random.random() < 0.5
 
     def modify(self, operation: 'qp.Operation'):
-        op, cnt = separate_controls(operation)
+        op, cnt = qp.ControlledOperation.split(operation)
 
         if isinstance(op, qp.AllocQuregOperation):
             assert cnt == qp.QubitIntersection.ALWAYS

@@ -11,8 +11,7 @@ def test_xor_lookup():
             with qp.qmanaged_int(bits=4, name='addr') as addr:
                 with qp.qmanaged_int(bits=8, name='out') as out:
                     with qp.qmanaged(name='cnt') as cnt:
-                        with qp.controlled_by(cnt):
-                            out ^= qp.LookupTable(range(1, 17))[addr]
+                        out ^= qp.LookupTable(range(1, 17))[addr] & qp.controlled_by(cnt)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _lookup_prefix: -----X---X---@---@-------------------------------------------------------------------------------------@-------------------------------------------------------------------------------------------@---X---@---@-------------------------------------------------------------------------------------@-------------------------------------------------------------------------------------------@---Mxc-------

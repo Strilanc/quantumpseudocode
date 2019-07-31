@@ -86,25 +86,23 @@ class Quint:
                                  qp.rval(False))
 
     def __ixor__(self, other):
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+        if isinstance(other, (qp.IntRValue, qp.QuintRValue)):
+            other = other.val
+
         if isinstance(other, int):
-            qp.emit(qp.XorEqualConst(lvalue=self, mask=other))
+            qp.emit(qp.XorEqualConst(lvalue=self, mask=other).controlled_by(controls))
             return self
 
         if isinstance(other, Quint):
-            qp.emit(qp.XorEqual(lvalue=self, mask=other))
+            qp.emit(qp.XorEqual(lvalue=self, mask=other).controlled_by(controls))
             return self
-
-        if isinstance(other, qp.ControlledRValue):
-            if isinstance(other.rvalue, qp.QuintRValue):
-                qp.emit(qp.XorEqual(lvalue=self, mask=other.rvalue.val).controlled_by(other.controls))
-                return self
-            elif isinstance(other.rvalue, qp.IntRValue):
-                qp.emit(qp.XorEqualConst(lvalue=self, mask=other.rvalue.val).controlled_by(other.controls))
-                return self
 
         rev = getattr(other, '__rixor__', None)
         if rev is not None:
-            return rev(self)
+            return rev(qp.ControlledLValue(controls, self))
 
         return NotImplemented
 

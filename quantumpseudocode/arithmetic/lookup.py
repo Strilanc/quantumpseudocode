@@ -173,11 +173,15 @@ class LookupRValue(qp.RValue[int]):
         return self.table.values[address]
 
     def __rixor__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
         if isinstance(other, qp.Quint):
             qp.emit(XorLookup(lvalue=other,
                               table=self.table,
                               address=self.address,
-                              phase_instead_of_toggle=False))
+                              phase_instead_of_toggle=False).controlled_by(controls))
             return other
 
         return NotImplemented

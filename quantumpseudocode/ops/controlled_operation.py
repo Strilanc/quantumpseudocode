@@ -20,6 +20,12 @@ class ControlledOperation(Operation):
     def _value_equality_values_(self):
         return self.controls, self.uncontrolled
 
+    @staticmethod
+    def split(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
+        if isinstance(op, qp.ControlledOperation):
+            return op.uncontrolled, op.controls
+        return op, qp.QubitIntersection.ALWAYS
+
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         c = sim_state.quint_buf(qp.Quint(qp.RawQureg(self.controls.qubits)))
         controls_satisfied = int(c) == (1 << len(c)) - 1
