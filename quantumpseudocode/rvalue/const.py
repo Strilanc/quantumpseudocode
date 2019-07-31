@@ -33,11 +33,12 @@ class BoolRValue(RValue[bool]):
         with qp.condition(controls):
             location ^= self.val
 
-    # def del_storage_location(self,
-    #                          location: 'qp.Qubit',
-    #                          controls: 'qp.QubitIntersection'):
-    #     if qp.measure_x_for_phase_fixup_and_reset(location):
-    #         qp.phase_flip(controls)
+    def del_storage_location(self,
+                             location: 'qp.Qubit',
+                             controls: 'qp.QubitIntersection'):
+        with qp.measurement_based_uncomputation(location) as b:
+            if self.val and b:
+                qp.phase_flip(controls)
 
     def __str__(self):
         return 'rval({})'.format(self.val)
@@ -76,12 +77,12 @@ class IntRValue(RValue[bool]):
         with qp.condition(controls):
             location ^= self.val
 
-    # def del_storage_location(self,
-    #                          location: 'qp.Quint',
-    #                          controls: 'qp.QubitIntersection'):
-    #     r = qp.measure_x_for_phase_fixup_and_reset(location)
-    #     if qp.popcnt(r & self.val) & 1:
-    #         qp.phase_flip(controls)
+    def del_storage_location(self,
+                             location: 'qp.Quint',
+                             controls: 'qp.QubitIntersection'):
+        with qp.measurement_based_uncomputation(location) as r:
+            if qp.popcnt(r & self.val) & 1:
+                qp.phase_flip(controls)
 
     def __riadd__(self, other):
         if isinstance(other, qp.Quint):

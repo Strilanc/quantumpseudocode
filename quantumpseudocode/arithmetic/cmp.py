@@ -64,6 +64,8 @@ class IfLessThanRVal(RValue[bool]):
         return qp.Qubit(name)
 
     def phase_flip_if(self, controls: 'qp.QubitIntersection'):
+        if controls == qp.QubitIntersection.NEVER:
+            return
         qp.emit(EffectIfLessThan(
             lhs=self.lhs,
             rhs=self.rhs,
@@ -82,8 +84,8 @@ class IfLessThanRVal(RValue[bool]):
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        if qp.measure_x_for_phase_fixup_and_reset(location):
-            self.phase_flip_if(controls)
+        with qp.measurement_based_uncomputation(location) as b:
+            self.phase_flip_if(controls & b)
 
     def __str__(self):
         if isinstance(self.or_equal, qp.BoolRValue):

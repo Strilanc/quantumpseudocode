@@ -6,6 +6,7 @@ from .xor import (
 from .add import (
     PlusEqual,
     do_addition,
+    do_subtraction,
 )
 
 from .cmp import (
@@ -23,15 +24,17 @@ from .mult_add import (
 
 from .measure import (
     measure,
-    measure_x_for_phase_fixup_and_reset,
     MeasureOperation,
-    MeasureXForPhaseKickOperation,
+    StartMeasurementBasedUncomputation,
+    EndMeasurementBasedComputationOp,
+    measurement_based_uncomputation,
 )
 
 from .lookup import (
     LookupRValue,
     XorLookup,
     do_xor_lookup,
+    del_xor_lookup,
 )
 
 from .phase_flip import (

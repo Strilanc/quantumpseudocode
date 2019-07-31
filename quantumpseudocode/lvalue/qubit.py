@@ -46,16 +46,18 @@ class Qubit:
     def init(self,
              value: 'qp.RValue[bool]',
              controls: 'qp.QubitIntersection' = None):
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
         qp.emit(
-            qp.LetRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+            qp.LetRValueOperation(value, self).controlled_by(controls))
 
     def clear(self,
               value: 'qp.RValue[bool]',
               controls: 'qp.QubitIntersection' = None):
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
         qp.emit(
-            qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+            qp.DelRValueOperation(value, self).controlled_by(controls))
 
     def __ixor__(self, other):
         if other in [False, 0]:

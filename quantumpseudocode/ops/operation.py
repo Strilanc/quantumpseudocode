@@ -1,4 +1,4 @@
-from typing import Union, Any
+from typing import Union, Any, Callable
 
 import cirq
 
@@ -7,6 +7,9 @@ import quantumpseudocode as qp
 
 class ClassicalSimState:
     phase_degrees: float
+
+    def measurement_based_uncomputation_result_chooser(self) -> Callable[[], bool]:
+        raise NotImplementedError()
 
     def quint_buf(self, quint: 'qp.Quint') -> 'qp.IntBuf':
         raise NotImplementedError()

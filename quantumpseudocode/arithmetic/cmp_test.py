@@ -8,13 +8,13 @@ def test_cmp():
         with qp.qmanaged_int(bits=4) as t:
             t.init(2)
             with qp.hold(t >= 2) as q:
-                assert qp.measure(q, reset=True)
+                assert qp.measure(q)
             with qp.hold(t > 2) as q:
-                assert not qp.measure(q, reset=True)
+                assert not qp.measure(q)
             with qp.hold(t <= 2) as q:
-                assert qp.measure(q, reset=True)
+                assert qp.measure(q)
             with qp.hold(t < 2) as q:
-                assert not qp.measure(q, reset=True)
+                assert not qp.measure(q)
             assert qp.measure(t, reset=True) == 2
 
 

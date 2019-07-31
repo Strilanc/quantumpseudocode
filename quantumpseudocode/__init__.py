@@ -54,6 +54,7 @@ from quantumpseudocode.util import (
     modular_multiplicative_inverse,
     MultiWith,
     popcnt,
+    little_endian_int,
 )
 
 from quantumpseudocode.control import (
@@ -91,9 +92,10 @@ from quantumpseudocode.arithmetic import (
     UnaryRValue,
     LookupRValue,
     measure,
-    measure_x_for_phase_fixup_and_reset,
+    measurement_based_uncomputation,
     MeasureOperation,
-    MeasureXForPhaseKickOperation,
+    StartMeasurementBasedUncomputation,
+    EndMeasurementBasedComputationOp,
     OP_PHASE_FLIP,
     Toggle,
     phase_flip,

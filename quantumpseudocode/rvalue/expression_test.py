@@ -1,3 +1,5 @@
+import itertools
+
 import cirq
 import pytest
 
@@ -41,6 +43,17 @@ q[2]: ---------Z---
     cirq.testing.assert_has_diagram(circuit, r"""
 b[0]: ---Mxc---
         """, use_unicode_characters=False)
+
+
+def test_uncompute():
+    for a, b, p in itertools.product([False, True], repeat=3):
+        with qp.Sim(phase_fixup_bias=p):
+            with qp.hold(a, name='a') as qa:
+                with qp.hold(b, name='b') as qb:
+                    with qp.hold(a & b, name='c') as qc:
+                        assert qp.measure(qa) == a
+                        assert qp.measure(qb) == b
+                        assert qp.measure(qc) == (a and b)
 
 
 def test_intersection_and():

@@ -61,10 +61,9 @@ class LogCirqCircuit(qp.Lens):
                 self.circuit.append(cirq.measure(*qubits),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
-        elif isinstance(op, qp.MeasureXForPhaseKickOperation):
-            q = op.target
-            q2 = cirq.NamedQubit(str(q))
-            self.circuit.append(MeasureXFixupGate()(q2),
+        elif isinstance(op, qp.StartMeasurementBasedUncomputation):
+            qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
+            self.circuit.append(MeasureXFixupGate().on_each(*qubits),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif op == qp.OP_PHASE_FLIP:

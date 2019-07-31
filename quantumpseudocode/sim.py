@@ -52,6 +52,8 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         self._int_state[qubit.name][qubit.index or 0] = new_val
 
     def quint_buf(self, quint: 'qp.Quint') -> qp.IntBuf:
+        if len(quint) == 0:
+            return qp.IntBuf.raw(val=0, length=0)
         if isinstance(quint.qureg, qp.NamedQureg):
             return self._int_state[quint.qureg.name]
         fused = _fuse(quint.qureg)
@@ -83,6 +85,11 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
         else:
             raise NotImplementedError(
                 "Unrecognized type for randomize_location {!r}".format(loc))
+
+    def measurement_based_uncomputation_result_chooser(self) -> Callable[[], bool]:
+        if self.phase_fixup_bias is not None:
+            return lambda: self.phase_fixup_bias
+        return lambda: random.random() < 0.5
 
     def modify(self, operation: 'qp.Operation'):
         op, cnt = separate_controls(operation)
@@ -118,7 +125,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
 
             for q in op.qureg:
                 if self.enforce_release_at_zero and not op.dirty:
-                    assert self._read_qubit(q) == 0, 'Failed to uncompute {}'.format(q)
+                    assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
 
             if isinstance(op.qureg, qp.NamedQureg):
                 assert op.qureg.name in self._int_state
@@ -130,24 +137,11 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
 
             return []
 
-        if isinstance(op, qp.MeasureOperation):
+        if isinstance(op, (qp.MeasureOperation,
+                           qp.StartMeasurementBasedUncomputation,
+                           qp.EndMeasurementBasedComputationOp)):
             assert cnt == qp.QubitIntersection.ALWAYS
-            assert op.raw_results is None
-            results = [self._read_qubit(q) for q in op.targets]
-            if op.reset:
-                for q in op.targets:
-                    self._write_qubit(q, False)
-            op.raw_results = tuple(results)
-            return []
-
-        if isinstance(op, qp.MeasureXForPhaseKickOperation):
-            r = self.phase_fixup_bias
-            if r is None:
-                r = random.random() < 0.5
-            op.result = r
-            if self._read_qubit(op.target) and r:
-                self.phase_degrees += 180
-            self._write_qubit(op.target, False)
+            op.mutate_state(self, True)
             return []
 
         if isinstance(op, qp.Toggle):
@@ -173,7 +167,7 @@ def _fuse(qubits: Iterable[qp.Qubit]) -> List[Tuple[str, slice]]:
     cur_end = None
 
     def flush():
-        if cur_name is not None:
+        if cur_name is not None and cur_end > cur_start:
             result.append((cur_name, slice(cur_start, cur_end)))
 
     for q in qubits:

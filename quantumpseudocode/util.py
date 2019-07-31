@@ -173,3 +173,12 @@ def popcnt(x: int) -> int:
         x &= x - 1
         t += 1
     return t
+
+
+def little_endian_int(bits: List[bool]) -> int:
+    t = 0
+    for b in reversed(bits):
+        t <<= 1
+        if b:
+            t |= 1
+    return t

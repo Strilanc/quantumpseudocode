@@ -125,9 +125,13 @@ def semi_quantum(func: Callable = None,
             resolve_lines.insert(1, '        return')
 
         new_args = list(classical_type_hints.keys() - type_hints.keys() - {'sim_state'})
+        for arg in list(new_args):
+            if classical_sig.parameters[arg].default is not inspect.Parameter.empty:
+                new_args.remove(arg)
         if new_args:
-            raise TypeError('classical function cannot introduce new parameters (besides sim+state), '
-                            'but introduced {!r}'.format(new_args))
+            raise TypeError('classical function cannot introduce new parameters '
+                            '(besides sim+state and arguments with default values), '
+                            'but {} introduced {!r}'.format(classical, new_args))
         missing_args = list(set(type_hints.keys()) - classical_type_hints.keys() - {'control'})
         if missing_args:
             raise TypeError('classical function cannot omit parameters (except control), '

@@ -1,6 +1,6 @@
 import math
 import random
-from typing import Optional, Union, Tuple, Iterable, Iterator
+from typing import Optional, Union, Tuple, Iterable, Iterator, List
 
 import cirq
 
@@ -17,7 +17,7 @@ def do_classical_xor_lookup(sim_state: 'qp.ClassicalSimState',
     mask = table.values[address]
     assert 0 <= address < len(table)
     if phase_instead_of_toggle:
-        if popcnt(int(lvalue) & mask) & 1:
+        if qp.popcnt(int(lvalue) & mask) & 1:
             sim_state.phase_degrees += 180
     else:
         lvalue ^= mask
@@ -34,8 +34,7 @@ def do_xor_lookup(*,
     assert isinstance(address, qp.Quint)
     assert isinstance(control, qp.QubitIntersection) and len(control.qubits) <= 1
     table = table[:1 << len(address)]
-    max_active_address_bits = qp.ceil_lg2(len(table))
-    address = address[:max_active_address_bits]
+    address = address[:qp.ceil_lg2(len(table))]
 
     # Base case: single distinct value in table.
     if all(e == table[0] for e in table):
@@ -69,6 +68,55 @@ def do_xor_lookup(*,
                        address=rest,
                        phase_instead_of_toggle=phase_instead_of_toggle)
         qp.emit(op.controlled_by(q))
+
+
+@semi_quantum(alloc_prefix='_qrom_', classical=do_classical_xor_lookup)
+def del_xor_lookup(*,
+                   lvalue: 'qp.Quint',
+                   table: 'qp.LookupTable',
+                   address: 'qp.Quint.Borrowed',
+                   control: 'qp.Qubit.Control' = True):
+    """Uncomputes a table lookup using measurement based uncomputation."""
+    assert isinstance(lvalue, qp.Quint)
+    assert isinstance(address, qp.Quint)
+    assert isinstance(control, qp.QubitIntersection) and len(control.qubits) <= 1
+    table = table[:1 << len(address)]
+    address = address[:qp.ceil_lg2(len(table))]
+
+    if all(e == table[0] for e in table):
+        qp.IntRValue(table[0]).del_storage_location(lvalue, control)
+        return
+
+    split = min(
+        qp.floor_lg2(len(lvalue)),  # Point of no-more-workspace-available.
+        len(address) // 2  # Point of optimal operation count.
+    )
+    low = address[:split]
+    high = address[split:]
+
+    with qp.measurement_based_uncomputation(lvalue) as result:
+        # Infer whether or not each address has a phase flip.
+        raw_fixups = [bool(qp.popcnt(result & table[k]) & 1)
+                      for k in range(len(table))]
+        fixup_table = qp.LookupTable(_chunk_bits(raw_fixups, 1 << split))
+
+        # Fix address phase flips using a smaller table lookup.
+        unary_storage = lvalue[:1 << split]
+        unary_storage.init(1 << low)
+        do_xor_lookup(
+            lvalue=unary_storage,
+            table=fixup_table,
+            address=high,
+            phase_instead_of_toggle=True,
+            control=control)
+        unary_storage.clear(1 << low)
+
+
+def _chunk_bits(bits: List[bool], size: int) -> List[int]:
+    return [
+        qp.little_endian_int(bits[k:k + size])
+        for k in range(0, len(bits), size)
+    ]
 
 
 @cirq.value_equality
@@ -149,64 +197,24 @@ class LookupRValue(qp.RValue[int]):
     def init_storage_location(self,
                               location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):
-        qp.emit(XorLookup(
+        do_xor_lookup(
             lvalue=location,
             table=self.table,
             address=self.address,
-            phase_instead_of_toggle=False
-        ).controlled_by(controls))
+            phase_instead_of_toggle=False,
+            control=controls)
 
     def del_storage_location(self,
                              location: 'qp.Quint',
                              controls: 'qp.QubitIntersection'):
-        if len(location) == 0:
-            return
-
-        address_count = min(1 << len(self.address), len(self.table))
-        if address_count == 1:
-            location ^= self.table[0] & qp.controlled_by(controls)
-            return
-
-        n = qp.ceil_lg2(address_count)
-        k = min(n >> 1, qp.floor_lg2(len(location)))
-        low = self.address[:k]
-        high = self.address[k:n]
-        assert len(low) >= 0
-        assert len(high) >= 0
-
-        # Determine fixups by performing eager measurements.
-        fixups = [0] * (1 << len(high))
-        for i in range(len(location)):
-            if qp.measure_x_for_phase_fixup_and_reset(location[i]):
-                for j in range(address_count):
-                    if self.table[j] & (1 << i):
-                        fixup_index = j >> k
-                        fixup_bit = j & ((1 << k) - 1)
-                        fixups[fixup_index] ^= 1 << fixup_bit
-        fixup_table = qp.LookupTable(fixups)
-
-        # Phase fixups.
-        unary_storage = location[:1<<k]
-        unary_storage.init(1 << low)
-        qp.emit(XorLookup(
-            lvalue=unary_storage,
-            table=fixup_table,
-            address=high,
-            phase_instead_of_toggle=True
-        ).controlled_by(controls))
-        unary_storage.clear(1 << low)
+        del_xor_lookup(
+            lvalue=location,
+            table=self.table,
+            address=self.address,
+            control=controls)
 
     def __str__(self):
         return 'T(len={})[{}]'.format(len(self.table), self.address)
 
     def __repr__(self):
         return 'qp.LookupRValue({!r}, {!r})'.format(self.table, self.address)
-
-
-def popcnt(v: int) -> int:
-    assert v >= 0
-    t = 0
-    while v:
-        v &= v - 1
-        t += 1
-    return t

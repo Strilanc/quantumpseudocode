@@ -11,6 +11,9 @@ class ControlledOperation(Operation):
     def __init__(self,
                  uncontrolled: 'qp.Operation',
                  controls: 'qp.QubitIntersection'):
+        if isinstance(uncontrolled, ControlledOperation):
+            controls = controls & uncontrolled.controls
+            uncontrolled = uncontrolled.uncontrolled
         self.controls = controls
         self.uncontrolled = uncontrolled
 

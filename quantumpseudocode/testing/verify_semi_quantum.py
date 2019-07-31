@@ -1,3 +1,4 @@
+import inspect
 import random
 from typing import Any, Callable, Iterable, Sequence, get_type_hints, Union, Dict, TypeVar, Generic, List
 
@@ -104,6 +105,13 @@ def _apply_classical(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _sample(kwargs: Dict[str, Any]) -> Dict[str, Any]:
-    return {
-        k: v() if isinstance(v, Callable) else random.choice(v) if isinstance(v, Sequence) else v
-        for k, v in kwargs.items()}
+    result = {}
+    for k, space in kwargs.items():
+        if isinstance(space, Callable):
+            v = space(**{k: result[k] for k in inspect.signature(space).parameters})
+        elif isinstance(space, Sequence):
+            v = random.choice(space)
+        else:
+            v = space
+        result[k] = v
+    return result

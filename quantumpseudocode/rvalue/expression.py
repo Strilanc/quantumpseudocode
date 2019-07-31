@@ -114,8 +114,8 @@ class QubitIntersection(RValue[bool]):
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        if qp.measure_x_for_phase_fixup_and_reset(location):
-            qp.phase_flip(self & controls)
+        with qp.measurement_based_uncomputation(location) as b:
+            qp.phase_flip(self & controls & b)
 
     def __str__(self):
         if not self.bit:
