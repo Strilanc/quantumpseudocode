@@ -117,9 +117,11 @@ class Quint:
                 return result
 
         if isinstance(other, (qp.Quint, qp.RValue)):
-            qp.emit(qp.PlusEqual(lvalue=self,
-                                 offset=other,
-                                 carry_in=False).controlled_by(controls))
+            qp.arithmetic.do_addition(
+                lvalue=self,
+                offset=other,
+                carry_in=False,
+                control=controls)
             return self
 
         return NotImplemented

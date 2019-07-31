@@ -56,8 +56,7 @@ def test_plus_equal_gate_circuit():
             with qp.qmanaged_int(bits=3, name='a') as a:
                 with qp.qmanaged_int(bits=4, name='t') as t:
                     with qp.qmanaged(qp.Qubit(name='_c')) as c:
-                        qp.emit(
-                            qp.PlusEqual(lvalue=t, offset=a, carry_in=c))
+                        qp.arithmetic.do_addition(lvalue=t, offset=a, carry_in=c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _c: -----X-------@---------------------------------------------------------------@---@-------X---
@@ -95,18 +94,18 @@ def test_do():
             'offset': 2
         }])
 
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_subtraction,
+        fuzz_space={
+            'lvalue': lambda: qp.IntBuf.random(range(0, 6)),
+            'offset': lambda: random.randint(0, 511),
+            'carry_in': [False, True],
+        },
+        fuzz_count=100)
 
-def test_vs_emulation():
-    with qp.Sim(enforce_release_at_zero=False) as sim:
-        bits = 4
-        with qp.qmanaged_int(bits=bits, name='lvalue') as lvalue:
-            for _ in range(10):
-                sim.randomize_location(lvalue)
-
-                old_state = sim.snapshot()
-                op = qp.PlusEqual(lvalue=lvalue,
-                                  offset=random.randint(0, 1 << bits),
-                                  carry_in=random.random() < 0.5)
-                qp.emit(op)
-                op.mutate_state(sim_state=sim, forward=False)
-                assert sim.snapshot() == old_state
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_subtraction,
+        fixed=[{
+            'lvalue': qp.IntBuf.raw(val=3, length=3),
+            'offset': 2
+        }])

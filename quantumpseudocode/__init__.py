@@ -54,6 +54,7 @@ from quantumpseudocode.util import (
     MultiWith,
     popcnt,
     little_endian_int,
+    ccz_count,
 )
 
 from quantumpseudocode.control import (
@@ -99,7 +100,6 @@ from quantumpseudocode.arithmetic import (
     OP_PHASE_FLIP,
     Toggle,
     phase_flip,
-    PlusEqual,
     PlusEqualProduct,
     swap,
     TimesEqual,

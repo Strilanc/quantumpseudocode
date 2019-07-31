@@ -97,9 +97,11 @@ class IntRValue(RValue[bool]):
             if self.val == 0:
                 return other
             k = qp.leading_zero_bit_count(self.val)
-            qp.emit(qp.PlusEqual(lvalue=other[k:],
-                                 offset=self.val >> k,
-                                 carry_in=False).controlled_by(controls))
+            qp.arithmetic.do_addition(
+                lvalue=other[k:],
+                offset=self.val >> k,
+                carry_in=False,
+                control=controls)
             return other
         return NotImplemented
 

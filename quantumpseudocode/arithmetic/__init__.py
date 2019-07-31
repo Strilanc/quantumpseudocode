@@ -4,7 +4,6 @@ from .xor import (
 )
 
 from .add import (
-    PlusEqual,
     do_addition,
     do_subtraction,
 )

@@ -1,9 +1,7 @@
 from typing import List, Union
 
-import cirq
-
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation, semi_quantum
+from quantumpseudocode.ops import semi_quantum
 
 
 def do_addition_classical(*,
@@ -66,32 +64,6 @@ def do_subtraction(*,
                    carry_in: qp.Qubit.Borrowed = False):
     with qp.invert():
         do_addition(control=control, lvalue=lvalue, offset=offset, carry_in=carry_in)
-
-
-@cirq.value_equality()
-class PlusEqual(Operation):
-    def __init__(self, lvalue: qp.Quint, offset: qp.Quint, carry_in: qp.Qubit):
-        self.lvalue = lvalue
-        self.offset = offset
-        self.carry_in = carry_in
-
-    def _value_equality_values_(self):
-        return self.lvalue, self.offset, self.carry_in
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        do_addition(control=controls, lvalue=self.lvalue, offset=self.offset, carry_in=self.carry_in)
-
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        if forward:
-            do_addition.sim(sim_state, lvalue=self.lvalue, offset=self.offset, carry_in=self.carry_in)
-        else:
-            do_subtraction.sim(sim_state, lvalue=self.lvalue, offset=self.offset, carry_in=self.carry_in)
-
-    def __str__(self):
-        return '{} += {} + {}'.format(self.lvalue, self.offset, self.carry_in)
-
-    def __repr__(self):
-        return 'qp.PlusEqual({!r}, {!r}, {!r})'.format(self.lvalue, self.offset, self.carry_in)
 
 
 def maj_sweep(lvalue: Union[qp.Quint, List[qp.Qubit], qp.Qureg],
