@@ -11,6 +11,9 @@ class BoolRValue(RValue[bool]):
     def __init__(self, val: bool):
         self.val = val
 
+    def trivial_unwrap(self):
+        return self.val
+
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         return self.val
 
@@ -30,8 +33,7 @@ class BoolRValue(RValue[bool]):
     def init_storage_location(self,
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
-        with qp.condition(controls):
-            location ^= self.val
+        location ^= self.val & qp.controlled_by(controls)
 
     def del_storage_location(self,
                              location: 'qp.Qubit',
@@ -51,6 +53,9 @@ class BoolRValue(RValue[bool]):
 class IntRValue(RValue[bool]):
     def __init__(self, val: int):
         self.val = val
+
+    def trivial_unwrap(self):
+        return self.val
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         return self.val
@@ -74,8 +79,7 @@ class IntRValue(RValue[bool]):
     def init_storage_location(self,
                               location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):
-        with qp.condition(controls):
-            location ^= self.val
+        location ^= self.val & qp.controlled_by(controls)
 
     def del_storage_location(self,
                              location: 'qp.Quint',
@@ -85,13 +89,17 @@ class IntRValue(RValue[bool]):
                 qp.phase_flip(controls)
 
     def __riadd__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
         if isinstance(other, qp.Quint):
             if self.val == 0:
                 return other
             k = qp.leading_zero_bit_count(self.val)
             qp.emit(qp.PlusEqual(lvalue=other[k:],
                                  offset=self.val >> k,
-                                 carry_in=False))
+                                 carry_in=False).controlled_by(controls))
             return other
         return NotImplemented
 

@@ -23,8 +23,7 @@ def assert_adds_correctly(n1: int, n2: int, v1: int, v2: int):
 def assert_control_adds_correctly(n1: int, n2: int, v1: int, v2: int,
                                   control: bool):
     def f(a: qp.Quint, b: qp.Quint, c: qp.Qubit):
-        with qp.controlled_by(c):
-            a += b
+        a += b & qp.controlled_by(c)
     r = qp.testing.sim_call(f,
                             qp.IntBuf.raw(val=v1, length=n1),
                             qp.IntBuf.raw(val=v2, length=n2),

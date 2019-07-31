@@ -11,6 +11,9 @@ class QubitRValue(RValue[bool]):
     def __init__(self, val: 'qp.Qubit'):
         self.val = val
 
+    def trivial_unwrap(self):
+        return self.val
+
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         return self.val.resolve(sim_state, False)
 
@@ -51,6 +54,9 @@ class QubitRValue(RValue[bool]):
 class QuintRValue(RValue[int]):
     def __init__(self, val: 'qp.Quint'):
         self.val = val
+
+    def trivial_unwrap(self):
+        return self.val
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         return self.val.resolve(sim_state, False)

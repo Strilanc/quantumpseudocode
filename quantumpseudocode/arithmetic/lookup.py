@@ -136,7 +136,7 @@ class LookupRValue(qp.RValue[int]):
     def __rixor__(self, other):
         other, controls = qp.ControlledLValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
-            return self
+            return other
 
         if isinstance(other, qp.Quint):
             qp.arithmetic.do_xor_lookup(

@@ -44,29 +44,27 @@ class QuintMod:
         return value
 
     def __iadd__(self, other):
-        rev = getattr(other, '__riadd__', None)
-        if rev is not None:
-            result = rev(self)
-            if result is not NotImplemented:
-                return result
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
 
-        rval_other = qp.rval(other, None)
+        rval_other = qp.rval(other, default=other)
         rev = getattr(rval_other, '__riadd__', None)
         if rev is not None:
-            result = rev(self)
+            result = rev(qp.ControlledLValue(controls, self))
             if result is not NotImplemented:
                 return result
 
-        if isinstance(other, (int, qp.IntRValue)):
+        if isinstance(other, int):
             qp.emit(qp.PlusEqualConstMod(lvalue=self[:],
                                          offset=int(other),
-                                         modulus=self.modulus))
+                                         modulus=self.modulus).controlled_by(controls))
             return self
 
         if isinstance(other, (qp.Quint, qp.RValue)):
             qp.emit(qp.PlusEqualMod(lvalue=self[:],
                                     offset=other,
-                                    modulus=self.modulus))
+                                    modulus=self.modulus).controlled_by(controls))
             return self
 
         return NotImplemented

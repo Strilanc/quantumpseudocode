@@ -25,12 +25,16 @@ class ScaledIntRValue(RValue[int]):
             self.coherent, self.constant)
 
     def __riadd__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
         if isinstance(other, qp.Quint):
             qp.emit(qp.PlusEqualProduct(
                 lvalue=other,
                 quantum_factor=self.coherent,
                 const_factor=self.constant,
-            ))
+            ).controlled_by(controls))
             return other
 
         return NotImplemented
@@ -98,7 +102,7 @@ class QubitIntersection(RValue[bool]):
     def __rixor__(self, other):
         other, controls = qp.ControlledLValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
-            return self
+            return other
 
         if isinstance(other, qp.Qubit):
             if self.bit:

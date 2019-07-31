@@ -40,14 +40,6 @@ class EmptyManager:
         pass
 
 
-def condition(control: Union['qp.Qubit', 'qp.QubitIntersection']) -> ContextManager[None]:
-    if isinstance(control, qp.Qubit):
-        control = qp.QubitIntersection((control,))
-    elif control == qp.QubitIntersection.ALWAYS:
-        return EmptyManager()
-    return cast(ContextManager[None], _ControlLens(control))
-
-
 def invert() -> ContextManager[None]:
     return cast(ContextManager[None], _InvertLens())
 

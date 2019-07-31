@@ -10,14 +10,18 @@ class ControlledRValue(qp.RValue):
     def __init__(self,
                  controls: 'qp.QubitIntersection',
                  rvalue: 'qp.RValue'):
+        assert isinstance(controls, qp.QubitIntersection)
         self.controls = controls
         self.rvalue = rvalue
 
     @staticmethod
-    def split(op: Any) -> Tuple[Any, 'qp.QubitIntersection']:
-        if isinstance(op, qp.ControlledRValue):
-            return op.rvalue, op.controls
-        return op, qp.QubitIntersection.ALWAYS
+    def split(val: Any) -> Tuple[Any, 'qp.QubitIntersection']:
+        controls = qp.QubitIntersection.ALWAYS
+        if isinstance(val, qp.ControlledRValue):
+            val, controls = val.rvalue, val.controls
+        if isinstance(val, qp.RValue):
+            val = val.trivial_unwrap()
+        return val, controls
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         if not self.controls.resolve(sim_state, False):
@@ -52,7 +56,12 @@ class ControlledRValue(qp.RValue):
 class ControlledLValue:
     def __init__(self,
                  controls: 'qp.QubitIntersection',
-                 lvalue: Union['qp.Qubit', 'qp.Quint', 'qp.Qureg', 'qp.ControlledLValue']):
+                 lvalue: Union['qp.Qubit',
+                               'qp.Quint',
+                               'qp.Qureg',
+                               'qp.ControlledLValue',
+                               'qp.QuintMod']):
+        assert isinstance(controls, qp.QubitIntersection)
         if isinstance(lvalue, ControlledLValue):
             lvalue = lvalue.lvalue
             controls = controls & lvalue.controls
@@ -60,10 +69,10 @@ class ControlledLValue:
         self.controls = controls
 
     @staticmethod
-    def split(op: Any) -> Tuple[Any, 'qp.QubitIntersection']:
-        if isinstance(op, qp.ControlledLValue):
-            return op.lvalue, op.controls
-        return op, qp.QubitIntersection.ALWAYS
+    def split(val: Any) -> Tuple[Any, 'qp.QubitIntersection']:
+        if isinstance(val, qp.ControlledLValue):
+            return val.lvalue, val.controls
+        return val, qp.QubitIntersection.ALWAYS
 
     def _value_equality_values_(self):
         return self.lvalue, self.controls
@@ -72,16 +81,9 @@ class ControlledLValue:
         return 'qp.ControlledLValue({!r}, {!r})'.format(self.controls, self.lvalue)
 
 
-class _ControlledByWithoutRValue:
+class ControlledBy:
     def __init__(self, controls: qp.QubitIntersection):
         self.controls = controls
-        self._cond = qp.condition(self.controls)
-
-    def __enter__(self):
-        return self._cond.__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return self._cond.__exit__(exc_type, exc_val, exc_tb)
 
     def __and__(self, other):
         if isinstance(other, ControlledRValue):
@@ -98,4 +100,4 @@ class _ControlledByWithoutRValue:
 def controlled_by(qubits: Union[qp.Qubit, qp.QubitIntersection]):
     if isinstance(qubits, qp.Qubit):
         qubits = qp.QubitIntersection((qubits,))
-    return _ControlledByWithoutRValue(qubits)
+    return ControlledBy(qubits)

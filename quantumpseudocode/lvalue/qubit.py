@@ -60,6 +60,10 @@ class Qubit:
             qp.DelRValueOperation(value, self).controlled_by(controls))
 
     def __ixor__(self, other):
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
         if other in [False, 0]:
             return self
 
@@ -73,6 +77,6 @@ class Qubit:
 
         rev = getattr(other, '__rixor__', None)
         if rev is not None:
-            return rev(self)
+            return rev(qp.ControlledLValue(controls, self))
 
         return NotImplemented

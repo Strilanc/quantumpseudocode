@@ -10,8 +10,7 @@ def times_equal_classic(target: Quint, k: int):
     assert k % 2 == 1  # Even factors aren't reversible.
     k %= 2**len(target)  # Normalize factor.
     for i in range(len(target))[::-1]:
-        with controlled_by(target[i]):
-            target[i + 1:] += k >> 1
+        target[i + 1:] += (k >> 1) & controlled_by(target[i])
 
 
 def times_equal_windowed(target: Quint, k: int, window: int):

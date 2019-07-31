@@ -9,6 +9,9 @@ T = TypeVar('T')
 class RValue(Generic[T]):
     """A value or expression that only needs to exist temporarily."""
 
+    def trivial_unwrap(self):
+        return self
+
     def qureg_deps(self) -> Iterable['qp.Qureg']:
         raise NotImplementedError()
 

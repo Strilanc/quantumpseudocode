@@ -2,7 +2,6 @@ from quantumpseudocode.lens import (
     capture,
     CaptureLens,
     EmptyManager,
-    condition,
     emit,
     invert,
     Lens,

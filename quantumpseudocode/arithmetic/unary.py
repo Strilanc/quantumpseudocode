@@ -12,7 +12,7 @@ class UnaryRValue(qp.RValue[int]):
     def __rixor__(self, other):
         other, controls = qp.ControlledLValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
-            return self
+            return other
 
         if isinstance(other, qp.Quint):
             t = qp.LookupTable(1 << k for k in range(1 << len(self.binary)))

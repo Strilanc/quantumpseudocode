@@ -50,8 +50,7 @@ def test_redundant_lookup():
             with qp.qmanaged_int(bits=4, name='addr') as addr:
                 with qp.qmanaged_int(bits=8, name='out') as out:
                     with qp.qmanaged(name='cnt') as cnt:
-                        with qp.controlled_by(cnt):
-                            out ^= qp.LookupTable([3] * 16)[addr]
+                        out ^= qp.LookupTable([3] * 16)[addr] & qp.controlled_by(cnt)
 
     cirq.testing.assert_has_diagram(circuit, r"""
 cnt: ------@---

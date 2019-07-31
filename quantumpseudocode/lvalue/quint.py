@@ -89,8 +89,6 @@ class Quint:
         other, controls = qp.ControlledRValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
             return self
-        if isinstance(other, (qp.IntRValue, qp.QuintRValue)):
-            other = other.val
 
         if isinstance(other, int):
             qp.emit(qp.XorEqualConst(lvalue=self, mask=other).controlled_by(controls))
@@ -107,23 +105,21 @@ class Quint:
         return NotImplemented
 
     def __iadd__(self, other):
-        rev = getattr(other, '__riadd__', None)
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
+        other_rval = qp.rval(other, default=other)
+        rev = getattr(other_rval, '__riadd__', None)
         if rev is not None:
-            result = rev(self)
+            result = rev(qp.ControlledLValue(controls, self))
             if result is not NotImplemented:
                 return result
 
-        rval_other = qp.rval(other, None)
-        rev = getattr(rval_other, '__riadd__', None)
-        if rev is not None:
-            result = rev(self)
-            if result is not NotImplemented:
-                return result
-
-        if isinstance(other, (qp.RValue, qp.Quint)):
+        if isinstance(other, (qp.Quint, qp.RValue)):
             qp.emit(qp.PlusEqual(lvalue=self,
                                  offset=other,
-                                 carry_in=False))
+                                 carry_in=False).controlled_by(controls))
             return self
 
         return NotImplemented

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import quantumpseudocode as qp
 from quantumpseudocode.ops import Op
 
@@ -24,7 +22,8 @@ class PlusEqualProduct(Op):
            quantum_factor: 'qp.Quint',
            const_factor: int):
         for i, q in enumerate(quantum_factor):
-            lvalue += (const_factor << i) & qp.controlled_by(q)
+            with qp.hold((const_factor << i) & qp.controlled_by(q)) as offset:
+                lvalue += offset
 
     def describe(self, *, lvalue, quantum_factor, const_factor):
         return '{} += {} * {}'.format(lvalue,
