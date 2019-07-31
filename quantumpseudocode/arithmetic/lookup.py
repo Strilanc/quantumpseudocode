@@ -1,6 +1,4 @@
-import math
-import random
-from typing import Optional, Union, Tuple, Iterable, Iterator, List
+from typing import Optional, Tuple, Iterable, List
 
 import cirq
 
@@ -55,19 +53,19 @@ def do_xor_lookup(*,
     with qp.hold(control & high_bit, name='_lookup_prefix') as q:
         # Do lookup for half of table where high_bit is 0.
         q ^= control  # Flip q to storing 'controls & ~high_bit'.
-        op = XorLookup(lvalue=lvalue,
-                       table=low_table,
-                       address=rest,
-                       phase_instead_of_toggle=phase_instead_of_toggle)
-        qp.emit(op.controlled_by(q))
+        do_xor_lookup(lvalue=lvalue,
+                      table=low_table,
+                      address=rest,
+                      phase_instead_of_toggle=phase_instead_of_toggle,
+                      control=q)
         q ^= control
 
         # Do lookup for half of table where high_bit is 1.
-        op = XorLookup(lvalue=lvalue,
-                       table=high_table,
-                       address=rest,
-                       phase_instead_of_toggle=phase_instead_of_toggle)
-        qp.emit(op.controlled_by(q))
+        do_xor_lookup(lvalue=lvalue,
+                      table=high_table,
+                      address=rest,
+                      phase_instead_of_toggle=phase_instead_of_toggle,
+                      control=q)
 
 
 @semi_quantum(alloc_prefix='_qrom_', classical=do_classical_xor_lookup)
