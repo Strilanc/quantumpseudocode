@@ -12,11 +12,6 @@ class RValue(Generic[T]):
     def trivial_unwrap(self):
         return self
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        raise NotImplementedError()
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]) -> T:
-        raise NotImplementedError()
 
     def existing_storage_location(self) -> Any:
         return None

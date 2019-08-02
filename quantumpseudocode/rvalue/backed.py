@@ -20,13 +20,6 @@ class QubitRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return [qp.RawQureg([self.val])]
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> bool:
-        return args[0] != 0
-
     def existing_storage_location(self) -> Any:
         return self.val
 
@@ -63,13 +56,6 @@ class QuintRValue(RValue[int]):
 
     def _value_equality_values_(self):
         return self.val
-
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return [self.val.qureg]
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> int:
-        return args[0]
 
     def existing_storage_location(self) -> Any:
         return self.val

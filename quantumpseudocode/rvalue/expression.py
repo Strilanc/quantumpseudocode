@@ -39,13 +39,6 @@ class ScaledIntRValue(RValue[int]):
 
         return NotImplemented
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return [self.coherent.qureg]
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> int:
-        return args[0]
-
     def make_storage_location(self, name: Optional[str] = None):
         return qp.Quint(qp.NamedQureg(
             name, len(self.coherent) + self.constant.bit_length()))
@@ -92,12 +85,6 @@ class QubitIntersection(RValue[bool]):
         if other in [True, 1]:
             return self
         return NotImplemented
-
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return qp.RawQureg(self.qubits)
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]) -> bool:
-        return self.bit and all(args)
 
     def __rixor__(self, other):
         other, controls = qp.ControlledLValue.split(other)

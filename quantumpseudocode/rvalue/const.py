@@ -20,13 +20,6 @@ class BoolRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return []
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> bool:
-        return self.val
-
     def make_storage_location(self, name: Optional[str] = None):
         return qp.Qubit(name)
 
@@ -61,13 +54,6 @@ class IntRValue(RValue[bool]):
         return self.val
 
     def _value_equality_values_(self):
-        return self.val
-
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return []
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> int:
         return self.val
 
     def make_storage_location(self, name: str = ''):

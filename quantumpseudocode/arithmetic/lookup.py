@@ -149,12 +149,6 @@ class LookupRValue(qp.RValue[int]):
 
         return NotImplemented
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return [self.address.qureg]
-
-    def value_from_resolved_deps(self, args: Tuple[int]) -> int:
-        return self.table[args[0]]
-
     def make_storage_location(self,
                               name: Optional[str] = None) -> 'qp.Quint':
         return qp.Quint(qp.NamedQureg(name, self.table.output_len()))
