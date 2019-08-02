@@ -1,11 +1,15 @@
-from typing import Optional, Iterable, Union
+from typing import Optional, Iterable, Union, List
 
 import cirq
 
 import quantumpseudocode as qp
+from .lvalue import LValue
 
 
-class Qureg:
+class Qureg(LValue[List[bool]]):
+    def _rval_(self):
+        return qp.QuregRValue(self)
+
     def __len__(self):
         raise NotImplementedError()
 

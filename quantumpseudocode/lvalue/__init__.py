@@ -26,3 +26,7 @@ from .padded import (
 from .unique import (
     UniqueHandle,
 )
+
+from .lvalue import (
+    LValue,
+)

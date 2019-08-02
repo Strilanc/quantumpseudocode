@@ -1,13 +1,14 @@
-from typing import Optional, Tuple, Iterable, Union, get_type_hints
-from typing_extensions import Protocol
+from typing import Optional, Union
 
 import cirq
+from typing_extensions import Protocol
 
 import quantumpseudocode as qp
+from .lvalue import LValue
 
 
 @cirq.value_equality
-class Qubit:
+class Qubit(LValue[bool]):
     class Borrowed(Protocol):
         # Union[int, 'qp.Qubit', 'qp.RValue[bool]']
         pass

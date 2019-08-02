@@ -27,10 +27,12 @@ from quantumpseudocode.rvalue import (
     QubitIntersection,
     QubitRValue,
     QuintRValue,
+    QuregRValue,
     ScaledIntRValue,
 )
 
 from quantumpseudocode.lvalue import (
+    LValue,
     NamedQureg,
     RangeQureg,
     RawQureg,

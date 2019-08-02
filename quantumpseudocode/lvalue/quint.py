@@ -4,10 +4,11 @@ import cirq
 from typing_extensions import Protocol
 
 import quantumpseudocode as qp
+from .lvalue import LValue
 
 
 @cirq.value_equality
-class Quint:
+class Quint(LValue[int]):
     class Borrowed(Protocol):
         # Union[int, 'qp.Quint', 'qp.RValue[int]']
         pass

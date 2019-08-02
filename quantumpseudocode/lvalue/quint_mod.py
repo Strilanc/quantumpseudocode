@@ -1,14 +1,18 @@
 import cirq
 
 import quantumpseudocode as qp
+from .lvalue import LValue
 
 
 @cirq.value_equality
-class QuintMod:
+class QuintMod(LValue[int]):
     def __init__(self, qureg: 'qp.Qureg', modulus: int):
         assert len(qureg) == qp.ceil_lg2(modulus)
         self.qureg = qureg
         self.modulus = modulus
+
+    def _rval_(self):
+        return qp.QuintRValue(qp.Quint(self.qureg))
 
     def _value_equality_values_(self):
         return self.qureg

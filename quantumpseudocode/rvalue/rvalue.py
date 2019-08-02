@@ -38,19 +38,16 @@ class RValue(Generic[T]):
 
 
 @overload
-def rval(val: 'qp.Qubit') -> 'qp.RValue[bool]':
+def rval(val: 'qp.LValue[T]') -> 'qp.RValue[T]':
     pass
 @overload
-def rval(val: 'qp.Quint') -> 'qp.RValue[int]':
+def rval(val: 'qp.RValue[T]') -> 'qp.RValue[T]':
     pass
 @overload
 def rval(val: 'int') -> 'qp.RValue[int]':
     pass
 @overload
 def rval(val: 'bool') -> 'qp.RValue[bool]':
-    pass
-@overload
-def rval(val: 'qp.RValue[T]') -> 'qp.RValue[T]':
     pass
 @overload
 def rval(val: Any, default: Any) -> 'qp.RValue[T]':
