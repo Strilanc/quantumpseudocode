@@ -47,7 +47,6 @@ def do_if_less_than(*,
         uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
 
 
-
 class IfLessThanRVal(RValue[bool]):
     def __init__(self,
                  lhs: RValue[int],

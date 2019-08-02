@@ -10,7 +10,6 @@ from .expression import (
 
 from .backed import (
     QubitRValue,
-    QuintRValue,
     QuregRValue,
 )
 

@@ -232,7 +232,7 @@ def _control_qubit_manager(val: 'qp.Qubit.Control', name: str) -> ContextManager
         return qp.EmptyManager(qp.QubitIntersection((val,)))
     if isinstance(val, qp.QubitIntersection) and len(val.qubits) == 1:
         return qp.EmptyManager(val)
-    if isinstance(val, qp.RValue):
+    if isinstance(val, qp.RValue) and not isinstance(val, qp.Quint):
         return qp.HeldRValueManager(val, name=name)
     raise TypeError('Expected a quantum control expression (a None, qubit, or RValue[bool]) '
                     'but got {!r}.'.format(val))

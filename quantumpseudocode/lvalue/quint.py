@@ -1,14 +1,15 @@
-from typing import Union, ContextManager
+from typing import Union, ContextManager, Any, Optional
 
 import cirq
 from typing_extensions import Protocol
 
 import quantumpseudocode as qp
 from .lvalue import LValue
+from quantumpseudocode.rvalue import RValue
 
 
 @cirq.value_equality
-class Quint(LValue[int]):
+class Quint(LValue[int], RValue[int]):
     class Borrowed(Protocol):
         # Union[int, 'qp.Quint', 'qp.RValue[int]']
         pass
@@ -17,11 +18,27 @@ class Quint(LValue[int]):
         self.qureg = qureg
 
     def _rval_(self):
-        return qp.QuintRValue(self)
+        return self
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         buf = sim_state.quint_buf(self)
         return buf if allow_mutate else int(buf)
+
+    def existing_storage_location(self) -> Any:
+        return self
+
+    def make_storage_location(self, name: Optional[str] = None):
+        return qp.Quint(qp.NamedQureg(name, len(self)))
+
+    def init_storage_location(self,
+                              location: Any,
+                              controls: 'qp.QubitIntersection'):
+        location ^= self & qp.controlled_by(controls)
+
+    def del_storage_location(self,
+                             location: Any,
+                             controls: 'qp.QubitIntersection'):
+        location ^= self & qp.controlled_by(controls)
 
     def _value_equality_values_(self):
         return self.qureg

@@ -12,7 +12,7 @@ class QuintMod(LValue[int]):
         self.modulus = modulus
 
     def _rval_(self):
-        return qp.QuintRValue(qp.Quint(self.qureg))
+        return qp.Quint(self.qureg)
 
     def _value_equality_values_(self):
         return self.qureg
