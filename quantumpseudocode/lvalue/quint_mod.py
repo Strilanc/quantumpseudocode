@@ -60,15 +60,17 @@ class QuintMod(LValue[int]):
                 return result
 
         if isinstance(other, int):
-            qp.emit(qp.PlusEqualConstMod(lvalue=self[:],
-                                         offset=int(other),
-                                         modulus=self.modulus).controlled_by(controls))
+            qp.arithmetic_mod.do_add_const_mod(
+                lvalue=self,
+                offset=int(other),
+                control=controls)
             return self
 
         if isinstance(other, (qp.Quint, qp.RValue)):
-            qp.emit(qp.PlusEqualMod(lvalue=self[:],
-                                    offset=other,
-                                    modulus=self.modulus).controlled_by(controls))
+            qp.arithmetic_mod.do_add_mod(
+                lvalue=self,
+                offset=other,
+                control=controls)
             return self
 
         return NotImplemented

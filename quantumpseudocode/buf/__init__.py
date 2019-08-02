@@ -4,4 +4,5 @@ from .int_buffer import (
     RawConcatBuffer,
     RawIntBuffer,
     RawWindowBuffer,
+    IntBufMod,
 )

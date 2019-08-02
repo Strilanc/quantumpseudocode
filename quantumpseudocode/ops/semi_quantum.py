@@ -200,6 +200,12 @@ def _lval_quint_checker(val: 'qp.Quint') -> 'qp.Quint':
     return val
 
 
+def _lval_quint_mod_checker(val: 'qp.QuintMod') -> 'qp.QuintMod':
+    if not isinstance(val, qp.QuintMod):
+        raise TypeError('Expected a qp.QuintMod but got {!r}'.format(val))
+    return val
+
+
 def _rval_qubit_manager(val: 'qp.Qubit.Borrowed', name: str) -> ContextManager['qp.Qubit']:
     if isinstance(val, qp.Qubit):
         return qp.EmptyManager(val)
@@ -250,6 +256,10 @@ SemiQuantumTypeData = NamedTuple(
 
 
 TYPE_TO_SEMI_DATA: Dict[type, SemiQuantumTypeData] = {
+    qp.QuintMod: SemiQuantumTypeData(
+        context_manager_func=None,
+        transform_func=_lval_quint_mod_checker,
+        resolve_func=_mutable_resolve),
     qp.Quint: SemiQuantumTypeData(
         context_manager_func=None,
         transform_func=_lval_quint_checker,

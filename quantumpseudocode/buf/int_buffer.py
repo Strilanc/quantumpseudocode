@@ -267,6 +267,43 @@ class RawWindowBuffer(Buffer):
         return 'RawWindowBuffer({!r}, {!r}, {!r})'.format(self._buf, self._start, self._stop)
 
 
+class IntBufMod:
+    def __init__(self, buffer: Buffer, modulus: int):
+        self._buf = buffer
+        self.modulus = modulus
+        assert len(self._buf) == (modulus - 1).bit_length()
+        assert int(self) < modulus
+
+    def as_int_buf(self) -> 'qp.IntBuf':
+        return qp.IntBuf(self._buf)
+
+    def _rval_(self) -> 'qp.RValue':
+        return qp.IntRValue(int(self))
+
+    @staticmethod
+    def random(modulus: Union[int, range, Iterable[int]],
+               val: Union[None, int, range, Iterable[int]] = None) -> 'IntBufMod':
+        modulus = modulus if isinstance(modulus, int) else random.choice(modulus)
+        if val is None:
+            val = range(modulus)
+        val = val if isinstance(val, int) else random.choice(val)
+        return IntBufMod.raw(val=val, modulus=modulus)
+
+    @staticmethod
+    def raw(*, val: int, modulus: int) -> 'IntBufMod':
+        """Returns a fresh IntBuf with the given length and starting value."""
+        return IntBufMod(RawIntBuffer(val, (modulus - 1).bit_length()), modulus)
+
+    def __len__(self):
+        return len(self._buf)
+
+    def __int__(self):
+        return self._buf[0:len(self._buf)]
+
+    def copy(self) -> 'IntBufMod':
+        return qp.IntBufMod.raw(val=int(self), modulus=self.modulus)
+
+
 class IntBuf:
     """A fixed-width unsigned integer backed by a mutable bit buffer.
 
@@ -287,10 +324,14 @@ class IntBuf:
         return result
 
     @staticmethod
-    def random(length: Union[int, range, Iterable[int]]) -> 'IntBuf':
+    def random(length: Union[int, range, Iterable[int]],
+               val: Union[None, int, range, Iterable[int]] = None) -> 'IntBuf':
         """Generates an IntBuf with random contents and a length sampled from the given allowed value(s)."""
         length = length if isinstance(length, int) else random.choice(length)
-        return IntBuf.raw(length=length, val=random.randint(0, 2**length-1))
+        if val is None:
+            val = random.randint(0, 2**length-1)
+        val = val if isinstance(length, int) else random.choice(val)
+        return IntBuf.raw(length=length, val=val)
 
     def _rval_(self) -> 'qp.RValue':
         return qp.IntRValue(int(self))
@@ -317,13 +358,13 @@ class IntBuf:
             return self
         return IntBuf(RawConcatBuffer(self._buf, RawIntBuffer(0, pad_len)))
 
-    @classmethod
-    def zero(cls, length: int) -> 'IntBuf':
+    @staticmethod
+    def zero(length: int) -> 'IntBuf':
         """Returns a fresh zero'd IntBuf with the given length."""
         return IntBuf(RawIntBuffer(0, length))
 
-    @classmethod
-    def raw(cls, *, val: int, length: int) -> 'IntBuf':
+    @staticmethod
+    def raw(*, val: int, length: int) -> 'IntBuf':
         """Returns a fresh IntBuf with the given length and starting value."""
         return IntBuf(RawIntBuffer(val, length))
 

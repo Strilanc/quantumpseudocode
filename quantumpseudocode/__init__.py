@@ -11,6 +11,7 @@ from quantumpseudocode.lens import (
 from quantumpseudocode.buf import (
     Buffer,
     IntBuf,
+    IntBufMod,
     RawConcatBuffer,
     RawIntBuffer,
     RawWindowBuffer,
@@ -119,9 +120,6 @@ from quantumpseudocode.qalloc import (
     ReleaseQuregOperation,
 )
 
-from quantumpseudocode.arithmetic_mod import (
-    PlusEqualConstMod,
-    PlusEqualMod,
-)
+import quantumpseudocode.arithmetic_mod
 
 import quantumpseudocode.testing as testing

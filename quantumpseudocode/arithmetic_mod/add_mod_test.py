@@ -1,59 +1,23 @@
-import pytest
 import random
 
 import quantumpseudocode as qp
 
 
-def assert_adds_correctly(modulus: int, t: int, v: int):
-    v %= modulus
+def test_do():
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic_mod.do_add_const_mod,
+        fuzz_space={
+            'lvalue': qp.IntBufMod.random(range(2, 512)),
+            'offset': lambda lvalue: random.choice(range(lvalue.modulus)),
+        },
+        fuzz_count=100)
 
-    assert_control_adds_correctly(modulus, t, v, False)
-    assert_control_adds_correctly(modulus, t, v, True)
-
-    def f(a: qp.QuintMod, b: int):
-        a += b
-    def g(a: qp.QuintMod, b: qp.Quint):
-        a += b
-
-    for e in f, g:
-        r = qp.testing.sim_call(e,
-                                qp.testing.ModInt(val=t, modulus=modulus),
-                                v)
-        assert r == qp.ArgsAndKwargs([
-            (t + v) % modulus,
-            v
-        ], {})
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic_mod.do_add_mod,
+        fuzz_space={
+            'lvalue': qp.IntBufMod.random(range(512)),
+            'offset': lambda lvalue: random.choice(range(lvalue.modulus)),
+        },
+        fuzz_count=100)
 
 
-def assert_control_adds_correctly(modulus: int, t: int, v: int, control: bool):
-    def f(a: qp.QuintMod, b: int, c: qp.Qubit):
-        a += b & qp.controlled_by(c)
-    def g(a: qp.QuintMod, b: qp.Quint, c: qp.Qubit):
-        a += b & qp.controlled_by(c)
-    for e in f, g:
-        r = qp.testing.sim_call(e,
-                                qp.testing.ModInt(val=t, modulus=modulus),
-                                v,
-                                control)
-        assert r == qp.ArgsAndKwargs([
-            (t + v) % modulus if control else t,
-            v,
-            control
-        ], {})
-
-
-def make_cases():
-    for modulus in range(1, 6):
-        for v in range(modulus):
-            for t in range(modulus):
-                yield modulus, t, v
-    for _ in range(10):
-        modulus = random.randint(0, 1 << 50)
-        t = random.randint(0, modulus - 1)
-        v = random.randint(0, modulus - 1)
-        yield modulus, t, v
-
-
-@pytest.mark.parametrize('modulus,t,v', make_cases())
-def test_function(modulus, t, v):
-    assert_adds_correctly(modulus, t, v)
