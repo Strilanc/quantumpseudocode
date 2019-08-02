@@ -1,13 +1,16 @@
 from typing import Union, ContextManager
 
 import cirq
+from typing_extensions import Protocol
 
 import quantumpseudocode as qp
 
 
 @cirq.value_equality
 class Quint:
-    Borrowed = Union[int, 'qp.Quint', 'qp.RValue[int]']
+    class Borrowed(Protocol):
+        # Union[int, 'qp.Quint', 'qp.RValue[int]']
+        pass
 
     def __init__(self, qureg: 'qp.Qureg'):
         self.qureg = qureg

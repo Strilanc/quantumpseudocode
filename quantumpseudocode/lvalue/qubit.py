@@ -1,4 +1,5 @@
-from typing import Optional, Tuple, Iterable, Union
+from typing import Optional, Tuple, Iterable, Union, get_type_hints
+from typing_extensions import Protocol
 
 import cirq
 
@@ -7,8 +8,13 @@ import quantumpseudocode as qp
 
 @cirq.value_equality
 class Qubit:
-    Borrowed = Union[int, 'qp.Qubit', 'qp.RValue[bool]']
-    Control = Union[None, 'qp.QubitIntersection', 'qp.Qubit', bool, 'qp.RValue[bool]']
+    class Borrowed(Protocol):
+        # Union[int, 'qp.Qubit', 'qp.RValue[bool]']
+        pass
+
+    class Control(Protocol):
+        # Union[None, 'qp.QubitIntersection', 'qp.Qubit', bool, 'qp.RValue[bool]']
+        pass
 
     def __init__(self,
                  name: 'Union[qp.UniqueHandle, str]' = '',

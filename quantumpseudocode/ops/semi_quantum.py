@@ -249,35 +249,25 @@ SemiQuantumTypeData = NamedTuple(
 )
 
 
-def _generate_type_to_transform() -> Dict[type, SemiQuantumTypeData]:
-    result = {
-        qp.Quint: SemiQuantumTypeData(
-            context_manager_func=None,
-            transform_func=_lval_quint_checker,
-            resolve_func=_mutable_resolve),
-        qp.Quint.Borrowed: SemiQuantumTypeData(
-            context_manager_func=_rval_quint_manager,
-            transform_func=None,
-            resolve_func=_immutable_resolve),
-        qp.Qubit: SemiQuantumTypeData(
-            context_manager_func=None,
-            transform_func=_lval_qubit_checker,
-            resolve_func=_mutable_resolve),
-        qp.Qubit.Borrowed: SemiQuantumTypeData(
-            context_manager_func=_rval_qubit_manager,
-            transform_func=None,
-            resolve_func=_immutable_resolve),
-        qp.Qubit.Control: SemiQuantumTypeData(
-            context_manager_func=_control_qubit_manager,
-            transform_func=_control_qubit_exposer,
-            resolve_func=_mutable_resolve),
-    }
-    for t, v in list(result.items()):
-        def _f() -> t:
-            pass
-        t2 = get_type_hints(_f)['return']
-        result[t2] = v
-    return result
-
-
-TYPE_TO_SEMI_DATA = _generate_type_to_transform()
+TYPE_TO_SEMI_DATA: Dict[type, SemiQuantumTypeData] = {
+    qp.Quint: SemiQuantumTypeData(
+        context_manager_func=None,
+        transform_func=_lval_quint_checker,
+        resolve_func=_mutable_resolve),
+    qp.Quint.Borrowed: SemiQuantumTypeData(
+        context_manager_func=_rval_quint_manager,
+        transform_func=None,
+        resolve_func=_immutable_resolve),
+    qp.Qubit: SemiQuantumTypeData(
+        context_manager_func=None,
+        transform_func=_lval_qubit_checker,
+        resolve_func=_mutable_resolve),
+    qp.Qubit.Borrowed: SemiQuantumTypeData(
+        context_manager_func=_rval_qubit_manager,
+        transform_func=None,
+        resolve_func=_immutable_resolve),
+    qp.Qubit.Control: SemiQuantumTypeData(
+        context_manager_func=_control_qubit_manager,
+        transform_func=_control_qubit_exposer,
+        resolve_func=_mutable_resolve),
+}
