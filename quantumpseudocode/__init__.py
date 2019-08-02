@@ -107,6 +107,7 @@ from quantumpseudocode.arithmetic import (
     TimesEqual,
     XorEqual,
     XorEqualConst,
+    GlobalPhaseOp,
 )
 
 from quantumpseudocode.qalloc import (

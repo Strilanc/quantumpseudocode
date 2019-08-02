@@ -38,6 +38,7 @@ from .lookup import (
 from .phase_flip import (
     OP_PHASE_FLIP,
     phase_flip,
+    GlobalPhaseOp,
 )
 
 from .toggle import (

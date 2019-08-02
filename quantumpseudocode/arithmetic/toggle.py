@@ -1,24 +1,28 @@
-from typing import List
+import cirq
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Op
+from quantumpseudocode.ops import Operation
 
 
-class Toggle(Op):
-    def emulate(self, *, lvalue: 'qp.IntBuf'):
-        for q in lvalue:
-            q.val = not q.val
+@cirq.value_equality
+class Toggle(Operation):
+    def __init__(self, lvalue: qp.Qureg):
+        self.targets = lvalue
 
-    def do(self,
-           controls: 'qp.QubitIntersection',
-           *,
-           lvalue: 'qp.Qureg'):
-        raise ValueError("The NOT gate is fundamental. "
-                         "It must be handled by the simulator, not decomposed.")
+    def validate_controls(self, controls: 'qp.QubitIntersection'):
+        assert set(self.targets).isdisjoint(controls.qubits)
+
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        sim_state.quint_buf(qp.Quint(self.targets))[:] ^= -1
+
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
+        raise ValueError(f"{self} must be emulated.")
 
     def inverse(self):
         return self
 
-    def describe(self, *, lvalue):
-        assert not isinstance(lvalue, qp.Qubit)
-        return 'Toggle {}'.format(lvalue)
+    def __repr__(self):
+        return f'qp.Toggle({self.targets})'
+
+    def _value_equality_values_(self):
+        return self.targets

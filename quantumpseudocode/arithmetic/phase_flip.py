@@ -1,22 +1,30 @@
 from typing import Union
 
+import cirq
+
 import quantumpseudocode as qp
 from quantumpseudocode.ops import Operation, Op
 
 
-class _PhaseFlipOp(Operation):
+@cirq.value_equality
+class GlobalPhaseOp(Operation):
+    def __init__(self, phase: float):
+        self.phase = phase % 360
+
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        sim_state.phase_degrees += 180
-        sim_state.phase_degrees %= 360
+        sim_state.phase_degrees += self.phase
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError("The phase flip gate is fundamental.")
 
     def inverse(self):
-        return self
+        return GlobalPhaseOp(-self.phase % 360)
+
+    def _value_equality_values_(self):
+        return self.phase
 
     def __repr__(self):
-        return 'qp.OP_PHASE_FLIP'
+        return 'qp.GlobalPhaseOp({!r})'.format(self.phase)
 
 
 def phase_flip(condition: 'Union[bool, qp.Qubit, qp.QubitIntersection, qp.RValue[bool]]' = True):
@@ -33,4 +41,4 @@ def phase_flip(condition: 'Union[bool, qp.Qubit, qp.QubitIntersection, qp.RValue
         raise NotImplementedError("Unknown phase flip condition: {!r}".format(condition))
 
 
-OP_PHASE_FLIP = _PhaseFlipOp()
+OP_PHASE_FLIP = GlobalPhaseOp(180)

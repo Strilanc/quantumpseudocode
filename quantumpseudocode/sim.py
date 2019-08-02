@@ -6,10 +6,6 @@ import quantumpseudocode.lens
 import quantumpseudocode.ops.operation
 
 
-def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
-    return lvalue
-
-
 class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.ClassicalSimState):
     def __init__(self,
                  enforce_release_at_zero: bool = True,
@@ -87,20 +83,26 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
 
     def modify(self, operation: 'qp.Operation'):
         op, cnt = qp.ControlledOperation.split(operation)
+        op.validate_controls(cnt)
 
         if isinstance(op, qp.AllocQuregOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            if isinstance(op.qureg, qp.NamedQureg):
-                assert op.qureg.name not in self._int_state, "Double allocated {}".format(op.qureg.name)
-                self._int_state[op.qureg.name] = qp.IntBuf.raw(
-                    val=random.randint(0, (1 << len(op.qureg)) - 1) if op.x_basis else 0,
-                    length=len(op.qureg))
-            else:
+            for name, length in _split_qureg(op.qureg):
+                assert name not in self._int_state, "Double allocated {}".format(name)
+                self._int_state[name] = qp.IntBuf.raw(
+                    val=random.randint(0, (1 << length) - 1) if op.x_basis else 0,
+                    length=length)
+            return []
+
+        if isinstance(op, qp.ReleaseQuregOperation):
+            if self.enforce_release_at_zero:
                 for q in op.qureg:
-                    assert q.name not in self._int_state, "Double allocated {}".format(q.name)
-                    self._int_state[q.name] = qp.IntBuf.raw(
-                        val=random.randint(0, 1) if op.x_basis else 0,
-                        length=1)
+                    if not op.dirty:
+                        assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
+
+            for name, _ in _split_qureg(op.qureg):
+                assert name in self._int_state
+                del self._int_state[name]
+
             return []
 
         if self.emulate_additions:
@@ -108,47 +110,19 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             o = op
             if isinstance(op, qp.InverseOperation):
                 o = op.sub
-            if isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
+            if isinstance(o, (qp.EffectIfLessThan)):
                 emulate = True
             if emulate:
                 operation.mutate_state(sim_state=self, forward=True)
                 return []
 
-        if isinstance(op, qp.ReleaseQuregOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-
-            for q in op.qureg:
-                if self.enforce_release_at_zero and not op.dirty:
-                    assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
-
-            if isinstance(op.qureg, qp.NamedQureg):
-                assert op.qureg.name in self._int_state
-                del self._int_state[op.qureg.name]
-            else:
-                for q in op.qureg:
-                    assert q.name in self._int_state
-                    del self._int_state[q.name]
-
-            return []
-
         if isinstance(op, (qp.MeasureOperation,
                            qp.StartMeasurementBasedUncomputation,
-                           qp.EndMeasurementBasedComputationOp)):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            op.mutate_state(self, True)
-            return []
-
-        if isinstance(op, qp.Toggle):
-            targets = op._args.pass_into(_toggle_targets)
-            assert set(targets).isdisjoint(cnt.qubits)
-            if cnt.bit and all(self._read_qubit(q) for q in cnt.qubits):
-                for t in targets:
-                    self._write_qubit(t, not self._read_qubit(t))
-            return []
-
-        if op == qp.OP_PHASE_FLIP:
+                           qp.EndMeasurementBasedComputationOp,
+                           qp.Toggle,
+                           qp.GlobalPhaseOp)):
             if self.resolve_location(cnt, False):
-                self.phase_degrees += 180
+                op.mutate_state(self, True)
             return []
 
         return [operation]
@@ -174,3 +148,9 @@ def _fuse(qubits: Iterable[qp.Qubit]) -> List[Tuple[str, slice]]:
             cur_end = cur_start + 1
     flush()
     return result
+
+
+def _split_qureg(qureg) -> List[Tuple[str, int]]:
+    if isinstance(qureg, qp.NamedQureg):
+        return [(qureg.name, len(qureg))]
+    return [(q.name, 1) for q in qureg]

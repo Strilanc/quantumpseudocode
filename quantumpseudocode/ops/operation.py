@@ -19,6 +19,9 @@ class ClassicalSimState:
 
 
 class Operation:
+    def validate_controls(self, controls: 'qp.QubitIntersection'):
+        pass
+
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
 

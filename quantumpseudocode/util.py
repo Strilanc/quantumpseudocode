@@ -192,7 +192,8 @@ def ccz_count(ops: Iterable['qp.Operation']) -> int:
             assert len(controls.qubits) <= 2
             if len(controls.qubits) == 2:
                 n += 1
-        elif op is qp.OP_PHASE_FLIP:
+        elif isinstance(op, qp.GlobalPhaseOp):
+            assert op == qp.OP_PHASE_FLIP
             assert len(controls.qubits) <= 3
             if len(controls.qubits) == 3:
                 n += 1

@@ -66,9 +66,9 @@ class LogCirqCircuit(qp.Lens):
             self.circuit.append(MeasureXFixupGate().on_each(*qubits),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
-        elif op == qp.OP_PHASE_FLIP:
+        elif isinstance(op, qp.GlobalPhaseOp):
             if controls.bit and len(controls.qubits):
-                g = cirq.Z
+                g = cirq.Z**(180 / op.phase)
                 for _ in range(len(controls.qubits) - 1):
                     g = cirq.ControlledGate(g)
                 ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
@@ -77,9 +77,8 @@ class LogCirqCircuit(qp.Lens):
 
         elif isinstance(op, qp.Toggle):
             ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
-            targets = op._args.pass_into(_toggle_targets)
-            if len(targets) and controls.bit:
-                targs = [cirq.NamedQubit(str(q)) for q in targets]
+            if len(op.targets) and controls.bit:
+                targs = [cirq.NamedQubit(str(q)) for q in op.targets]
                 self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
@@ -108,11 +107,10 @@ class CountNots(qp.Lens):
         op, controls = separate_controls(operation)
 
         if isinstance(op, qp.Toggle):
-            targets = op._args.pass_into(_toggle_targets)
             if len(controls.qubits) > 1:
-                self.counts[1] += 2 * (len(targets) - 1)
+                self.counts[1] += 2 * (len(op.targets) - 1)
                 self.counts[len(controls.qubits)] += 1
             else:
-                self.counts[len(controls.qubits)] += len(targets)
+                self.counts[len(controls.qubits)] += len(op.targets)
 
         return [operation]

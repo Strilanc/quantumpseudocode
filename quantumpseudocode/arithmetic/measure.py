@@ -113,6 +113,9 @@ class MeasureOperation(Generic[T], Operation):
         self.reset = reset
         self.raw_results = None
 
+    def validate_controls(self, controls: 'qp.QubitIntersection'):
+        assert controls == qp.QubitIntersection.ALWAYS
+
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError(f"{self} must be emulated.")
 
@@ -144,6 +147,9 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
         self.interpret = interpret
         self.raw_results = None
         self.captured_phase_degrees = None
+
+    def validate_controls(self, controls: 'qp.QubitIntersection'):
+        assert controls == qp.QubitIntersection.ALWAYS
 
     @property
     def results(self) -> T:
@@ -197,6 +203,9 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
 class EndMeasurementBasedComputationOp(Operation):
     def __init__(self, expected_phase_degrees: int):
         self.expected_phase_degrees = expected_phase_degrees
+
+    def validate_controls(self, controls: 'qp.QubitIntersection'):
+        assert controls == qp.QubitIntersection.ALWAYS
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         if sim_state.phase_degrees != self.expected_phase_degrees:
