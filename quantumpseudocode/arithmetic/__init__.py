@@ -18,7 +18,8 @@ from .mul import (
 )
 
 from .mult_add import (
-    PlusEqualProduct,
+    do_multiply_add,
+    do_classical_multiply_add,
 )
 
 from .measure import (

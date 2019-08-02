@@ -30,11 +30,11 @@ class ScaledIntRValue(RValue[int]):
             return other
 
         if isinstance(other, qp.Quint):
-            qp.emit(qp.PlusEqualProduct(
+            qp.arithmetic.do_multiply_add(
                 lvalue=other,
                 quantum_factor=self.coherent,
                 const_factor=self.constant,
-            ).controlled_by(controls))
+                control=controls)
             return other
 
         return NotImplemented
@@ -46,11 +46,11 @@ class ScaledIntRValue(RValue[int]):
     def init_storage_location(self,
                               location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):
-        qp.emit(qp.PlusEqualProduct(
+        qp.arithmetic.do_multiply_add(
             lvalue=location,
             quantum_factor=self.coherent,
             const_factor=self.constant,
-        ).controlled_by(controls))
+            control=controls)
 
 
 @cirq.value_equality

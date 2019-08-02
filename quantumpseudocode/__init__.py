@@ -102,7 +102,6 @@ from quantumpseudocode.arithmetic import (
     OP_PHASE_FLIP,
     Toggle,
     phase_flip,
-    PlusEqualProduct,
     swap,
     TimesEqual,
     XorEqual,
