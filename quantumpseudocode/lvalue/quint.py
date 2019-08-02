@@ -31,14 +31,16 @@ class Quint(LValue[int], RValue[int]):
         return qp.Quint(qp.NamedQureg(name, len(self)))
 
     def init_storage_location(self,
-                              location: Any,
+                              location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):
         location ^= self & qp.controlled_by(controls)
 
     def del_storage_location(self,
-                             location: Any,
+                             location: 'qp.Quint',
                              controls: 'qp.QubitIntersection'):
-        location ^= self & qp.controlled_by(controls)
+        with qp.measurement_based_uncomputation(location.qureg) as bits:
+            for b, q in zip(bits, self.qureg):
+                qp.phase_flip(b & q & controls)
 
     def _value_equality_values_(self):
         return self.qureg
