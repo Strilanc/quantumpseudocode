@@ -1,6 +1,8 @@
 import random
 from typing import Iterable, Sequence, Union
 
+import quantumpseudocode as qp
+
 
 class Buffer:
     """An abstract bit array interface."""
@@ -260,6 +262,9 @@ class IntBuf:
         """Generates an IntBuf with random contents and a length sampled from the given allowed value(s)."""
         length = length if isinstance(length, int) else random.choice(length)
         return IntBuf.raw(length=length, val=random.randint(0, 2**length-1))
+
+    def _rval_(self) -> 'qp.RValue':
+        return qp.IntRValue(int(self))
 
     def copy(self) -> 'IntBuf':
         return IntBuf.raw(length=len(self), val=int(self))

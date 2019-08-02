@@ -26,6 +26,9 @@ class Qubit:
         buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
         return buf if allow_mutate else bool(int(buf))
 
+    def _rval_(self):
+        return qp.QubitRValue(self)
+
     def _value_equality_values_(self):
         return self.name, self.index
 

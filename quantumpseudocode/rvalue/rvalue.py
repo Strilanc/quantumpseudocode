@@ -9,9 +9,11 @@ T = TypeVar('T')
 class RValue(Generic[T]):
     """A value or expression that only needs to exist temporarily."""
 
-    def trivial_unwrap(self):
+    def _rval_(self):
         return self
 
+    def trivial_unwrap(self):
+        return self
 
     def existing_storage_location(self) -> Any:
         return None
@@ -63,22 +65,21 @@ def rval(val: Any, default: Any = _raise_on_fail) -> 'qp.RValue[Any]':
 
     Args:
          val: The value that the caller wants as an rvalue.
+         default: Alternative result used when there is no associated rvalue.
+            If not specified, an error is raised when no associated rvalue
+            exists.
 
     Returns:
         A `qp.RValue` wrapper around the given candidate value.
     """
+    func = getattr(val, '_rval_', None)
+    if func is not None:
+        return func()
+
     if isinstance(val, bool):
         return qp.BoolRValue(val)
     if isinstance(val, int):
         return qp.IntRValue(val)
-    if isinstance(val, qp.IntBuf):
-        return qp.IntRValue(int(val))
-    if isinstance(val, qp.Qubit):
-        return qp.QubitRValue(val)
-    if isinstance(val, qp.Quint):
-        return qp.QuintRValue(val)
-    if isinstance(val, qp.RValue):
-        return val
     if default is not _raise_on_fail:
         return default
     raise NotImplementedError(
