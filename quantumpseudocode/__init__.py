@@ -101,8 +101,6 @@ from quantumpseudocode.arithmetic import (
     phase_flip,
     swap,
     TimesEqual,
-    XorEqual,
-    XorEqualConst,
     GlobalPhaseOp,
 )
 

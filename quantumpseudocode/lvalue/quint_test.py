@@ -53,18 +53,30 @@ def test_ixor():
 
     with qp.capture() as out:
         q ^= 5
-    assert out == [qp.XorEqualConst(lvalue=q, mask=5)]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q[0], q[2]]))]
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
     with qp.capture() as out:
         q ^= q2
-    assert out == [qp.XorEqual(lvalue=q, mask=q2)]
+    assert out == [
+        qp.Toggle(lvalue=qp.RawQureg([q[0]])).controlled_by(q2[0]),
+        qp.Toggle(lvalue=qp.RawQureg([q[1]])).controlled_by(q2[1]),
+        qp.Toggle(lvalue=qp.RawQureg([q[2]])).controlled_by(q2[2]),
+        qp.Toggle(lvalue=qp.RawQureg([q[3]])).controlled_by(q2[3]),
+        qp.Toggle(lvalue=qp.RawQureg([q[4]])).controlled_by(q2[4]),
+    ]
 
     q3 = qp.Quint(qp.NamedQureg('test3', 5))
     c = qp.Qubit('c')
     with qp.capture() as out:
         q ^= q3 & qp.controlled_by(c)
-    assert out == [qp.XorEqual(lvalue=q, mask=q3).controlled_by(c)]
+    assert out == [
+        qp.Toggle(lvalue=qp.RawQureg([q[0]])).controlled_by(q3[0] & c),
+        qp.Toggle(lvalue=qp.RawQureg([q[1]])).controlled_by(q3[1] & c),
+        qp.Toggle(lvalue=qp.RawQureg([q[2]])).controlled_by(q3[2] & c),
+        qp.Toggle(lvalue=qp.RawQureg([q[3]])).controlled_by(q3[3] & c),
+        qp.Toggle(lvalue=qp.RawQureg([q[4]])).controlled_by(q3[4] & c),
+    ]
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
