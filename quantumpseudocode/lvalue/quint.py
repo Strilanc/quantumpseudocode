@@ -9,16 +9,13 @@ from quantumpseudocode.rvalue import RValue
 
 
 @cirq.value_equality
-class Quint(LValue[int], RValue[int]):
+class Quint(RValue[int], LValue[int]):
     class Borrowed(Protocol):
         # Union[int, 'qp.Quint', 'qp.RValue[int]']
         pass
 
     def __init__(self, qureg: 'qp.Qureg'):
         self.qureg = qureg
-
-    def _rval_(self):
-        return self
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         buf = sim_state.quint_buf(self)

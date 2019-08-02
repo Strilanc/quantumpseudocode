@@ -26,7 +26,6 @@ from quantumpseudocode.rvalue import (
     rval,
     RValue,
     QubitIntersection,
-    QubitRValue,
     QuregRValue,
     ScaledIntRValue,
 )

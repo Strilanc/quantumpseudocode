@@ -9,7 +9,6 @@ from .expression import (
 )
 
 from .backed import (
-    QubitRValue,
     QuregRValue,
 )
 

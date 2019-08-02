@@ -1,14 +1,15 @@
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import cirq
 from typing_extensions import Protocol
 
 import quantumpseudocode as qp
 from .lvalue import LValue
+from quantumpseudocode.rvalue import RValue
 
 
 @cirq.value_equality
-class Qubit(LValue[bool]):
+class Qubit(RValue[bool], LValue[bool]):
     class Borrowed(Protocol):
         # Union[int, 'qp.Qubit', 'qp.RValue[bool]']
         pass
@@ -27,8 +28,22 @@ class Qubit(LValue[bool]):
         buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
         return buf if allow_mutate else bool(int(buf))
 
-    def _rval_(self):
-        return qp.QubitRValue(self)
+    def existing_storage_location(self) -> Any:
+        return self
+
+    def make_storage_location(self, name: Optional[str] = None):
+        return qp.Qubit(name)
+
+    def init_storage_location(self,
+                              location: 'qp.Qubit',
+                              controls: 'qp.QubitIntersection'):
+        location ^= self & qp.controlled_by(controls)
+
+    def del_storage_location(self,
+                             location: 'qp.Qubit',
+                             controls: 'qp.QubitIntersection'):
+        with qp.measurement_based_uncomputation(location) as bit:
+            qp.phase_flip(bit & self & controls)
 
     def _value_equality_values_(self):
         return self.name, self.index
