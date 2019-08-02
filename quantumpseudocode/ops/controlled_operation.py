@@ -11,24 +11,26 @@ class ControlledOperation(Operation):
     def __init__(self,
                  uncontrolled: 'qp.Operation',
                  controls: 'qp.QubitIntersection'):
+        if isinstance(uncontrolled, ControlledOperation):
+            controls = controls & uncontrolled.controls
+            uncontrolled = uncontrolled.uncontrolled
         self.controls = controls
         self.uncontrolled = uncontrolled
 
     def _value_equality_values_(self):
         return self.controls, self.uncontrolled
 
-    def state_locations(self) -> 'qp.ArgsAndKwargs':
-        return qp.ArgsAndKwargs([
-            qp.RawQureg(self.controls),
-            self.uncontrolled.state_locations()
-        ], {})
+    @staticmethod
+    def split(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
+        if isinstance(op, qp.ControlledOperation):
+            return op.uncontrolled, op.controls
+        return op, qp.QubitIntersection.ALWAYS
 
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
-        c, v = args.args
-        if isinstance(c, qp.Mutable):
-            c = c.val
-        if all(c):
-            self.uncontrolled.mutate_state(forward, v)
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        c = sim_state.quint_buf(qp.Quint(qp.RawQureg(self.controls.qubits)))
+        controls_satisfied = int(c) == (1 << len(c)) - 1
+        if controls_satisfied:
+            self.uncontrolled.mutate_state(sim_state=sim_state, forward=forward)
 
     def inverse(self):
         return ControlledOperation(self.uncontrolled.inverse(), self.controls)

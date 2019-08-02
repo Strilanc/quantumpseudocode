@@ -10,12 +10,13 @@ class PlusEqualConstMod(Op):
     @staticmethod
     def biemulate(forward: bool,
                   *,
-                  lvalue: 'qp.Mutable[int]',
+                  lvalue: 'qp.IntBuf',
                   offset: int,
                   modulus: int):
-        assert lvalue.val < modulus
+        v = int(lvalue)
+        assert v < modulus
         sign = 1 if forward else -1
-        lvalue.val = (lvalue.val + offset * sign) % modulus
+        lvalue[:] = (v + offset * sign) % modulus
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',
@@ -25,11 +26,19 @@ class PlusEqualConstMod(Op):
            modulus: int):
         assert 0 <= offset < modulus
         assert isinstance(lvalue, qp.Quint)
+        assert modulus > 0
+        n = (modulus - 1).bit_length()
+        assert len(lvalue) >= n
+
+        if not modulus & (modulus - 1):
+            lvalue += offset & qp.controlled_by(controls)
+            return
+
         with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
-            q.init(lvalue >= modulus - offset)
+            q.init(lvalue >= modulus - offset, controls=controls)
             lvalue += offset & qp.controlled_by(controls)
             lvalue -= modulus & qp.controlled_by(q & controls)
-            q.clear(lvalue < offset)
+            q.clear(lvalue < offset, controls=controls)
 
     @staticmethod
     def describe(*, lvalue, offset, modulus):
@@ -44,12 +53,13 @@ class PlusEqualMod(Op):
     @staticmethod
     def biemulate(forward: bool,
                   *,
-                  lvalue: 'qp.Mutable[int]',
+                  lvalue: 'qp.IntBuf',
                   offset: int,
                   modulus: int):
-        assert lvalue.val < modulus
+        v = int(lvalue)
+        assert v < modulus
         sign = 1 if forward else -1
-        lvalue.val = (lvalue.val + offset * sign) % modulus
+        lvalue[:] = (v + offset * sign) % modulus
 
     @staticmethod
     def do(controls: 'qp.QubitIntersection',
@@ -59,18 +69,25 @@ class PlusEqualMod(Op):
            modulus: int):
         assert len(offset) <= len(lvalue)
         assert isinstance(lvalue, qp.Quint)
-        with qp.pad(offset, min_len=len(lvalue)) as p:
-            p_off = qp.Quint(p)
-            with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
-                p_off ^= -1
-                p_off += modulus + 1
-                q.init(lvalue >= p_off)
-                p_off -= modulus + 1
-                p_off ^= -1
+        assert modulus > 0
+        n = (modulus - 1).bit_length()
+        assert len(lvalue) >= n
 
-                lvalue += p_off & qp.controlled_by(controls)
+        if not modulus & (modulus - 1):
+            lvalue += offset & qp.controlled_by(controls)
+            return
+
+        with offset.hold_padded_to(n) as offset:
+            with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
+                offset ^= -1
+                offset += modulus + 1
+                q.init(lvalue >= offset, controls=controls)
+                offset -= modulus + 1
+                offset ^= -1
+
+                lvalue += offset & qp.controlled_by(controls)
                 lvalue -= modulus & qp.controlled_by(q & controls)
-                q.clear(lvalue < offset)
+                q.clear(lvalue < offset, controls=controls)
 
     @staticmethod
     def describe(*, lvalue, offset, modulus):

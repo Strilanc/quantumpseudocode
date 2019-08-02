@@ -1,6 +1,7 @@
 import cirq
 import inspect
 from typing import Callable, TypeVar, Generic, List, Dict, Iterable, Any, get_type_hints, Optional, Tuple
+import quantumpseudocode as qp
 
 T = TypeVar('T')
 T2 = TypeVar('T2')
@@ -39,6 +40,9 @@ class ArgsAndKwargs(Generic[T]):
     def __init__(self, args: List[T], kwargs: Dict[str, T]):
         self.args = args
         self.kwargs = kwargs
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.map(lambda e: sim_state.resolve_location(e, allow_mutate))
 
     def _value_equality_values_(self):
         return self.args, self.kwargs
@@ -169,3 +173,27 @@ def popcnt(x: int) -> int:
         x &= x - 1
         t += 1
     return t
+
+
+def little_endian_int(bits: List[bool]) -> int:
+    t = 0
+    for b in reversed(bits):
+        t <<= 1
+        if b:
+            t |= 1
+    return t
+
+
+def ccz_count(ops: Iterable['qp.Operation']) -> int:
+    n = 0
+    for op in ops:
+        op, controls = qp.ControlledOperation.split(op)
+        if isinstance(op, qp.Toggle):
+            assert len(controls.qubits) <= 2
+            if len(controls.qubits) == 2:
+                n += 1
+        elif op is qp.OP_PHASE_FLIP:
+            assert len(controls.qubits) <= 3
+            if len(controls.qubits) == 3:
+                n += 1
+    return n

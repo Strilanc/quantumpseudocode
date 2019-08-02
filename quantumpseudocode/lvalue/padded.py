@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Callable, Any
 
 import quantumpseudocode as qp
 
@@ -6,7 +6,7 @@ import quantumpseudocode as qp
 def pad(base: 'Union[qp.Qureg, qp.Quint]', *, min_len: int) -> 'qp.PaddedQureg':
     assert min_len >= 0
     if isinstance(base, qp.Quint):
-        return PaddedQureg(base.qureg, min_len)
+        return PaddedQureg(base.qureg, min_len, qp.Quint)
     else:
         return PaddedQureg(base, min_len)
 
@@ -18,10 +18,11 @@ def pad_all(*bases: 'Union[qp.Qureg, qp.Quint]',
 
 
 class PaddedQureg:
-    def __init__(self, base: 'qp.Qureg', min_len: int):
+    def __init__(self, base: 'qp.Qureg', min_len: int, wrapper: Callable[[Any], Any] = lambda e: e):
         self.base = base
         self.padded = None
         self.min_len = min_len
+        self.wrapper = wrapper
 
     def __len__(self):
         return len(self.padded)
@@ -31,14 +32,14 @@ class PaddedQureg:
 
     def __enter__(self) -> 'qp.Qureg':
         if len(self.base) >= self.min_len:
-            return self.base
+            return self.wrapper(self.base)
 
         assert self.padded is None
         sub_name = str(self.base) if isinstance(self.base, qp.NamedQureg) else ''
         q = qp.NamedQureg('{}_pad'.format(sub_name), self.min_len - len(self.base))
         qp.emit(qp.AllocQuregOperation(q))
         self.padded = q
-        return qp.RawQureg(list(self.base) + list(q))
+        return self.wrapper(qp.RawQureg(list(self.base) + list(q)))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if len(self.base) >= self.min_len:

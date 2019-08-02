@@ -8,13 +8,13 @@ def test_cmp():
         with qp.qmanaged_int(bits=4) as t:
             t.init(2)
             with qp.hold(t >= 2) as q:
-                assert qp.measure(q, reset=True)
+                assert qp.measure(q)
             with qp.hold(t > 2) as q:
-                assert not qp.measure(q, reset=True)
+                assert not qp.measure(q)
             with qp.hold(t <= 2) as q:
-                assert qp.measure(q, reset=True)
+                assert qp.measure(q)
             with qp.hold(t < 2) as q:
-                assert not qp.measure(q, reset=True)
+                assert not qp.measure(q)
             assert qp.measure(t, reset=True) == 2
 
 
@@ -29,7 +29,7 @@ def test_if_less_than_then_circuit():
                                 lhs=lhs,
                                 rhs=rhs,
                                 or_equal=c,
-                                effect=qp.Toggle(qp.RawQureg([t]))))
+                                effect=qp.Toggle(lvalue=qp.RawQureg([t]))))
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _or_eq: ---X-------@---@-------------------------------------------------------------------------------------------------------@---@-------X---

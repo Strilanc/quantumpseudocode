@@ -58,19 +58,19 @@ def hold(val: Union[T, 'qp.RValue[T]', 'qp.Qubit', 'qp.Quint'],
     """
     return qp.HeldRValueManager(
         qp.rval(val),
-        controls=controls or qp.QubitIntersection.EMPTY,
+        controls=qp.QubitIntersection.ALWAYS if controls is None else controls,
         name=name)
 
 
 class HeldRValueManager(Generic[T]):
     def __init__(self, rvalue: 'qp.RValue[T]',
                  *,
-                 controls: 'qp.QubitIntersection',
+                 controls: 'qp.QubitIntersection' = None,
                  name: str = ''):
         assert isinstance(name, str)
         self.name = name
         self.rvalue = rvalue
-        self.controls = controls
+        self.controls = controls if controls is not None else qp.QubitIntersection.ALWAYS
         self.location = None  # type: Optional[Any]
         self.qalloc = None  # type: Optional[Any]
 

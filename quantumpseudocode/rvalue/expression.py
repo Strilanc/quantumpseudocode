@@ -25,12 +25,16 @@ class ScaledIntRValue(RValue[int]):
             self.coherent, self.constant)
 
     def __riadd__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
         if isinstance(other, qp.Quint):
             qp.emit(qp.PlusEqualProduct(
                 lvalue=other,
                 quantum_factor=self.coherent,
                 const_factor=self.constant,
-            ))
+            ).controlled_by(controls))
             return other
 
         return NotImplemented
@@ -58,44 +62,53 @@ class ScaledIntRValue(RValue[int]):
 
 @cirq.value_equality
 class QubitIntersection(RValue[bool]):
-    """The logical-and of several qubits."""
+    """The logical-and of several qubits and bits."""
 
-    EMPTY = None # type: QubitIntersection
+    ALWAYS = None # type: QubitIntersection
+    NEVER = None # type: QubitIntersection
 
-    def __init__(self, qubits: Tuple['qp.Qubit', ...]):
-        self.qubits = tuple(qubits)
+    def __init__(self, qubits: Tuple['qp.Qubit', ...] = (), bit: bool = True):
+        assert all(isinstance(e, qp.Qubit) for e in qubits)
+        self.qubits = tuple(qubits) if bit else ()
+        self.bit = bool(bit)
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool) -> bool:
+        v = qp.Quint(qp.RawQureg(self.qubits)).resolve(sim_state, False)
+        return self.bit and v == (1 << len(self.qubits)) - 1
 
     def _value_equality_values_(self):
-        return frozenset(self.qubits)
-
-    def __getitem__(self, item):
-        if isinstance(item, int):
-            return self.qubits[item]
-        return NotImplemented
-
-    def __len__(self):
-        return len(self.qubits)
+        return self.bit and frozenset(self.qubits)
 
     def __rand__(self, other):
         return self.__and__(other)
 
     def __and__(self, other):
         if isinstance(other, QubitIntersection):
-            return QubitIntersection(self.qubits + other.qubits)
+            return QubitIntersection(self.qubits + other.qubits, bit=self.bit and other.bit)
         if isinstance(other, qp.Qubit):
-            return QubitIntersection(self.qubits + (other,))
+            return QubitIntersection(self.qubits + (other,), bit=self.bit)
+        if other in [False, 0]:
+            return qp.QubitIntersection.NEVER
+        if other in [True, 1]:
+            return self
         return NotImplemented
 
     def qureg_deps(self) -> Iterable['qp.Qureg']:
         return qp.RawQureg(self.qubits)
 
     def value_from_resolved_deps(self, args: Tuple[int, ...]) -> bool:
-        return all(args)
+        return self.bit and all(args)
 
     def __rixor__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
         if isinstance(other, qp.Qubit):
-            qp.emit(qp.Toggle(qp.RawQureg([other])).controlled_by(self))
-            return self
+            if self.bit:
+                qp.emit(qp.Toggle(lvalue=qp.RawQureg([other])).controlled_by(self & controls))
+            return other
+
         return NotImplemented
 
     def make_storage_location(self, name: Optional[str] = None):
@@ -105,19 +118,26 @@ class QubitIntersection(RValue[bool]):
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
         t = qp.RawQureg([location])
-        qp.emit(qp.Toggle(t).controlled_by(self & controls))
+        qp.emit(qp.Toggle(lvalue=t).controlled_by(self & controls))
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        if qp.measure_x_for_phase_fixup_and_reset(location):
-            qp.phase_flip(self & controls)
+        with qp.measurement_based_uncomputation(location) as b:
+            qp.phase_flip(self & controls & b)
 
     def __str__(self):
-        return ' & '.join(str(e) for e in self)
+        if not self.bit:
+            return 'never'
+        if not self.qubits:
+            return 'always'
+        return ' & '.join(str(e) for e in self.qubits)
 
     def __repr__(self):
+        if not self.bit:
+            return 'qp.QubitIntersection(bit=False)'
         return 'qp.QubitIntersection({!r})'.format(self.qubits)
 
 
-QubitIntersection.EMPTY = QubitIntersection(())
+QubitIntersection.ALWAYS = QubitIntersection()
+QubitIntersection.NEVER = QubitIntersection(bit=False)

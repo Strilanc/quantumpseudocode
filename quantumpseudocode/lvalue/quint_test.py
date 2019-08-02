@@ -32,21 +32,11 @@ def test_len_getitem():
         qp.NamedQureg(h, 10), range(2, 4)))
 
 
-def test_set_item():
+def test_set_item_blocks():
     q = qp.Quint(qp.NamedQureg('test', 10))
 
     with pytest.raises(NotImplementedError):
         q[2] = qp.Qubit()
-
-    with qp.capture() as out:
-        q[2] ^= q[3]
-    assert out == [qp.Toggle(qp.RawQureg([q[2]])).controlled_by(q[3])]
-
-    with qp.capture() as out:
-        q[2:] += 5
-    assert out == [qp.PlusEqual(lvalue=q[2:],
-                                offset=5,
-                                carry_in=False)]
 
 
 def test_mul_rmul():
@@ -63,18 +53,18 @@ def test_ixor():
 
     with qp.capture() as out:
         q ^= 5
-    assert out == [qp.XorEqualConst(q, 5)]
+    assert out == [qp.XorEqualConst(lvalue=q, mask=5)]
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
     with qp.capture() as out:
         q ^= q2
-    assert out == [qp.XorEqual(q, q2)]
+    assert out == [qp.XorEqual(lvalue=q, mask=q2)]
 
     q3 = qp.Quint(qp.NamedQureg('test3', 5))
     c = qp.Qubit('c')
     with qp.capture() as out:
         q ^= q3 & qp.controlled_by(c)
-    assert out == [qp.XorEqual(q, q3).controlled_by(c)]
+    assert out == [qp.XorEqual(lvalue=q, mask=q3).controlled_by(c)]
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
@@ -94,31 +84,20 @@ def test_iadd_isub():
 
     with qp.capture() as out:
         q += 5
-    assert out == [qp.PlusEqual(lvalue=q,
-                                offset=5,
-                                carry_in=False)]
+    assert qp.ccz_count(out) == 18
 
     with qp.capture() as out:
         q += 4
-    assert out == [qp.PlusEqual(lvalue=q[2:],
-                                offset=1,
-                                carry_in=False)]
+    assert qp.ccz_count(out) == 14
 
     with qp.capture() as out:
         q -= 3
-    assert out == [
-        qp.InverseOperation(qp.PlusEqual(
-            lvalue=q,
-            offset=3,
-            carry_in=False))
-    ]
+    assert qp.ccz_count(out) == 18
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
     with qp.capture() as out:
         q += q2
-    assert out == [qp.PlusEqual(lvalue=q,
-                                offset=q2,
-                                carry_in=False)]
+    assert qp.ccz_count(out) == 18
 
     # Classes can specify custom behavior via __riadd__.
     class Riadd:

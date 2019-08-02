@@ -10,10 +10,15 @@ class UnaryRValue(qp.RValue[int]):
         self.binary = binary
 
     def __rixor__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
         if isinstance(other, qp.Quint):
             t = qp.LookupTable(1 << k for k in range(1 << len(self.binary)))
-            other ^= t[self.binary]
+            other ^= t[self.binary] & qp.controlled_by(controls)
             return other
+
         return NotImplemented
 
     def qureg_deps(self) -> Iterable['qp.Qureg']:

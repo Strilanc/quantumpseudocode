@@ -11,6 +11,12 @@ class QubitRValue(RValue[bool]):
     def __init__(self, val: 'qp.Qubit'):
         self.val = val
 
+    def trivial_unwrap(self):
+        return self.val
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.val.resolve(sim_state, False)
+
     def _value_equality_values_(self):
         return self.val
 
@@ -49,6 +55,12 @@ class QuintRValue(RValue[int]):
     def __init__(self, val: 'qp.Quint'):
         self.val = val
 
+    def trivial_unwrap(self):
+        return self.val
+
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        return self.val.resolve(sim_state, False)
+
     def _value_equality_values_(self):
         return self.val
 
@@ -68,12 +80,12 @@ class QuintRValue(RValue[int]):
     def init_storage_location(self,
                               location: Any,
                               controls: 'qp.QubitIntersection'):
-        qp.emit(qp.XorEqual(location, self.val).controlled_by(controls))
+        qp.emit(qp.XorEqual(lvalue=location, mask=self.val).controlled_by(controls))
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        qp.emit(qp.XorEqual(location, self.val).controlled_by(controls))
+        qp.emit(qp.XorEqual(lvalue=location, mask=self.val).controlled_by(controls))
 
     def __str__(self):
         return 'rval({})'.format(self.val)

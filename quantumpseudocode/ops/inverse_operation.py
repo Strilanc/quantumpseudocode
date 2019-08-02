@@ -16,11 +16,8 @@ class InverseOperation(Operation):
         with qp.invert():
             self.sub.emit_ops(controls)
 
-    def state_locations(self):
-        return self.sub.state_locations()
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
-        self.sub.mutate_state(not forward, args)
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        self.sub.mutate_state(sim_state=sim_state, forward=not forward)
 
     def inverse(self):
         return self.sub

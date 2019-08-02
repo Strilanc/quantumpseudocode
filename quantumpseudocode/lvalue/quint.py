@@ -1,3 +1,5 @@
+from typing import Union, ContextManager
+
 import cirq
 
 import quantumpseudocode as qp
@@ -5,11 +7,20 @@ import quantumpseudocode as qp
 
 @cirq.value_equality
 class Quint:
+    Borrowed = Union[int, 'qp.Quint', 'qp.RValue[int]']
+
     def __init__(self, qureg: 'qp.Qureg'):
         self.qureg = qureg
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        buf = sim_state.quint_buf(self)
+        return buf if allow_mutate else int(buf)
+
     def _value_equality_values_(self):
         return self.qureg
+
+    def hold_padded_to(self, min_len: int) -> ContextManager['qp.Quint']:
+        return qp.pad(self, min_len=min_len)
 
     def __len__(self):
         return len(self.qureg)
@@ -29,14 +40,14 @@ class Quint:
              controls: 'qp.QubitIntersection' = None):
         qp.emit(
             qp.LetRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.EMPTY))
+                controls or qp.QubitIntersection.ALWAYS))
 
     def clear(self,
               value: 'qp.RValue[int]',
               controls: 'qp.QubitIntersection' = None):
         qp.emit(
             qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.EMPTY))
+                controls or qp.QubitIntersection.ALWAYS))
 
     def __setitem__(self, key, value):
         if value != self[key]:
@@ -75,44 +86,42 @@ class Quint:
                                  qp.rval(False))
 
     def __ixor__(self, other):
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
         if isinstance(other, int):
-            qp.emit(qp.XorEqualConst(self, other))
+            qp.emit(qp.XorEqualConst(lvalue=self, mask=other).controlled_by(controls))
             return self
 
         if isinstance(other, Quint):
-            qp.emit(qp.XorEqual(self, other))
-            return self
-
-        if (isinstance(other, qp.ControlledRValue)
-                and isinstance(other.rvalue, qp.QuintRValue)):
-            qp.emit(qp.XorEqual(self, other.rvalue.val
-                                ).controlled_by(other.controls))
+            qp.emit(qp.XorEqual(lvalue=self, mask=other).controlled_by(controls))
             return self
 
         rev = getattr(other, '__rixor__', None)
         if rev is not None:
-            return rev(self)
+            return rev(qp.ControlledLValue(controls, self))
 
         return NotImplemented
 
     def __iadd__(self, other):
-        rev = getattr(other, '__riadd__', None)
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
+        other_rval = qp.rval(other, default=other)
+        rev = getattr(other_rval, '__riadd__', None)
         if rev is not None:
-            result = rev(self)
+            result = rev(qp.ControlledLValue(controls, self))
             if result is not NotImplemented:
                 return result
 
-        rval_other = qp.rval(other, None)
-        rev = getattr(rval_other, '__riadd__', None)
-        if rev is not None:
-            result = rev(self)
-            if result is not NotImplemented:
-                return result
-
-        if isinstance(other, (qp.RValue, qp.Quint)):
-            qp.emit(qp.PlusEqual(lvalue=self,
-                                 offset=other,
-                                 carry_in=False))
+        if isinstance(other, (qp.Quint, qp.RValue)):
+            qp.arithmetic.do_addition(
+                lvalue=self,
+                offset=other,
+                carry_in=False,
+                control=controls)
             return self
 
         return NotImplemented

@@ -1,5 +1,6 @@
 import functools
-from typing import Union, Any
+import inspect
+from typing import Union, Any, get_type_hints, List, Callable, Dict
 
 import cirq
 
@@ -32,9 +33,6 @@ class Op(Operation):
     def inv_type(self):
         return None
 
-    def state_locations(self):
-        return self._args
-
     def inverse(self):
         inv = self.inv_type()
         if inv is None:
@@ -63,32 +61,57 @@ class Op(Operation):
             class_name = type(self).__name__
         return '{}({})'.format(class_name, self._args.repr_args())
 
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        do_sig = _paramsNameToTypeMap(self.do, ['controls'])
         if hasattr(self, 'biemulate'):
-            matched = args.match_parameters(self.biemulate, skip=1)
-            unwrapped = matched.map(_unwrap_untagged_mutable)
-            unwrapped.pass_into(functools.partial(self.biemulate, forward))
-            return
+            emu_sig = _paramsNameToTypeMap(self.biemulate, ['forward'])
+        elif hasattr(self, 'emulate'):
+            emu_sig = _paramsNameToTypeMap(self.emulate, [])
+        else:
+            raise NotImplementedError(
+                '{} must implement emulate or biemulate.'.format(
+                    type(self).__name__))
+        desc_sig = _paramsNameToTypeMap(self.describe, [], allow_none=True)
 
-        if hasattr(self, 'emulate'):
+        assert do_sig.keys() == emu_sig.keys() == desc_sig.keys() == self._args.kwargs.keys()
+        assert len(self._args.args) == 0
+        args = self._args.resolve(sim_state, True)
+        if hasattr(self, 'biemulate'):
+            args.pass_into(functools.partial(self.biemulate, forward))
+        else:
             if not forward:
-                self.inverse().mutate_state(True, args)
+                self.inverse().mutate_state(sim_state, True)
                 return
-            matched = args.match_parameters(self.emulate)
-            unwrapped = matched.map(_unwrap_untagged_mutable)
-            unwrapped.pass_into(self.emulate)
-            return
+            args.pass_into(functools.partial(self.emulate))
 
-        raise NotImplementedError(
-            '{} must implement emulate or biemulate.'.format(
-                type(self).__name__))
+
+def _paramsNameToTypeMap(func: Callable,
+                         skipped_parameters: List[str],
+                         allow_none: bool = False) -> Dict[str, type]:
+    result: Dict[str, type] = {}
+    sig = inspect.signature(func)
+    type_hints = get_type_hints(func)
+    for parameter in sig.parameters.values():
+        if parameter.name not in skipped_parameters:
+            assert parameter.kind == inspect.Parameter.KEYWORD_ONLY, (
+                f'Parameter {parameter.name} must be keyword-only '
+                '(i.e. come after a "*," or "*args," argument) on function '
+                f'{func}.'
+            )
+            t = type_hints.get(parameter.name, None)
+            assert t is not None or allow_none
+            result[parameter.name] = t
+    return result
 
 
 def _unwrap_untagged_mutable(a: qp.ArgParameter):
-    # If it's not type tagged as mutable, don't expose it as mutable.
-    if (isinstance(a.arg, qp.Mutable) and
-            getattr(a.parameter_type, '__origin__', None) is not qp.Mutable):
-        return a.arg.val
+    assert a.parameter_type is not None, (
+        f'Parameter "{a.parameter.name}" must have a type annotation.')
+    assert isinstance(a.arg, a.parameter_type), (
+        f'Parameter "{a.parameter.name}" has '
+        f'type annotation "{a.parameter_type}" '
+        f'but was passed an argument of type {type(a.arg)}.\n'
+        f'Arg: {a.arg}.')
     return a.arg
 
 

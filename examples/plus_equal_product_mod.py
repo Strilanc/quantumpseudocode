@@ -6,8 +6,7 @@ def plus_equal_product_mod_classic(target: QuintMod,
                                    y: Quint):
     N = target.modulus
     for i in range(len(y)):
-        with controlled_by(y[i]):
-            target += (k * 2**i % N)
+        target += (k * 2**i % N) & controlled_by(y[i])
 
 
 def plus_equal_product_mod_windowed(target: QuintMod,

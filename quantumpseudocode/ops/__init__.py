@@ -3,6 +3,7 @@ from .operation import (
     FlagOperation,
     LetRValueOperation,
     DelRValueOperation,
+    ClassicalSimState,
 )
 
 from .inverse_operation import (
@@ -14,7 +15,6 @@ from .controlled_operation import (
 )
 
 from .misc import (
-    Mutable,
     SubEffect,
     HeldMultipleRValue,
 )
@@ -22,4 +22,8 @@ from .misc import (
 from .simple_op import (
     Op,
     SigHoldArgTypes,
+)
+
+from .semi_quantum import (
+    semi_quantum,
 )

@@ -1,4 +1,5 @@
-from typing import Iterable
+import random
+from typing import Iterable, Sequence, Union
 
 
 class Buffer:
@@ -80,6 +81,21 @@ class RawConcatBuffer(Buffer):
         assert buf0 is not buf1
         self.buf0 = buf0
         self.buf1 = buf1
+
+    @staticmethod
+    def balanced_concat(parts: Sequence[Buffer]) -> 'Buffer':
+        """Creates a buffer over many concatenated parts.
+
+        Arranges RawConcatBuffer instances into a balanced search tree.
+        """
+        if len(parts) == 0:
+            return RawIntBuffer(val=0, length=0)
+        if len(parts) == 1:
+            return parts[0]
+        middle = len(parts) >> 1
+        return RawConcatBuffer(
+            RawConcatBuffer.balanced_concat(parts[:middle]),
+            RawConcatBuffer.balanced_concat(parts[middle:]))
 
     def __getitem__(self, item):
         n = len(self.buf0)
@@ -228,6 +244,7 @@ class IntBuf:
 
     def __init__(self, buffer: Buffer):
         self._buf = buffer
+        assert isinstance(buffer, Buffer), 'Not a Buffer: {!r}'.format(buffer)
 
     def signed_int(self) -> int:
         """Return value as a signed int instead of an unsigned int."""
@@ -237,6 +254,15 @@ class IntBuf:
         if self[len(self) - 1]:
             result -= 1 << len(self)
         return result
+
+    @staticmethod
+    def random(length: Union[int, range, Iterable[int]]) -> 'IntBuf':
+        """Generates an IntBuf with random contents and a length sampled from the given allowed value(s)."""
+        length = length if isinstance(length, int) else random.choice(length)
+        return IntBuf.raw(length=length, val=random.randint(0, 2**length-1))
+
+    def copy(self) -> 'IntBuf':
+        return IntBuf.raw(length=len(self), val=int(self))
 
     def __len__(self):
         """The number of bits in this fixed-width integer."""

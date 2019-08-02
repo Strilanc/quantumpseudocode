@@ -1,16 +1,28 @@
-from typing import Union, Any
+from typing import Union, Any, Callable
+
+import cirq
 
 import quantumpseudocode as qp
+
+
+class ClassicalSimState:
+    phase_degrees: float
+
+    def measurement_based_uncomputation_result_chooser(self) -> Callable[[], bool]:
+        raise NotImplementedError()
+
+    def quint_buf(self, quint: 'qp.Quint') -> 'qp.IntBuf':
+        raise NotImplementedError()
+
+    def resolve_location(self, loc: Any, allow_mutate: bool) -> Any:
+        pass
 
 
 class Operation:
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
 
-    def state_locations(self) -> 'qp.ArgsAndKwargs[Union[qp.Qureg, qp.Qubit, qp.Quint], Any]':
-        raise NotImplementedError('state_locations not implemented by {!r}'.format(self))
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs') -> None:
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
 
     def inverse(self) -> 'Operation':
@@ -20,22 +32,20 @@ class Operation:
                                             'qp.QubitIntersection']):
         if isinstance(controls, qp.Qubit):
             return qp.ControlledOperation(self, qp.QubitIntersection((controls,)))
-        if len(controls) == 0:
+        if controls == qp.QubitIntersection.ALWAYS:
             return self
         return qp.ControlledOperation(self, controls)
 
 
 class FlagOperation(Operation):
-    def state_locations(self):
-        return ()
-
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
 
     def inverse(self):
         raise NotImplementedError('{!r} has no defined inverse'.format(self))
 
 
+@cirq.value_equality
 class LetRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
         self.rvalue = qp.rval(rvalue)
@@ -43,6 +53,9 @@ class LetRValueOperation(Operation):
 
     def inverse(self) -> 'qp.Operation':
         return DelRValueOperation(self.rvalue, self.loc)
+
+    def _value_equality_values_(self):
+        return self.rvalue, self.loc
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         self.rvalue.init_storage_location(self.loc, controls)
@@ -55,10 +68,14 @@ class LetRValueOperation(Operation):
                                                              self.loc)
 
 
+@cirq.value_equality
 class DelRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
         self.rvalue = qp.rval(rvalue)
         self.loc = loc
+
+    def _value_equality_values_(self):
+        return self.rvalue, self.loc
 
     def inverse(self) -> 'qp.Operation':
         return LetRValueOperation(self.rvalue, self.loc)

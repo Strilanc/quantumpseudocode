@@ -34,6 +34,10 @@ def test_and():
     assert a & b == qp.QubitIntersection((a, b))
     assert a & b & c == qp.QubitIntersection((a, b, c))
     assert a & s == qp.QubitIntersection((a, c, d))
+    assert a & False == qp.QubitIntersection.NEVER
+    assert a & True is a
+    assert False & a == qp.QubitIntersection.NEVER
+    assert True & a is a
 
 
 def test_ixor():
@@ -55,15 +59,15 @@ def test_ixor():
     assert out == []
     with qp.capture() as out:
         q ^= True
-    assert out == [qp.Toggle(qp.RawQureg([q]))]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q]))]
 
     # Qubit and qubit intersection cause controlled toggle.
     with qp.capture() as out:
         q ^= c
-    assert out == [qp.Toggle(qp.RawQureg([q])).controlled_by(c)]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(c)]
     with qp.capture() as out:
         q ^= c & d
-    assert out == [qp.Toggle(qp.RawQureg([q])).controlled_by(c & d)]
+    assert out == [qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(c & d)]
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:

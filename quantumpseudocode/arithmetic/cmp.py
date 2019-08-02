@@ -37,13 +37,13 @@ class EffectIfLessThan(Op):
         with qp.pad_all(lhs, rhs, min_len=n) as (lhs, rhs):
             # Propagate carries.
             with qp.invert():
-                uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.EMPTY)
+                uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
 
             # Apply effect.
             qp.emit(qp.ControlledOperation(effect, controls & rhs[-1]))
 
             # Uncompute carries.
-            uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.EMPTY)
+            uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
 
     @staticmethod
     def describe(lhs, rhs, or_equal, effect):
@@ -64,6 +64,8 @@ class IfLessThanRVal(RValue[bool]):
         return qp.Qubit(name)
 
     def phase_flip_if(self, controls: 'qp.QubitIntersection'):
+        if controls == qp.QubitIntersection.NEVER:
+            return
         qp.emit(EffectIfLessThan(
             lhs=self.lhs,
             rhs=self.rhs,
@@ -77,13 +79,13 @@ class IfLessThanRVal(RValue[bool]):
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=qp.Toggle(qp.RawQureg([location])).controlled_by(controls)))
+            effect=qp.Toggle(lvalue=qp.RawQureg([location])).controlled_by(controls)))
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        if qp.measure_x_for_phase_fixup_and_reset(location):
-            self.phase_flip_if(controls)
+        with qp.measurement_based_uncomputation(location) as b:
+            self.phase_flip_if(controls & b)
 
     def __str__(self):
         if isinstance(self.or_equal, qp.BoolRValue):

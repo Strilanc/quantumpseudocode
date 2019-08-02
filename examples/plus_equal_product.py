@@ -7,8 +7,7 @@ def plus_equal_product_builtin(target: Quint, k: int, y: Quint):
 
 def plus_equal_product_iter_quantum(target: Quint, k: int, y: Quint):
     for i in range(len(y)):
-        with controlled_by(y[i]):
-            target[i:] += k
+        target[i:] += k & controlled_by(y[i])
 
 
 def plus_equal_product_iter_classical(target: Quint, k: int, y: Quint):

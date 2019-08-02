@@ -1,7 +1,7 @@
 from quantumpseudocode.lens import (
     capture,
     CaptureLens,
-    condition,
+    EmptyManager,
     emit,
     invert,
     Lens,
@@ -18,6 +18,7 @@ from quantumpseudocode.buf import (
 
 from quantumpseudocode.rvalue import (
     BoolRValue,
+    LookupTable,
     HeldRValueManager,
     hold,
     IntRValue,
@@ -52,11 +53,14 @@ from quantumpseudocode.util import (
     modular_multiplicative_inverse,
     MultiWith,
     popcnt,
+    little_endian_int,
+    ccz_count,
 )
 
 from quantumpseudocode.control import (
     controlled_by,
     ControlledRValue,
+    ControlledLValue,
 )
 
 from quantumpseudocode.sim import (
@@ -73,10 +77,12 @@ from quantumpseudocode.ops import (
     FlagOperation,
     HeldMultipleRValue,
     InverseOperation,
-    Mutable,
+    Op,
     Operation,
     LetRValueOperation,
+    semi_quantum,
     DelRValueOperation,
+    ClassicalSimState,
     SigHoldArgTypes,
     SubEffect,
 )
@@ -86,21 +92,19 @@ from quantumpseudocode.arithmetic import (
     EffectIfLessThan,
     UnaryRValue,
     LookupRValue,
-    LookupTable,
     measure,
-    measure_x_for_phase_fixup_and_reset,
+    measurement_based_uncomputation,
     MeasureOperation,
-    MeasureXForPhaseKickOperation,
+    StartMeasurementBasedUncomputation,
+    EndMeasurementBasedComputationOp,
     OP_PHASE_FLIP,
     Toggle,
     phase_flip,
-    PlusEqual,
     PlusEqualProduct,
     swap,
     TimesEqual,
     XorEqual,
     XorEqualConst,
-    XorLookup,
 )
 
 from quantumpseudocode.qalloc import (

@@ -5,14 +5,9 @@ from quantumpseudocode.ops import Operation, Op
 
 
 class _PhaseFlipOp(Operation):
-    def mutate_state(self, forward: bool, args: 'qp.ArgsAndKwargs'):
-        pass
-
-    def state_locations(self):
-        return qp.ArgsAndKwargs([], {})
-
-    def permute(self, forward: bool, *args):
-        pass
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        sim_state.phase_degrees += 180
+        sim_state.phase_degrees %= 360
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError("The phase flip gate is fundamental.")
@@ -25,9 +20,9 @@ class _PhaseFlipOp(Operation):
 
 
 def phase_flip(condition: 'Union[bool, qp.Qubit, qp.QubitIntersection, qp.RValue[bool]]' = True):
-    if condition is False:
+    if condition is False or condition == qp.QubitIntersection.NEVER:
         pass
-    elif condition is True:
+    elif condition is True or condition == qp.QubitIntersection.ALWAYS:
         qp.emit(OP_PHASE_FLIP)
     elif isinstance(condition, (qp.Qubit, qp.QubitIntersection)):
         qp.emit(OP_PHASE_FLIP.controlled_by(condition))

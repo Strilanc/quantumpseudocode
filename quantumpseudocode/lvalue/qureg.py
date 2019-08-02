@@ -12,6 +12,11 @@ class Qureg:
     def __getitem__(self, item):
         raise NotImplementedError()
 
+    def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
+        if not allow_mutate:
+            return [q.resolve(sim_state, False) for q in self]
+        return sim_state.quint_buf(qp.Quint(self))
+
 
 @cirq.value_equality
 class RawQureg(Qureg):

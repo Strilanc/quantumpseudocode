@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable
+from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable, ContextManager, cast
 
 import quantumpseudocode as qp
 
@@ -21,32 +21,27 @@ def emit(operation: 'qp.Operation'):
         state = next_state
 
     for op in state:
-        op.emit_ops(qp.QubitIntersection.EMPTY)
+        op.emit_ops(qp.QubitIntersection.ALWAYS)
     emit_indent -= 1
 
 
-def capture(out: 'Optional[List[qp.Operation]]' = None):
-    return CaptureLens([] if out is None else out)
+def capture(out: 'Optional[List[qp.Operation]]' = None) -> ContextManager[List['qp.Operation']]:
+    return cast(ContextManager, CaptureLens([] if out is None else out))
 
 
 class EmptyManager:
+    def __init__(self, value=None):
+        self.value = value
+
     def __enter__(self):
-        pass
+        return self.value
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
 
-def condition(control: Union['qp.Qubit', 'qp.QubitIntersection']):
-    if isinstance(control, qp.Qubit):
-        control = qp.QubitIntersection((control,))
-    elif len(control) == 0:
-        return EmptyManager()
-    return _ControlLens(control)
-
-
-def invert():
-    return _InvertLens()
+def invert() -> ContextManager[None]:
+    return cast(ContextManager[None], _InvertLens())
 
 
 class Lens:
@@ -95,14 +90,23 @@ class _ControlLens(CaptureLens):
         super().__init__([])
         self.controls = controls
 
+    def __enter__(self):
+        super().__enter__()
+        return None
+
     def _succeeded(self):
-        for op in self.out:
-            emit(op.controlled_by(self.controls))
+        if self.controls.bit:
+            for op in self.out:
+                emit(op.controlled_by(self.controls))
 
 
 class _InvertLens(CaptureLens):
     def __init__(self):
         super().__init__([])
+
+    def __enter__(self):
+        super().__enter__()
+        return None
 
     def _succeeded(self):
         for op in reversed(self.out):

@@ -27,11 +27,9 @@ def assert_adds_correctly(modulus: int, t: int, v: int):
 
 def assert_control_adds_correctly(modulus: int, t: int, v: int, control: bool):
     def f(a: qp.QuintMod, b: int, c: qp.Qubit):
-        with qp.controlled_by(c):
-            a += b
+        a += b & qp.controlled_by(c)
     def g(a: qp.QuintMod, b: qp.Quint, c: qp.Qubit):
-        with qp.controlled_by(c):
-            a += b
+        a += b & qp.controlled_by(c)
     for e in f, g:
         r = qp.testing.sim_call(e,
                                 qp.testing.ModInt(val=t, modulus=modulus),
