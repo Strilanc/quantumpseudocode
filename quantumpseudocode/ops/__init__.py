@@ -15,7 +15,6 @@ from .controlled_operation import (
 )
 
 from .misc import (
-    SubEffect,
     HeldMultipleRValue,
 )
 

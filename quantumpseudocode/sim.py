@@ -105,17 +105,6 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
 
             return []
 
-        if self.emulate_additions:
-            emulate = False
-            o = op
-            if isinstance(op, qp.InverseOperation):
-                o = op.sub
-            if isinstance(o, (qp.EffectIfLessThan)):
-                emulate = True
-            if emulate:
-                operation.mutate_state(sim_state=self, forward=True)
-                return []
-
         if isinstance(op, (qp.MeasureOperation,
                            qp.StartMeasurementBasedUncomputation,
                            qp.EndMeasurementBasedComputationOp,

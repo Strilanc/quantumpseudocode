@@ -10,7 +10,8 @@ from .add import (
 
 from .cmp import (
     IfLessThanRVal,
-    EffectIfLessThan,
+    do_if_less_than,
+    do_classical_if_less_than,
 )
 
 from .mul import (

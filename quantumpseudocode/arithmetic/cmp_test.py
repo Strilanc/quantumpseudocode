@@ -1,6 +1,20 @@
+import random
+
 import cirq
 
 import quantumpseudocode as qp
+
+
+def test_do():
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_if_less_than,
+        fuzz_space={
+            'lhs': lambda: random.randint(0, 511),
+            'rhs': lambda: random.randint(0, 511),
+            'or_equal': [False, True],
+            'effect': [qp.OP_PHASE_FLIP],
+        },
+        fuzz_count=100)
 
 
 def test_cmp():
@@ -25,11 +39,11 @@ def test_if_less_than_then_circuit():
                 with qp.qmanaged_int(bits=4, name='rhs') as rhs:
                     with qp.qmanaged(qp.Qubit(name='_or_eq')) as c:
                         with qp.qmanaged(qp.Qubit(name='t')) as t:
-                            qp.emit(qp.EffectIfLessThan(
+                            qp.arithmetic.do_if_less_than(
                                 lhs=lhs,
                                 rhs=rhs,
                                 or_equal=c,
-                                effect=qp.Toggle(lvalue=qp.RawQureg([t]))))
+                                effect=qp.Toggle(lvalue=qp.RawQureg([t])))
 
     cirq.testing.assert_has_diagram(circuit, r"""
 _or_eq: ---X-------@---@-------------------------------------------------------------------------------------------------------@---@-------X---

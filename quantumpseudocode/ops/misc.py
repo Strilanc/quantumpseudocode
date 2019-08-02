@@ -7,12 +7,6 @@ import quantumpseudocode as qp
 T = TypeVar('T')
 
 
-class SubEffect:
-    def __init__(self, *, op: 'qp.Operation', args: 'qp.ArgsAndKwargs'):
-        self.op = op
-        self.args = args
-
-
 class HeldMultipleRValue:
     def __init__(self,
                  args: qp.ArgsAndKwargs['qp.SigHoldArgTypes'],

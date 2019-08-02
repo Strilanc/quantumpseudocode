@@ -86,12 +86,10 @@ from quantumpseudocode.ops import (
     DelRValueOperation,
     ClassicalSimState,
     SigHoldArgTypes,
-    SubEffect,
 )
 
 from quantumpseudocode.arithmetic import (
     IfLessThanRVal,
-    EffectIfLessThan,
     UnaryRValue,
     LookupRValue,
     measure,
