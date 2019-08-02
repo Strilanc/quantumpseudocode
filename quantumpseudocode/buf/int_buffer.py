@@ -12,6 +12,9 @@ class Buffer:
     def __setitem__(self, key, value):
         raise NotImplementedError()
 
+    def __ixor__(self, other):
+        raise NotImplementedError()
+
     def __len__(self):
         raise NotImplementedError()
 
@@ -34,6 +37,14 @@ class RawIntBuffer(Buffer):
             assert 0 <= item.start <= item.stop <= len(self)
             length = item.stop - item.start
             return (self._val >> item.start) & ~(-1 << length)
+
+        return NotImplemented
+
+    def __ixor__(self, other):
+        if isinstance(other, int):
+            other &= (1 << self._len) - 1
+            self._val ^= other
+            return self
 
         return NotImplemented
 
@@ -98,6 +109,15 @@ class RawConcatBuffer(Buffer):
         return RawConcatBuffer(
             RawConcatBuffer.balanced_concat(parts[:middle]),
             RawConcatBuffer.balanced_concat(parts[middle:]))
+
+    def __ixor__(self, other):
+        if isinstance(other, int):
+            n = len(self.buf0)
+            self.buf0 ^= other
+            self.buf1 ^= other >> n
+            return self
+
+        return NotImplemented
 
     def __getitem__(self, item):
         n = len(self.buf0)
@@ -191,6 +211,15 @@ class RawWindowBuffer(Buffer):
         self._buf = buf
         self._start = start
         self._stop = stop
+
+    def __ixor__(self, other):
+        if isinstance(other, int):
+            other <<= self._start
+            other &= (1 << self._stop) - 1
+            self._buf ^= other
+            return self
+
+        return NotImplemented
 
     def __getitem__(self, item) -> int:
         if isinstance(item, int):
@@ -378,7 +407,7 @@ class IntBuf:
 
     def __ixor__(self, other):
         if isinstance(other, (int, IntBuf)):
-            self[:] = int(self) ^ int(other)
+            self ._buf ^= int(other)
             return self
         return NotImplemented
 
