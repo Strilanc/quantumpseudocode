@@ -1,7 +1,9 @@
 language: python
 branches:
   only: master
-install: pip install -r requirements.txt
+install:
+  - pip install -r requirements.txt
+  - python setup.py build_ext --inplace
 script: pytest
 
 matrix:
