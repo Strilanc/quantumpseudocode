@@ -104,6 +104,11 @@ from quantumpseudocode.arithmetic import (
     GlobalPhaseOp,
 )
 
+from quantumpseudocode.cython import (
+    BitBuf,
+    BitView,
+)
+
 from quantumpseudocode.qalloc import (
     AllocQuregOperation,
     qalloc,
