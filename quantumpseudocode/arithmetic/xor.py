@@ -16,7 +16,7 @@ def do_xor_const(*,
     for i, q in enumerate(lvalue):
         if mask & (1 << i):
             targets.append(q)
-    qp.emit(qp.Toggle(lvalue=qp.RawQureg(targets)).controlled_by(control))
+    qp.cnot(control, targets)
 
 
 @semi_quantum(classical=do_classical_xor)
@@ -28,4 +28,4 @@ def do_xor(*,
     assert isinstance(mask, qp.Quint)
     assert len(mask) <= len(lvalue)
     for q, m in zip(lvalue, mask):
-        qp.emit(qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(m & control))
+        qp.cnot(m & control, q)

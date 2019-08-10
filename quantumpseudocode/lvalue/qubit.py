@@ -91,11 +91,11 @@ class Qubit(RValue[bool], LValue[bool]):
             return self
 
         if other in [True, 1]:
-            qp.emit(qp.Toggle(lvalue=qp.RawQureg([self])))
+            qp.cnot(qp.QubitIntersection.ALWAYS, self)
             return self
 
         if isinstance(other, Qubit):
-            qp.emit(qp.Toggle(lvalue=qp.RawQureg([self])).controlled_by(other))
+            qp.cnot(other, self)
             return self
 
         rev = getattr(other, '__rixor__', None)
