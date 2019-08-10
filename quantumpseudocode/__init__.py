@@ -75,12 +75,9 @@ from quantumpseudocode.log_cirq import (
 from quantumpseudocode.ops import (
     ControlledOperation,
     FlagOperation,
-    HeldMultipleRValue,
-    Op,
     Operation,
     semi_quantum,
     ClassicalSimState,
-    SigHoldArgTypes,
 )
 
 from quantumpseudocode.arithmetic import (

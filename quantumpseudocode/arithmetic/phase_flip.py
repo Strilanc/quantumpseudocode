@@ -3,7 +3,7 @@ from typing import Union
 import cirq
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation, Op
+from quantumpseudocode.ops import Operation
 
 
 @cirq.value_equality
