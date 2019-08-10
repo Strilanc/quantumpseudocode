@@ -42,9 +42,11 @@ class UnaryRValue(qp.RValue[int]):
         assert len(location) >= 1 << len(self.binary)
         for i, q in reversed(list(enumerate(self.binary))):
             s = 1 << i
-            for j in range(s)[::-1]:
-                location[j] ^= location[j + s]
-                location[j + s].clear(location[j] & q)
+            location[:s] ^= location[s:2*s]
+            with qp.measurement_based_uncomputation(location[s:2*s]) as u:
+                for j in range(s):
+                    if u & (1 << j):
+                        qp.phase_flip(q & location[j])
         location[0].clear(controls)
 
     def __str__(self):
