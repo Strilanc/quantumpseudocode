@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 import cirq
 
 import quantumpseudocode as qp
@@ -26,18 +28,18 @@ class QuintMod(LValue[int]):
         return qp.Quint(self.qureg[item])
 
     def init(self,
-             value: 'qp.RValue[int]',
-             controls: 'qp.QubitIntersection' = None):
-        qp.emit(
-            qp.LetRValueOperation(value, self[:]).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+             value: Union[int, 'qp.RValue[int]'],
+             controls: Optional['qp.QubitIntersection'] = None):
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
+        qp.rval(value).init_storage_location(self[:], controls)
 
     def clear(self,
-              value: 'qp.RValue[int]',
-              controls: 'qp.QubitIntersection' = None):
-        qp.emit(
-            qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+              value: Union[int, 'qp.RValue[int]'],
+              controls: Optional['qp.QubitIntersection'] = None):
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
+        qp.rval(value).del_storage_location(self[:], controls)
 
     def __setitem__(self, key, value):
         if value != self[key]:

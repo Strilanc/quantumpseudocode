@@ -78,14 +78,13 @@ from quantumpseudocode.ops import (
     HeldMultipleRValue,
     Op,
     Operation,
-    LetRValueOperation,
     semi_quantum,
-    DelRValueOperation,
     ClassicalSimState,
     SigHoldArgTypes,
 )
 
 from quantumpseudocode.arithmetic import (
+    cnot,
     IfLessThanRVal,
     UnaryRValue,
     LookupRValue,

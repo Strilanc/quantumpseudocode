@@ -45,6 +45,7 @@ from .phase_flip import (
 )
 
 from .toggle import (
+    cnot,
     Toggle,
 )
 

@@ -69,20 +69,18 @@ class Qubit(RValue[bool], LValue[bool]):
         return self.__and__(other)
 
     def init(self,
-             value: 'qp.RValue[bool]',
+             value: Union[bool, 'qp.RValue[bool]'],
              controls: 'qp.QubitIntersection' = None):
         if controls is None:
             controls = qp.QubitIntersection.ALWAYS
-        qp.emit(
-            qp.LetRValueOperation(value, self).controlled_by(controls))
+        qp.rval(value).init_storage_location(self, controls)
 
     def clear(self,
-              value: 'qp.RValue[bool]',
+              value: Union[bool, 'qp.RValue[bool]'],
               controls: 'qp.QubitIntersection' = None):
         if controls is None:
             controls = qp.QubitIntersection.ALWAYS
-        qp.emit(
-            qp.DelRValueOperation(value, self).controlled_by(controls))
+        qp.rval(value).del_storage_location(self, controls)
 
     def __ixor__(self, other):
         other, controls = qp.ControlledRValue.split(other)

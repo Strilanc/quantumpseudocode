@@ -41,34 +41,34 @@ def test_quint_borrowed():
         assert isinstance(v, qp.Quint)
         assert out == [
             qp.AllocQuregOperation(v.qureg),
-            qp.LetRValueOperation(qp.rval(2), v),
-            qp.DelRValueOperation(qp.rval(2), v),
+            qp.Toggle(v[1]),
+            qp.StartMeasurementBasedUncomputation(v),
+            qp.GlobalPhaseOp(180),
+            qp.EndMeasurementBasedComputationOp(0),
             qp.ReleaseQuregOperation(v.qureg),
         ]
-    assert len(out) == 4
+    assert len(out) == 6
 
     with qp.capture() as out:
         v = f(True)
         assert isinstance(v, qp.Quint)
         assert out == [
             qp.AllocQuregOperation(v.qureg),
-            qp.LetRValueOperation(qp.rval(1), v),
-            qp.DelRValueOperation(qp.rval(1), v),
+            qp.Toggle(v[0]),
+            qp.StartMeasurementBasedUncomputation(v),
+            qp.GlobalPhaseOp(180),
+            qp.EndMeasurementBasedComputationOp(0),
             qp.ReleaseQuregOperation(v.qureg),
         ]
-    assert len(out) == 4
+    assert len(out) == 6
 
     with qp.capture() as out:
         rval = qp.LookupTable([1, 2, 3])[q]
         v = f(rval)
         assert isinstance(v, qp.Quint)
-        assert out == [
-            qp.AllocQuregOperation(v.qureg),
-            qp.LetRValueOperation(rval, v),
-            qp.DelRValueOperation(rval, v),
-            qp.ReleaseQuregOperation(v.qureg),
-        ]
-    assert len(out) == 4
+        n = len(out)
+        assert n > 6
+    assert len(out) == n
 
     with pytest.raises(TypeError, match='quantum integer expression'):
         _ = f('test')
@@ -120,19 +120,21 @@ def test_qubit_borrowed():
         assert isinstance(v, qp.Qubit)
         assert out == [
             qp.AllocQuregOperation(qp.RawQureg([v])),
-            qp.LetRValueOperation(qp.rval(True), v),
-            qp.DelRValueOperation(qp.rval(True), v),
+            qp.Toggle(v),
+            qp.StartMeasurementBasedUncomputation(v),
+            qp.GlobalPhaseOp(180),
+            qp.EndMeasurementBasedComputationOp(0),
             qp.ReleaseQuregOperation(qp.RawQureg([v])),
         ]
-    assert len(out) == 4
+    assert len(out) == 6
 
     with qp.capture() as out:
         v = f(0)
         assert isinstance(v, qp.Qubit)
         assert out == [
             qp.AllocQuregOperation(qp.RawQureg([v])),
-            qp.LetRValueOperation(qp.rval(False), v),
-            qp.DelRValueOperation(qp.rval(False), v),
+            qp.StartMeasurementBasedUncomputation(v),
+            qp.EndMeasurementBasedComputationOp(0),
             qp.ReleaseQuregOperation(qp.RawQureg([v])),
         ]
     assert len(out) == 4
@@ -141,13 +143,9 @@ def test_qubit_borrowed():
         rval = qp.Quint(qp.NamedQureg('a', 10)) > qp.Quint(qp.NamedQureg('b', 10))
         v = f(rval)
         assert isinstance(v, qp.Qubit)
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg([v])),
-            qp.LetRValueOperation(rval, v),
-            qp.DelRValueOperation(rval, v),
-            qp.ReleaseQuregOperation(qp.RawQureg([v])),
-        ]
-    assert len(out) == 4
+        n = len(out)
+        assert n > 6
+    assert len(out) == n
 
     with pytest.raises(TypeError, match='quantum boolean expression'):
         _ = f('test')
@@ -155,7 +153,8 @@ def test_qubit_borrowed():
 
 def test_qubit_control():
     @qp.semi_quantum
-    def f(x: qp.Qubit.Control):
+    def f(x: qp.Qubit.Control) -> qp.QubitIntersection:
+        assert isinstance(x, qp.QubitIntersection)
         return x
 
     q = qp.Qubit('a', 10)
@@ -183,11 +182,13 @@ def test_qubit_control():
         assert isinstance(v, qp.QubitIntersection)
         assert out == [
             qp.AllocQuregOperation(qp.RawQureg(v.qubits)),
-            qp.LetRValueOperation(q & q2, v.qubits[0]),
-            qp.DelRValueOperation(q & q2, v.qubits[0]),
+            qp.Toggle(v.qubits).controlled_by(q & q2),
+            qp.StartMeasurementBasedUncomputation(v.qubits),
+            qp.GlobalPhaseOp(180).controlled_by(q & q2),
+            qp.EndMeasurementBasedComputationOp(0),
             qp.ReleaseQuregOperation(qp.RawQureg(v.qubits)),
         ]
-    assert len(out) == 4
+    assert len(out) == 6
 
     # Arbitrary expression
     with qp.capture() as out:
@@ -196,13 +197,9 @@ def test_qubit_control():
         assert isinstance(v, qp.QubitIntersection)
         q = v.qubits[0]
         assert q.name.key == '_f_x'
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg([q])),
-            qp.LetRValueOperation(rval, v.qubits[0]),
-            qp.DelRValueOperation(rval, v.qubits[0]),
-            qp.ReleaseQuregOperation(qp.RawQureg([q])),
-        ]
-    assert len(out) == 4
+        n = len(out)
+        assert n > 6
+    assert len(out) == n
 
     with pytest.raises(TypeError, match='quantum control expression'):
         _ = f('test')

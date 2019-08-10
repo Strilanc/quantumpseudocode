@@ -1,5 +1,7 @@
 import random
-from typing import List, Union, Callable, Any, Optional, TypeVar, Generic, overload, ContextManager
+from typing import List, Union, Callable, Any, Optional, TypeVar, Generic, overload, ContextManager, Iterable
+
+import cirq
 
 import quantumpseudocode as qp
 from quantumpseudocode.ops import Operation, FlagOperation
@@ -136,10 +138,17 @@ class MeasureOperation(Generic[T], Operation):
             self.targets, self.interpret, self.reset)
 
 
+@cirq.value_equality
 class StartMeasurementBasedUncomputation(Generic[T], Operation):
     def __init__(self,
-                 targets: qp.Qureg,
-                 interpret: Callable[[List[bool]], T]):
+                 targets: Union['qp.Qubit', Iterable['qp.Qubit']],
+                 interpret: Callable[[List[bool]], T] = lambda e: e):
+        if isinstance(targets, qp.Qubit):
+            targets = qp.RawQureg((targets,))
+        elif isinstance(targets, qp.Quint):
+            targets = targets.qureg
+        elif not isinstance(targets, qp.Qureg):
+            targets = qp.RawQureg(targets)
         self.targets = targets
         self.interpret = interpret
         self.raw_results = None
@@ -186,17 +195,27 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
                          "It returns a context manager, not a boolean.")
 
     def __enter__(self):
+        # HACK: Workaround capture not calling mutate_state.
+        self.raw_results = '_unfilled'
+        self.captured_phase_degrees = 0
         qp.emit(self)
         return self.results
+
+    def _value_equality_values_(self):
+        return self.targets
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.captured_phase_degrees is not None
         qp.emit(qp.EndMeasurementBasedComputationOp(self.captured_phase_degrees))
 
 
+@cirq.value_equality
 class EndMeasurementBasedComputationOp(Operation):
     def __init__(self, expected_phase_degrees: int):
         self.expected_phase_degrees = expected_phase_degrees
+
+    def _value_equality_values_(self):
+        return self.expected_phase_degrees
 
     def validate_controls(self, controls: 'qp.QubitIntersection'):
         assert controls == qp.QubitIntersection.ALWAYS
