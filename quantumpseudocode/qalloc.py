@@ -125,6 +125,10 @@ class AllocQuregOperation(qp.FlagOperation):
     def validate_controls(self, controls: 'qp.QubitIntersection'):
         assert controls == qp.QubitIntersection.ALWAYS
 
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool):
+        for name, length in _split_qureg(self.qureg):
+            sim_state.alloc(name, length, x_basis=self.x_basis)
+
     def _value_equality_values_(self):
         return self.qureg, self.x_basis
 
@@ -145,25 +149,33 @@ class AllocQuregOperation(qp.FlagOperation):
 class ReleaseQuregOperation(qp.FlagOperation):
     def __init__(self,
                  qureg: 'qp.Qureg',
-                 x_basis: bool = False,
+                 *,
                  dirty: bool = False):
         self.qureg = qureg
-        self.x_basis = x_basis
         self.dirty = dirty
+
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool):
+        for name, _ in _split_qureg(self.qureg):
+            sim_state.release(name, dirty=self.dirty)
 
     def validate_controls(self, controls: 'qp.QubitIntersection'):
         assert controls == qp.QubitIntersection.ALWAYS
 
     def _value_equality_values_(self):
-        return self.qureg, self.x_basis, self.dirty
+        return self.qureg, self.dirty
 
     def __str__(self):
-        return 'RELEASE {} [{}{}]'.format(
+        return 'RELEASE {} [{}]'.format(
             self.qureg,
-            'X' if self.x_basis else 'Z',
             ', dirty' if self.dirty else '')
 
     def controlled_by(self, controls):
         if controls.ALWAYS:
             return self
         raise ValueError("Can't control deallocation.")
+
+
+def _split_qureg(qureg) -> List[Tuple[str, int]]:
+    if isinstance(qureg, qp.NamedQureg):
+        return [(qureg.name, len(qureg))]
+    return [(q.name, 1) for q in qureg]

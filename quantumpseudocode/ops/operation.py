@@ -1,3 +1,4 @@
+import abc
 from typing import Union, Any, Callable
 
 import cirq
@@ -5,17 +6,28 @@ import cirq
 import quantumpseudocode as qp
 
 
-class ClassicalSimState:
+class ClassicalSimState(metaclass=abc.ABCMeta):
     phase_degrees: float
 
+    @abc.abstractmethod
+    def alloc(self, name: str, length: int, *, x_basis: bool = False):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def release(self, name: str, *, dirty: bool = False):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def measurement_based_uncomputation_result_chooser(self) -> Callable[[], bool]:
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def quint_buf(self, quint: 'qp.Quint') -> 'qp.IntBuf':
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def resolve_location(self, loc: Any, allow_mutate: bool) -> Any:
-        pass
+        raise NotImplementedError()
 
 
 class Operation:
