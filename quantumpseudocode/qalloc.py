@@ -125,9 +125,6 @@ class AllocQuregOperation(qp.FlagOperation):
     def validate_controls(self, controls: 'qp.QubitIntersection'):
         assert controls == qp.QubitIntersection.ALWAYS
 
-    def inverse(self):
-        return ReleaseQuregOperation(self.qureg, self.x_basis)
-
     def _value_equality_values_(self):
         return self.qureg, self.x_basis
 
@@ -159,11 +156,6 @@ class ReleaseQuregOperation(qp.FlagOperation):
 
     def _value_equality_values_(self):
         return self.qureg, self.x_basis, self.dirty
-
-    def inverse(self):
-        if self.dirty:
-            raise NotImplementedError()
-        return AllocQuregOperation(self.qureg, self.x_basis)
 
     def __str__(self):
         return 'RELEASE {} [{}{}]'.format(

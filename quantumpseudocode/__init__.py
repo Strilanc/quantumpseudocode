@@ -3,7 +3,6 @@ from quantumpseudocode.lens import (
     CaptureLens,
     EmptyManager,
     emit,
-    invert,
     Lens,
     Log,
 )
@@ -77,7 +76,6 @@ from quantumpseudocode.ops import (
     ControlledOperation,
     FlagOperation,
     HeldMultipleRValue,
-    InverseOperation,
     Op,
     Operation,
     LetRValueOperation,

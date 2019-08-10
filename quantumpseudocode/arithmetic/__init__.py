@@ -5,7 +5,8 @@ from .xor import (
 
 from .add import (
     do_addition,
-    do_subtraction,
+    uma_sweep,
+    maj_sweep,
 )
 
 from .cmp import (

@@ -28,9 +28,6 @@ class Operation:
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
 
-    def inverse(self) -> 'Operation':
-        return qp.InverseOperation(self)
-
     def controlled_by(self, controls: Union['qp.Qubit',
                                             'qp.QubitIntersection']):
         if isinstance(controls, qp.Qubit):
@@ -44,18 +41,12 @@ class FlagOperation(Operation):
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
 
-    def inverse(self):
-        raise NotImplementedError('{!r} has no defined inverse'.format(self))
-
 
 @cirq.value_equality
 class LetRValueOperation(Operation):
     def __init__(self, rvalue: 'qp.RValue', loc: Any):
         self.rvalue = qp.rval(rvalue)
         self.loc = loc
-
-    def inverse(self) -> 'qp.Operation':
-        return DelRValueOperation(self.rvalue, self.loc)
 
     def _value_equality_values_(self):
         return self.rvalue, self.loc
@@ -79,9 +70,6 @@ class DelRValueOperation(Operation):
 
     def _value_equality_values_(self):
         return self.rvalue, self.loc
-
-    def inverse(self) -> 'qp.Operation':
-        return LetRValueOperation(self.rvalue, self.loc)
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         self.rvalue.del_storage_location(self.loc, controls)

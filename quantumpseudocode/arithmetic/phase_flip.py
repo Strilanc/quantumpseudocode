@@ -17,9 +17,6 @@ class GlobalPhaseOp(Operation):
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError("The phase flip gate is fundamental.")
 
-    def inverse(self):
-        return GlobalPhaseOp(-self.phase % 360)
-
     def _value_equality_values_(self):
         return self.phase
 

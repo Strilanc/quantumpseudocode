@@ -32,9 +32,6 @@ class ControlledOperation(Operation):
         if controls_satisfied:
             self.uncontrolled.mutate_state(sim_state=sim_state, forward=forward)
 
-    def inverse(self):
-        return ControlledOperation(self.uncontrolled.inverse(), self.controls)
-
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         return self.uncontrolled.emit_ops(self.controls & controls)
 

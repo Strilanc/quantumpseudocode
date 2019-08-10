@@ -37,8 +37,7 @@ def do_if_less_than(*,
 
     with qp.pad_all(lhs, rhs, min_len=n) as (lhs, rhs):
         # Propagate carries.
-        with qp.invert():
-            uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
+        uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS, forward=False)
 
         # Apply effect.
         qp.emit(effect.controlled_by(control & rhs[-1]))

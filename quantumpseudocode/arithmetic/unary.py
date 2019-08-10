@@ -36,6 +36,17 @@ class UnaryRValue(qp.RValue[int]):
                 location[j + s].init(location[j] & q)
                 location[j] ^= location[j + s]
 
+    def del_storage_location(self,
+                             location: 'qp.Quint',
+                             controls: 'qp.QubitIntersection'):
+        assert len(location) >= 1 << len(self.binary)
+        for i, q in reversed(list(enumerate(self.binary))):
+            s = 1 << i
+            for j in range(s)[::-1]:
+                location[j] ^= location[j + s]
+                location[j + s].clear(location[j] & q)
+        location[0].clear(controls)
+
     def __str__(self):
         return '1 << {}'.format(self.binary)
 

@@ -25,6 +25,12 @@ class ScaledIntRValue(RValue[int]):
             self.coherent, self.constant)
 
     def __riadd__(self, other):
+        return self._riadd_ex_(other, forward=True)
+
+    def __risub__(self, other):
+        return self._riadd_ex_(other, forward=False)
+
+    def _riadd_ex_(self, other, forward: bool):
         other, controls = qp.ControlledLValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
             return other
@@ -34,7 +40,8 @@ class ScaledIntRValue(RValue[int]):
                 lvalue=other,
                 quantum_factor=self.coherent,
                 const_factor=self.constant,
-                control=controls)
+                control=controls,
+                forward=forward)
             return other
 
         return NotImplemented
@@ -51,6 +58,16 @@ class ScaledIntRValue(RValue[int]):
             quantum_factor=self.coherent,
             const_factor=self.constant,
             control=controls)
+
+    def del_storage_location(self,
+                             location: 'qp.Quint',
+                             controls: 'qp.QubitIntersection'):
+        qp.arithmetic.do_multiply_add(
+            lvalue=location,
+            quantum_factor=self.coherent,
+            const_factor=self.constant,
+            control=controls,
+            forward=False)
 
 
 @cirq.value_equality

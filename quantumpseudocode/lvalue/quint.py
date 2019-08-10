@@ -128,12 +128,18 @@ class Quint(RValue[int], LValue[int]):
         return NotImplemented
 
     def __iadd__(self, other):
+        return self._iadd_helper_(other, forward=True)
+
+    def __isub__(self, other):
+        return self._iadd_helper_(other, forward=False)
+
+    def _iadd_helper_(self, other, forward: bool):
         other, controls = qp.ControlledRValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
             return self
 
         other_rval = qp.rval(other, default=other)
-        rev = getattr(other_rval, '__riadd__', None)
+        rev = getattr(other_rval, '__riadd__' if forward else '__risub__', None)
         if rev is not None:
             result = rev(qp.ControlledLValue(controls, self))
             if result is not NotImplemented:
@@ -144,7 +150,8 @@ class Quint(RValue[int], LValue[int]):
                 lvalue=self,
                 offset=other,
                 carry_in=False,
-                control=controls)
+                control=controls,
+                forward=forward)
             return self
 
         return NotImplemented
@@ -164,10 +171,6 @@ class Quint(RValue[int], LValue[int]):
                 return result
 
         return NotImplemented
-
-    def __isub__(self, other):
-        with qp.invert():
-            return self.__iadd__(other)
 
     def __str__(self):
         return str(self.qureg)

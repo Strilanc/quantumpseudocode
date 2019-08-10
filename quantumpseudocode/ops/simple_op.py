@@ -25,19 +25,11 @@ class Op(Operation):
     def alloc_prefix(self):
         return ''
     def do(self, controls: 'qp.QubitIntersection', *args, **kwargs):
-        if self.inv_type() is not None:
-            qp.emit(qp.InverseOperation(self.inverse()))
         raise NotImplemented()
     def describe(self, *args, **kwargs):
         raise NotImplemented()
     def inv_type(self):
         return None
-
-    def inverse(self):
-        inv = self.inv_type()
-        if inv is None:
-            return super().inverse()
-        return self._args.pass_into(inv)
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         v = self._args.match_parameters(self.do, skip=1).map(_rval_wrap)

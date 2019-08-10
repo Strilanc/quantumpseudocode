@@ -84,28 +84,36 @@ def test_do():
             'lvalue': lambda: qp.IntBuf.random(range(0, 6)),
             'offset': lambda: random.randint(0, 511),
             'carry_in': [False, True],
+            'forward': [False, True],
         },
-        fuzz_count=100)
+        fuzz_count=200)
 
     qp.testing.assert_semi_quantum_func_is_consistent(
         qp.arithmetic.do_addition,
         fixed=[{
             'lvalue': qp.IntBuf.raw(val=3, length=3),
-            'offset': 2
-        }])
+            'offset': 2,
+            'forward': forward,
+        } for forward in [False, True]])
 
-    qp.testing.assert_semi_quantum_func_is_consistent(
-        qp.arithmetic.do_subtraction,
+
+def test_inv():
+    qp.testing.assert_self_inverse_is_consistent(
+        qp.arithmetic.uma_sweep,
+        fuzz_count=10,
         fuzz_space={
-            'lvalue': lambda: qp.IntBuf.random(range(0, 6)),
-            'offset': lambda: random.randint(0, 511),
-            'carry_in': [False, True],
-        },
-        fuzz_count=100)
+            'lvalue': qp.IntBuf.random(range(10)),
+            'carry': qp.IntBuf.random(1),
+            'offset': lambda lvalue: qp.IntBuf.random(len(lvalue)),
+        }
+    )
 
-    qp.testing.assert_semi_quantum_func_is_consistent(
-        qp.arithmetic.do_subtraction,
-        fixed=[{
-            'lvalue': qp.IntBuf.raw(val=3, length=3),
-            'offset': 2
-        }])
+    qp.testing.assert_self_inverse_is_consistent(
+        qp.arithmetic.maj_sweep,
+        fuzz_count=10,
+        fuzz_space={
+            'lvalue': qp.IntBuf.random(range(10)),
+            'carry': qp.IntBuf.random(1),
+            'offset': lambda lvalue: qp.IntBuf.random(len(lvalue)),
+        }
+    )

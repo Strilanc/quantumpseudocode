@@ -26,24 +26,11 @@ def test_correct_result(case):
     def mul(target: qp.Quint, k: int):
         target *= k
 
-    def inv_mul(target: qp.Quint, k: int):
-        with qp.invert():
-            target *= k
-
     final_state = qp.testing.sim_call(
         mul,
         target=qp.IntBuf.raw(val=t, length=n),
         k=k)
     assert final_state == qp.ArgsAndKwargs([], {
         'target': t * k % 2**n,
-        'k': k,
-    })
-
-    final_state = qp.testing.sim_call(
-        inv_mul,
-        target=qp.IntBuf.raw(val=t * k % 2**n, length=n),
-        k=k)
-    assert final_state == qp.ArgsAndKwargs([], {
-        'target': t,
         'k': k,
     })

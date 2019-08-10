@@ -18,9 +18,6 @@ class Toggle(Operation):
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError(f"{self} must be emulated.")
 
-    def inverse(self):
-        return self
-
     def __repr__(self):
         return f'qp.Toggle({self.targets})'
 

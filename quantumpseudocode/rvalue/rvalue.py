@@ -1,3 +1,4 @@
+import abc
 from typing import Optional, Any, Union, Generic, TypeVar, List, Tuple, Iterable, overload
 
 import quantumpseudocode as qp
@@ -6,7 +7,7 @@ import quantumpseudocode as qp
 T = TypeVar('T')
 
 
-class RValue(Generic[T]):
+class RValue(Generic[T], metaclass=abc.ABCMeta):
     """A value or expression that only needs to exist temporarily."""
 
     def _rval_(self):
@@ -18,6 +19,7 @@ class RValue(Generic[T]):
     def existing_storage_location(self) -> Any:
         return None
 
+    @abc.abstractmethod
     def make_storage_location(self, name: Optional[str] = None) -> Any:
         raise NotImplementedError()
 
@@ -25,16 +27,17 @@ class RValue(Generic[T]):
         with qp.hold(self, controls=controls) as loc:
             qp.phase_flip(loc)
 
+    @abc.abstractmethod
     def init_storage_location(self,
                               location: Any,
                               controls: 'qp.QubitIntersection'):
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        with qp.invert():
-            self.init_storage_location(location, controls)
+        raise NotImplementedError()
 
 
 @overload

@@ -48,12 +48,18 @@ class QuintMod(LValue[int]):
         return value
 
     def __iadd__(self, other):
+        return self._iadd_helper_(other, forward=True)
+
+    def __isub__(self, other):
+        return self._iadd_helper_(other, forward=False)
+
+    def _iadd_helper_(self, other, forward: bool):
         other, controls = qp.ControlledRValue.split(other)
         if controls == qp.QubitIntersection.NEVER:
             return self
 
         rval_other = qp.rval(other, default=other)
-        rev = getattr(rval_other, '__riadd__', None)
+        rev = getattr(rval_other, '__riadd__' if forward else '__risub__', None)
         if rev is not None:
             result = rev(qp.ControlledLValue(controls, self))
             if result is not NotImplemented:
@@ -63,21 +69,19 @@ class QuintMod(LValue[int]):
             qp.arithmetic_mod.do_add_const_mod(
                 lvalue=self,
                 offset=int(other),
-                control=controls)
+                control=controls,
+                forward=forward)
             return self
 
         if isinstance(other, (qp.Quint, qp.RValue)):
             qp.arithmetic_mod.do_add_mod(
                 lvalue=self,
                 offset=other,
-                control=controls)
+                control=controls,
+                forward=forward)
             return self
 
         return NotImplemented
-
-    def __isub__(self, other):
-        with qp.invert():
-            return self.__iadd__(other)
 
     def __str__(self):
         return '{} (mod {})'.format(self.qureg, self.modulus)

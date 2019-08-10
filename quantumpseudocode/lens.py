@@ -40,10 +40,6 @@ class EmptyManager:
         pass
 
 
-def invert() -> ContextManager[None]:
-    return cast(ContextManager[None], _InvertLens())
-
-
 class Lens:
     def __init__(self):
         self.used = False
@@ -98,19 +94,6 @@ class _ControlLens(CaptureLens):
         if self.controls.bit:
             for op in self.out:
                 emit(op.controlled_by(self.controls))
-
-
-class _InvertLens(CaptureLens):
-    def __init__(self):
-        super().__init__([])
-
-    def __enter__(self):
-        super().__enter__()
-        return None
-
-    def _succeeded(self):
-        for op in reversed(self.out):
-            emit(op.inverse())
 
 
 class Log(Lens):
