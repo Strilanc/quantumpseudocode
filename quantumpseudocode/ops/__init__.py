@@ -1,6 +1,5 @@
 from .operation import (
     Operation,
-    FlagOperation,
     ClassicalSimState,
 )
 

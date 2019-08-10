@@ -4,7 +4,7 @@ from typing import List, Union, Callable, Any, Optional, TypeVar, Generic, overl
 import cirq
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation, FlagOperation
+from quantumpseudocode.ops import Operation
 
 
 T = TypeVar('T')

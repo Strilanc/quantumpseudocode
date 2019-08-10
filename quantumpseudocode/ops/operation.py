@@ -47,8 +47,3 @@ class Operation:
         if controls == qp.QubitIntersection.ALWAYS:
             return self
         return qp.ControlledOperation(self, controls)
-
-
-class FlagOperation(Operation):
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        pass
