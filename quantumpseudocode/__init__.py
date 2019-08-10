@@ -97,7 +97,6 @@ from quantumpseudocode.arithmetic import (
     Toggle,
     phase_flip,
     swap,
-    TimesEqual,
     GlobalPhaseOp,
 )
 

@@ -100,10 +100,17 @@ class IntRValue(RValue[bool]):
         return NotImplemented
 
     def __rimul__(self, other):
-        if isinstance(other, qp.Quint):
-            qp.emit(qp.TimesEqual(lvalue=other,
-                                  factor=self.val))
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
             return other
+
+        if isinstance(other, qp.Quint):
+            qp.arithmetic.do_multiplication(
+                lvalue=other,
+                factor=self.val,
+                control=controls)
+            return other
+
         return NotImplemented
 
     def __str__(self):
