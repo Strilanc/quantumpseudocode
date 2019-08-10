@@ -97,19 +97,9 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
     def modify(self, operation: 'qp.Operation'):
         op, cnt = qp.ControlledOperation.split(operation)
         op.validate_controls(cnt)
-
-        if isinstance(op, (qp.MeasureOperation,
-                           qp.StartMeasurementBasedUncomputation,
-                           qp.EndMeasurementBasedComputationOp,
-                           qp.Toggle,
-                           qp.GlobalPhaseOp,
-                           qp.AllocQuregOperation,
-                           qp.ReleaseQuregOperation)):
-            if self.resolve_location(cnt, False):
-                op.mutate_state(self, True)
-            return []
-
-        return [operation]
+        if self.resolve_location(cnt, False):
+            op.mutate_state(self, True)
+        return []
 
 
 def _fuse(qubits: Iterable[qp.Qubit]) -> List[Tuple[str, slice]]:
