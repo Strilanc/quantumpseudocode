@@ -151,6 +151,7 @@ def semi_quantum(func: Callable = None,
                                      'sim',
                                      {'classical_func': classical, 'qp': qp, **type_string_map, **remap_string_map})
 
+    result.raw = func
     return result
 
 

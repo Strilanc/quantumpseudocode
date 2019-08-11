@@ -21,6 +21,11 @@ def do_addition(*,
                 offset: qp.Quint.Borrowed,
                 carry_in: qp.Qubit.Borrowed = False,
                 forward: bool = True):
+    """Cuccaro adder.
+
+    References:
+        https://arxiv.org/abs/quant-ph/0410184
+    """
     assert isinstance(control, qp.QubitIntersection) and len(control.qubits) <= 1
     assert isinstance(lvalue, qp.Quint)
     assert isinstance(offset, qp.Quint)
