@@ -18,7 +18,7 @@ def init_square(*,
                 clean_out: qp.Quint):
     """Initializes a zero'd quint to store the square of a quint."""
     n = len(factor)
-    zero = qp.qalloc(name='_sqr_zero')
+    zero = qp.alloc(name='_sqr_zero')
     for k in range(n):
         rval = factor[k+1:] & qp.controlled_by(factor[k])
         with qp.hold(rval, name='_sqr_offset') as partial_offset:
@@ -28,5 +28,5 @@ def init_square(*,
                 *partial_offset.qureg
             ]))
             clean_out[2*k:2*k+len(offset)+1] += offset
-    qp.qfree(zero)
+    qp.free(zero)
     return clean_out

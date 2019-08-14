@@ -53,15 +53,35 @@ class QallocManager:
             qp.emit(ReleaseQuregOperation(self.qureg))
 
 
-def qalloc(val: Union[None, int] = None,
-           *,
-           name: Optional[str] = None,
-           x_basis: bool = False) -> 'Any':
-    if val is None:
+def alloc(bit_count: Union[None, int] = None,
+          *,
+          expr: Union[None, qp.RValue, int, bool] = None,
+          name: Optional[str] = None,
+          x_basis: bool = False) -> 'Any':
+    """Allocates and initializes quantum data.
+
+    Args:
+        bit_count: The number of qubits to allocate.
+        expr: An expression describing the value to initialize the allocated
+            storage location to. Defaults to the location being zero'd.
+        name: Debug information to associate with the allocated register.
+        x_basis: When set, a plus state is allocated under the assumption that
+            it is okay for a Toffoli simulator to allocate a random
+            computational basis state.
+    """
+    if expr is not None:
+        assert not x_basis
+        assert bit_count is None
+        expr = qp.rval(expr)
+        loc = expr.make_storage_location(name)
+        expr.init_storage_location(bit_count, qp.QubitIntersection.ALWAYS)
+        return loc
+
+    if bit_count is None:
         result = qp.Qubit(name or '')
         reg = qp.RawQureg([result])
-    elif isinstance(val, int):
-        result = qp.NamedQureg(name or '', length=val)
+    elif isinstance(bit_count, int):
+        result = qp.NamedQureg(name or '', length=bit_count)
         reg = result
     else:
         raise NotImplementedError()
@@ -72,22 +92,35 @@ def qalloc(val: Union[None, int] = None,
     return result
 
 
-def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
-          equivalent_expression: 'Union[None, bool, int, qp.RValue[Any]]' = None,
-          dirty: bool = False):
+def free(loc: qp.LValue,
+         *,
+         expr: Union[None, bool, int, 'qp.RValue[Any]'] = None,
+         dirty: bool = False) -> None:
+    """Uncomputes and deallocates quantum data
 
-    if equivalent_expression is not None:
-        qp.rval(equivalent_expression).del_storage_location(
-            target, qp.QubitIntersection.ALWAYS)
+    Args:
+        loc: The location to deallocate.
+        expr: An expression equivalent to the value at the location, expressed
+            as a constant or an rvalue that can be used to uncompute it.
+            Defaults to assuming the location is already zero'd.
+        dirty: When not set, deallocate a non-zero'd qubit (or a qubit that
+            failed to be uncomputed using the `expr` argument) causes an error.
+            When set, no error is raised. The simulator may also disable this
+            error checking globally.
+    """
 
-    if isinstance(target, qp.Qubit):
-        reg = qp.RawQureg([target])
-    elif isinstance(target, qp.Qureg):
-        reg = target
-    elif isinstance(target, qp.Quint):
-        reg = target.qureg
-    elif isinstance(target, qp.QuintMod):
-        reg = target.qureg
+    if expr is not None:
+        qp.rval(expr).del_storage_location(
+            loc, qp.QubitIntersection.ALWAYS)
+
+    if isinstance(loc, qp.Qubit):
+        reg = qp.RawQureg([loc])
+    elif isinstance(loc, qp.Qureg):
+        reg = loc
+    elif isinstance(loc, qp.Quint):
+        reg = loc.qureg
+    elif isinstance(loc, qp.QuintMod):
+        reg = loc.qureg
     else:
         raise NotImplementedError()
     if len(reg):

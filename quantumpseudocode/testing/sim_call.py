@@ -36,7 +36,7 @@ def sim_call(func: Callable,
             return result
 
         if a.parameter_type is qp.Qubit:
-            result = qp.qalloc(name=a.parameter.name)
+            result = qp.alloc(name=a.parameter.name)
             result.init(a.arg)
             return result
 
@@ -45,7 +45,7 @@ def sim_call(func: Callable,
     def qfree_as_needed(a: Any):
         if isinstance(a, (qp.Quint, qp.Qureg, qp.Qubit, qp.QuintMod)):
             result = qp.measure(a, reset=True)
-            qp.qfree(a)
+            qp.free(a)
             return result
         return a
 

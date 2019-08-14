@@ -243,7 +243,7 @@ def test_classical():
         f.sim(sim_state, q, 5)
         assert sim_state.resolve_location(q, False) == 6
         f.sim(sim_state, q, 6)
-        qp.qfree(q)
+        qp.free(q)
 
 
 def test_optional():
@@ -265,7 +265,7 @@ def test_optional():
     assert int(b) == 1
 
     with qp.Sim() as sim_state:
-        q = qp.qalloc()
+        q = qp.alloc()
         assert not sim_state.resolve_location(q, False)
         qf(q)
         assert sim_state.resolve_location(q, False)
@@ -276,7 +276,7 @@ def test_optional():
         qf(q, False)
         assert sim_state.resolve_location(q, False)
         assert qp.measure(q, reset=True)
-        qp.qfree(q)
+        qp.free(q)
 
 
 def test_with_sim_state():

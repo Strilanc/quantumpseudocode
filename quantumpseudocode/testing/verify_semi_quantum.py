@@ -70,7 +70,7 @@ def _apply_quantum(func: Callable, kwargs: Dict[str, Any]) -> Dict[str, Any]:
             elif type_hints[k] == qp.Qubit:
                 assert isinstance(v, qp.IntBuf) and len(v) == 1, 'Expected length 1 qp.IntBuf for argument "{}"'.format(
                     k)
-                mapped[k] = qp.qalloc(name=k)
+                mapped[k] = qp.alloc(name=k)
                 mapped[k] ^= int(v)
             else:
                 mapped[k] = v

@@ -50,7 +50,7 @@ def times_equal_exp_mod(target: QuintMod,
     if a is not target:
         swap(a, b)
         a, b = b, a
-    qfree(b)
+    free(b)
 
 
 def times_equal_exp_mod_window_1_1(target: QuintMod,

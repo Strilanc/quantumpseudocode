@@ -50,8 +50,8 @@ def measure_pow_mod(base: int, exponent: Quint, modulus: int) -> int:
         a, b = b, a
 
     result = measure(a)
-    qfree(a, dirty=True)
-    qfree(b, dirty=True)
+    free(a, dirty=True)
+    free(b, dirty=True)
 
     return result % modulus
 
@@ -64,8 +64,8 @@ def make_coset_register(value: int, length: int, modulus: int) -> Quint:
     pad_bits = length - modulus.bit_length()
     for i in range(pad_bits):
         offset = modulus << i
-        q = qalloc(x_basis=True)
+        q = alloc(x_basis=True)
         reg += offset & controlled_by(q)
-        qfree(q, equivalent_expression=reg >= offset)
+        free(q, expr=reg >= offset)
 
     return reg

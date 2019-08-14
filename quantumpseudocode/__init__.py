@@ -103,12 +103,12 @@ from quantumpseudocode.cython import (
 
 from quantumpseudocode.qalloc import (
     AllocQuregOperation,
-    qalloc,
+    alloc,
     qalloc_int,
     qalloc_int_mod,
     QallocManager,
     qmanaged,
-    qfree,
+    free,
     qmanaged_int,
     ReleaseQuregOperation,
 )
