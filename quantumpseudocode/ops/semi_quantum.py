@@ -176,13 +176,25 @@ def _eval_body_func(body: str, func: Callable, func_name_in_body: str, exec_glob
     return result
 
 
+def _expose_as_quint(val: qp.LValue):
+    if isinstance(val, qp.Quint):
+        return val
+    if isinstance(val, qp.Qubit):
+        return qp.Quint(qp.RawQureg([val]))
+    raise TypeError('Expected an int-like lvalue but got {!r}.'.format(val))
+
+
 def _rval_quint_manager(val: 'qp.Quint.Borrowed', name: str) -> ContextManager['qp.Quint']:
     if isinstance(val, qp.Quint):
         return qp.EmptyManager(val)
+    if isinstance(val, qp.Qubit):
+        return qp.EmptyManager(qp.Quint(qp.RawQureg([val])))
     if isinstance(val, (bool, int)):
         return qp.HeldRValueManager(qp.IntRValue(int(val)), name=name)
     if isinstance(val, qp.RValue):
-        return qp.HeldRValueManager(val, name=name)
+        return qp.HeldRValueManager(val,
+                                    name=name,
+                                    loc_transform=_expose_as_quint)
     raise TypeError('Expected a classical or quantum integer expression (a quint, int, or RVal[int]) '
                     'but got {!r}.'.format(val))
 

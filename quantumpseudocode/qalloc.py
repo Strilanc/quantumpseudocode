@@ -73,7 +73,7 @@ def alloc(bit_count: Union[None, int] = None,
         assert not x_basis
         assert bit_count is None
         expr = qp.rval(expr)
-        loc = expr.make_storage_location(name)
+        loc = expr.make_storage_location(name or '')
         expr.init_storage_location(bit_count, qp.QubitIntersection.ALWAYS)
         return loc
 

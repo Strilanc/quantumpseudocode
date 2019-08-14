@@ -1,4 +1,4 @@
-from typing import Optional, Any, Union, Generic, TypeVar, List, Tuple, Iterable, overload
+from typing import Optional, Any, Union, Generic, TypeVar, List, Tuple, Iterable, overload, Callable
 
 import quantumpseudocode as qp
 
@@ -66,13 +66,15 @@ class HeldRValueManager(Generic[T]):
     def __init__(self, rvalue: 'qp.RValue[T]',
                  *,
                  controls: 'qp.QubitIntersection' = None,
-                 name: str = ''):
+                 name: str = '',
+                 loc_transform: Callable[['qp.LValue'], 'qp.LValue'] = lambda e: e):
         assert isinstance(name, str)
         self.name = name
         self.rvalue = rvalue
         self.controls = controls if controls is not None else qp.QubitIntersection.ALWAYS
         self.location = None  # type: Optional[Any]
         self.qalloc = None  # type: Optional[Any]
+        self.loc_transform = loc_transform
 
     def __repr__(self):
         return 'qp.HeldRValueManager({!r}, {!r})'.format(
@@ -86,7 +88,7 @@ class HeldRValueManager(Generic[T]):
             self.qalloc = qp.qmanaged(self.location)
             self.qalloc.__enter__()
             self.rvalue.init_storage_location(self.location, self.controls)
-        return self.location
+        return self.loc_transform(self.location)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.qalloc is not None and exc_type is None:

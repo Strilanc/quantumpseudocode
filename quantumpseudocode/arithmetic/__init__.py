@@ -19,6 +19,10 @@ from .mul import (
     do_multiplication,
 )
 
+from .quotient import (
+    do_init_small_quotient,
+)
+
 from .mult_add import (
     do_multiply_add,
     do_classical_multiply_add,
