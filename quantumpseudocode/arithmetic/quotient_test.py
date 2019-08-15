@@ -3,7 +3,7 @@ import random
 import quantumpseudocode as qp
 
 
-def test_do():
+def test_do_init_small_quotient():
     qp.testing.assert_semi_quantum_func_is_consistent(
         qp.arithmetic.do_init_small_quotient,
         fuzz_space={
@@ -26,3 +26,35 @@ def test_do():
             'forward': False,
         },
         fuzz_count=100)
+
+
+def test_do_div_rem():
+    n = 10
+
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_div_rem,
+        fuzz_space={
+            'divisor': lambda: random.randint(1, 1 << n),
+            'lvalue_total_then_remainder': lambda divisor:
+                qp.IntBuf.random(divisor.bit_length() + random.randint(0, n)),
+            'lvalue_quotient': lambda divisor, lvalue_total_then_remainder:
+                qp.IntBuf.raw(
+                    val=0,
+                    length=len(lvalue_total_then_remainder) - divisor.bit_length() + random.randint(1, n)),
+            'forward': True,
+        },
+        fuzz_count=3)
+
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_div_rem,
+        fuzz_space={
+            'divisor': lambda: random.randint(1, 1 << n),
+            'lvalue_total_then_remainder': lambda divisor: qp.IntBuf.random(
+                length=(divisor - 1).bit_length() + random.randint(0, n),
+                val=range(divisor)),
+            'lvalue_quotient': lambda divisor, lvalue_total_then_remainder: qp.IntBuf.random(
+                val=range((1 << len(lvalue_total_then_remainder)) // divisor),
+                length=((1 << len(lvalue_total_then_remainder)) // divisor).bit_length()),
+            'forward': False,
+        },
+        fuzz_count=3)

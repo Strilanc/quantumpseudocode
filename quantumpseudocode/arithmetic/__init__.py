@@ -21,6 +21,7 @@ from .mul import (
 
 from .quotient import (
     do_init_small_quotient,
+    do_div_rem,
 )
 
 from .mult_add import (

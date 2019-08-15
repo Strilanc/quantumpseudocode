@@ -330,7 +330,7 @@ class IntBuf:
         length = length if isinstance(length, int) else random.choice(length)
         if val is None:
             val = random.randint(0, 2**length-1)
-        val = val if isinstance(length, int) else random.choice(val)
+        val = val if isinstance(val, int) else random.choice(val)
         return IntBuf.raw(length=length, val=val)
 
     def _rval_(self) -> 'qp.RValue':
