@@ -68,33 +68,34 @@ def do_div_rem(*,
     while len(lv):
         word_offset = len(lv[:-w])
         lword = lv[-w:]
-        chunks.append((word_offset, lword))
+        tword = lvalue_total_then_remainder[word_offset:]
+        chunks.append((tword, lword))
         lv = lv[:-w]
+    if not forward:
+        chunks = chunks[::-1]
 
-    if forward:
-        for word_offset, lword in chunks:
-            do_init_small_quotient(
-                lvalue=lword,
-                divisor=divisor << word_offset,
-                total=lvalue_total_then_remainder,
-                forward=True)
-            lvalue_total_then_remainder[word_offset:] -= lword * divisor
-    else:
-        for word_offset, lword in chunks[::-1]:
-            lvalue_total_then_remainder[word_offset:] += lword * divisor
-            do_init_small_quotient(
-                lvalue=lword,
-                divisor=divisor << word_offset,
-                total=lvalue_total_then_remainder,
-                forward=False)
+    for tword, lword in chunks:
+        do_init_small_quotient(
+            lvalue=lword,
+            divisor=divisor,
+            total=tword,
+            forward=forward,
+            transfer=True)
 
 
 def classical_do_init_quotient(*,
                                lvalue: qp.IntBuf,
                                total: qp.IntBuf,
                                divisor: int,
-                               forward: bool = True):
-    if forward:
+                               forward: bool = True,
+                               transfer: bool = False):
+    if transfer:
+        classical_do_div_rem(
+            lvalue_quotient=lvalue,
+            lvalue_total_then_remainder=total,
+            divisor=divisor,
+            forward=forward)
+    elif forward:
         assert int(lvalue) == 0
         lvalue[:] = int(total) // divisor
     else:
@@ -107,7 +108,8 @@ def do_init_small_quotient(*,
                            lvalue: qp.Quint,
                            total: qp.Quint,
                            divisor: int,
-                           forward: bool = True):
+                           forward: bool = True,
+                           transfer: bool = False):
     """Performs lvalue := total // divisor.
 
     This method is efficient for small numbers of quotient bits, but has
@@ -119,13 +121,28 @@ def do_init_small_quotient(*,
         divisor: The value to divide by.
         forward: If not set, uncomputes the small quotient instead of computing
             it.
+        transfer: If set, anything added into the quotient register is subtracted
+            out of the total register (times the divisor), so that the equation
+            lvalue*divisor + total is invariant.
     """
+    if divisor == 1:
+        if transfer and not forward:
+            total ^= lvalue
+        lvalue ^= total
+        if transfer and forward:
+            total ^= lvalue
+        return
+
     m, start, thresh = build_quotient_threshold_table(divisor, len(total))
     low, high = total[:m], total[m:]
     if forward:
         lvalue ^= start[high]
         lvalue += low > thresh[high]
+        if transfer:
+            total -= lvalue * divisor
     else:
+        if transfer:
+            total += lvalue * divisor
         lvalue -= low > thresh[high]
         lvalue.clear(start[high])
 

@@ -12,6 +12,7 @@ def test_do_init_small_quotient():
             'lvalue': lambda divisor, total:
                 qp.IntBuf.raw(val=0, length=len(total) - divisor.bit_length() + random.randint(1, 3)),
             'forward': True,
+            'transfer': [False, True],
         },
         fuzz_count=100)
 
@@ -24,9 +25,24 @@ def test_do_init_small_quotient():
                 val=int(total) // divisor,
                 length=len(total) - divisor.bit_length() + random.randint(1, 3)),
             'forward': False,
+            'transfer': False,
         },
         fuzz_count=100)
 
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_init_small_quotient,
+        fuzz_space={
+            'divisor': lambda: random.randint(1, 1023),
+            'total': lambda divisor: qp.IntBuf.random(
+                length=(divisor - 1).bit_length() + random.randint(0, 3),
+                val=range(divisor)),
+            'lvalue': lambda divisor, total: qp.IntBuf.random(
+                val=range((1 << len(total)) // divisor),
+                length=((1 << len(total)) // divisor).bit_length()),
+            'forward': False,
+            'transfer': True,
+        },
+        fuzz_count=100)
 
 def test_do_div_rem():
     n = 10
