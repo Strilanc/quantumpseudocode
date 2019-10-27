@@ -32,11 +32,9 @@ class ControlledOperation(Operation):
         if controls_satisfied:
             self.uncontrolled.mutate_state(sim_state=sim_state, forward=forward)
 
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        return self.uncontrolled.emit_ops(self.controls & controls)
-
     def __str__(self):
         return 'IF {}: {}'.format(self.controls, self.uncontrolled)
+
     def __repr__(self):
         return 'ControlledOperation({!r}, {!r})'.format(self.uncontrolled,
                                                         self.controls)

@@ -98,12 +98,6 @@ class _MeasureRValueOperation(Generic[T], Operation):
     def permute(self, forward: bool, args):
         pass
 
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        assert controls == qp.QubitIntersection.ALWAYS, "Not allowed to control measurement."
-
-        with qp.hold(self.target) as target:
-            self.results = measure(target)
-
 
 class MeasureOperation(Generic[T], Operation):
     def __init__(self,
@@ -117,9 +111,6 @@ class MeasureOperation(Generic[T], Operation):
 
     def validate_controls(self, controls: 'qp.QubitIntersection'):
         assert controls == qp.QubitIntersection.ALWAYS
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError(f"{self} must be emulated.")
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         assert self.raw_results is None
@@ -161,9 +152,6 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
     def results(self) -> T:
         assert self.raw_results is not None
         return self.interpret(self.raw_results)
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError(f"{self} must be emulated.")
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         assert forward
@@ -223,9 +211,6 @@ class EndMeasurementBasedComputationOp(Operation):
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         if sim_state.phase_degrees != self.expected_phase_degrees:
             raise AssertionError('Failed to uncompute. Measurement based uncomputation failed to fix phase flips.')
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError(f"{self} must be emulated.")
 
     def __repr__(self):
         return f'qp.EndMeasurementBasedComputationOp({self.expected_phase_degrees})'

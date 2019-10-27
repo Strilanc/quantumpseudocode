@@ -14,9 +14,6 @@ class GlobalPhaseOp(Operation):
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         sim_state.phase_degrees += self.phase
 
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError("The phase flip gate is fundamental.")
-
     def _value_equality_values_(self):
         return self.phase
 

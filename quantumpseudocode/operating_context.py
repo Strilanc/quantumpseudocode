@@ -1,5 +1,5 @@
 import abc
-from typing import List, Optional, Iterable, ContextManager, cast
+from typing import List, Optional, ContextManager, cast
 
 import quantumpseudocode as qp
 
@@ -10,7 +10,7 @@ def emit(operation: 'qp.Operation'):
     _current_operating_context.do(operation)
 
 
-def capture(*, out: 'Optional[List[qp.Operation]]' = None) -> ContextManager[List['qp.Operation']]:
+def capture(*, out: Optional[List['qp.Operation']] = None) -> ContextManager[List['qp.Operation']]:
     return cast(ContextManager, CaptureContext(out=out))
 
 
@@ -31,8 +31,7 @@ class OperatingContext(metaclass=abc.ABCMeta):
         self._outer_context = None
 
     @abc.abstractmethod
-    def do(self, operation: 'qp.Operation'
-           ) -> Iterable['qp.Operation']:
+    def do(self, operation: 'qp.Operation'):
         """Perform the given operation using this context."""
 
     def __enter__(self):

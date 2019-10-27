@@ -34,9 +34,6 @@ class Operation:
     def validate_controls(self, controls: 'qp.QubitIntersection'):
         pass
 
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
-
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
 
