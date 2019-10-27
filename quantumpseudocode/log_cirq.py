@@ -45,7 +45,8 @@ class LogCirqCircuit(qp.Lens):
         super().__init__()
         self.circuit = cirq.Circuit()
 
-    def _val(self):
+    def __enter__(self):
+        super().__enter__()
         return self.circuit
 
     def modify(self, operation: 'qp.Operation'):
@@ -100,7 +101,8 @@ class CountNots(qp.Lens):
         super().__init__()
         self.counts = collections.Counter()
 
-    def _val(self):
+    def __enter__(self):
+        super().__enter__()
         return self.counts
 
     def modify(self, operation: 'qp.Operation'):

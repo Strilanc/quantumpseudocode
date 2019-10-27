@@ -48,23 +48,14 @@ class Lens:
                ) -> Iterable['qp.Operation']:
         raise NotImplementedError()
 
-    def _val(self):
-        return self
-
-    def _succeeded(self):
-        pass
-
     def __enter__(self):
         assert not self.used
         self.used = True
         lens_stack.append(self)
-        return self._val()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert lens_stack[-1] is self
         lens_stack.pop()
-        if exc_type is None:
-            self._succeeded()
 
 
 class CaptureLens(Lens):
@@ -79,21 +70,6 @@ class CaptureLens(Lens):
     def modify(self, operation):
         self.out.append(operation)
         return []
-
-
-class _ControlLens(CaptureLens):
-    def __init__(self, controls: 'qp.QubitIntersection'):
-        super().__init__([])
-        self.controls = controls
-
-    def __enter__(self):
-        super().__enter__()
-        return None
-
-    def _succeeded(self):
-        if self.controls.bit:
-            for op in self.out:
-                emit(op.controlled_by(self.controls))
 
 
 class Log(Lens):

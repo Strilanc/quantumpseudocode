@@ -28,9 +28,10 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
 
     def __enter__(self):
         # HACK: Prevent name pollution across simulation runs.
+        super().__enter__()
         qp.UniqueHandle._free_handles = {}
         qp.UniqueHandle._next_handle = {}
-        return super().__enter__()
+        return self
 
     def snapshot(self):
         return dict(self._int_state)
