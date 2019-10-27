@@ -9,8 +9,10 @@ def test_memory():
         m = qp.BitBuf(4)
         s = m[0:8]
         np.testing.assert_equal(s.bits(), [0, 0, 0, 0, 0, 0, 0, 0])
+        np.testing.assert_equal(s.uint64s(), [0])
         s.write_bits([1, 1, 0, 0, 1, 0, 1, 0])
         np.testing.assert_equal(s.bits(), [1, 1, 0, 0, 1, 0, 1, 0])
+        np.testing.assert_equal(s.uint64s(), [0b01010011])
 
 
 def test_memory_concat():
@@ -18,8 +20,10 @@ def test_memory_concat():
         m = qp.BitBuf(4)
         s = m[4:8].concat(m[10:14])
         np.testing.assert_equal(s.bits(), [0, 0, 0, 0, 0, 0, 0, 0])
+        np.testing.assert_equal(s.uint64s(), [0])
         s.write_bits([1, 1, 0, 0, 1, 0, 1, 0])
         np.testing.assert_equal(s.bits(), [1, 1, 0, 0, 1, 0, 1, 0])
+        np.testing.assert_equal(s.uint64s(), [0b01010011])
 
 
 def test_xor():

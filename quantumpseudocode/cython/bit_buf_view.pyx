@@ -85,15 +85,8 @@ cdef class BitView:
 
     def uint64s(self):
         cdef size_t words = (self.num_bits + 63) >> 6
-        cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out = np.empty(words, dtype=np.uint64)
-
-        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
-        memset(buf, 0, words * sizeof(uint64_t))
-        self.read(buf)
-        for i in range(words):
-            out[i] = buf[i]
-        PyMem_Free(buf)
-
+        cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out = np.zeros(words, dtype=np.uint64)
+        self.read(<uint64_t*> out.data)
         return out
 
     def write_int(self, v):
@@ -143,7 +136,7 @@ cdef class BitView:
     def bits(self):
         cdef int k
         uint64s = self.uint64s()
-        result = np.empty(self.num_bits, dtype=np.bool)
+        result = np.zeroes(self.num_bits, dtype=np.bool)
         for k in range(self.num_bits):
             result[k] = (int(uint64s[k >> 6]) >> (k & 63)) & 1
         return result
