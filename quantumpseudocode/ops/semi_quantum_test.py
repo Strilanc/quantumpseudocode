@@ -285,7 +285,7 @@ def test_with_sim_state():
 
     @qp.semi_quantum(classical=cf)
     def qf():
-        qp.emit(qp.OP_PHASE_FLIP)
+        qp.do_atom(qp.OP_PHASE_FLIP)
 
     with qp.Sim() as sim_state:
         assert sim_state.phase_degrees == 0

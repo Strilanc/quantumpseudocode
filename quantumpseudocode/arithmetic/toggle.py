@@ -12,7 +12,7 @@ def cnot(controls: Union['qp.Qubit', Iterable['qp.Qubit'], 'qp.QubitIntersection
         controls = qp.QubitIntersection((controls,))
     elif not isinstance(controls, qp.QubitIntersection):
         controls = qp.QubitIntersection(tuple(controls))
-    qp.emit(qp.Toggle(targets).controlled_by(controls))
+    qp.do_atom(qp.Toggle(targets).controlled_by(controls))
 
 
 @cirq.value_equality

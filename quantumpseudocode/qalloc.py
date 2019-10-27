@@ -45,12 +45,12 @@ class QallocManager:
 
     def __enter__(self):
         if len(self.qureg):
-            qp.emit(AllocQuregOperation(self.qureg))
+            qp.do_atom(AllocQuregOperation(self.qureg))
         return self.wrap
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if len(self.qureg) and exc_type is None:
-            qp.emit(ReleaseQuregOperation(self.qureg))
+            qp.do_atom(ReleaseQuregOperation(self.qureg))
 
 
 def alloc(bit_count: Union[None, int] = None,
@@ -87,7 +87,7 @@ def alloc(bit_count: Union[None, int] = None,
         raise NotImplementedError()
 
     if len(reg):
-        qp.emit(AllocQuregOperation(reg, x_basis))
+        qp.do_atom(AllocQuregOperation(reg, x_basis))
 
     return result
 
@@ -124,7 +124,7 @@ def free(loc: qp.LValue,
     else:
         raise NotImplementedError()
     if len(reg):
-        qp.emit(qp.ReleaseQuregOperation(reg, dirty=dirty))
+        qp.do_atom(qp.ReleaseQuregOperation(reg, dirty=dirty))
 
 
 def qalloc_int(*,
@@ -132,7 +132,7 @@ def qalloc_int(*,
                name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
     result = qp.Quint(qureg=qp.NamedQureg(length=bits, name=name or ''))
     if bits:
-        qp.emit(AllocQuregOperation(result.qureg))
+        qp.do_atom(AllocQuregOperation(result.qureg))
     return result
 
 
@@ -144,7 +144,7 @@ def qalloc_int_mod(*,
     result = qp.QuintMod(qureg=qp.NamedQureg(length=bits, name=name or ''),
                          modulus=modulus)
     if bits:
-        qp.emit(AllocQuregOperation(result.qureg))
+        qp.do_atom(AllocQuregOperation(result.qureg))
     return result
 
 

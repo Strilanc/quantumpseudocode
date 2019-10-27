@@ -32,7 +32,7 @@ def do_if_less_than(*,
 
     n = max(len(lhs), len(rhs))
     if n == 0:
-        qp.emit(effect.controlled_by(control & or_equal))
+        qp.do_atom(effect.controlled_by(control & or_equal))
         return
 
     with qp.pad_all(lhs, rhs, min_len=n) as (lhs, rhs):
@@ -40,7 +40,7 @@ def do_if_less_than(*,
         uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS, forward=False)
 
         # Apply effect.
-        qp.emit(effect.controlled_by(control & rhs[-1]))
+        qp.do_atom(effect.controlled_by(control & rhs[-1]))
 
         # Uncompute carries.
         uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)

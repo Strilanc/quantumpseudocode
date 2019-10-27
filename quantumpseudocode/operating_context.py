@@ -1,12 +1,12 @@
 import abc
-from typing import List, Optional, ContextManager, cast
+from typing import List, Optional, ContextManager, cast, Union, Iterable
 
 import quantumpseudocode as qp
 
 _current_operating_context: 'qp.OperatingContext' = None
 
 
-def emit(operation: 'qp.Operation'):
+def do_atom(operation: 'qp.Operation'):
     _current_operating_context.do(operation)
 
 

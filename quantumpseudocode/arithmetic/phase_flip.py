@@ -25,12 +25,12 @@ def phase_flip(condition: 'Union[bool, qp.Qubit, qp.QubitIntersection, qp.RValue
     if condition is False or condition == qp.QubitIntersection.NEVER:
         pass
     elif condition is True or condition == qp.QubitIntersection.ALWAYS:
-        qp.emit(OP_PHASE_FLIP)
+        qp.do_atom(OP_PHASE_FLIP)
     elif isinstance(condition, (qp.Qubit, qp.QubitIntersection)):
-        qp.emit(OP_PHASE_FLIP.controlled_by(condition))
+        qp.do_atom(OP_PHASE_FLIP.controlled_by(condition))
     elif isinstance(condition, qp.RValue):
         with qp.hold(condition) as q:
-            qp.emit(OP_PHASE_FLIP.controlled_by(q))
+            qp.do_atom(OP_PHASE_FLIP.controlled_by(q))
     else:
         raise NotImplementedError("Unknown phase flip condition: {!r}".format(condition))
 

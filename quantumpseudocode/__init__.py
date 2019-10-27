@@ -2,7 +2,7 @@ from quantumpseudocode.operating_context import (
     capture,
     CaptureContext,
     EmptyManager,
-    emit,
+    do_atom,
     OperatingContext,
 )
 

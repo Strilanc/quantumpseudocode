@@ -26,7 +26,7 @@ def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
             *,
             reset: bool = False) -> Union[bool, int, List[bool], T]:
     op = _measure_op(val, reset=reset)
-    qp.emit(op)
+    qp.do_atom(op)
     assert op.results is not None
     return op.results
 
@@ -186,7 +186,7 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
         # HACK: Workaround capture not calling mutate_state.
         self.raw_results = '_unfilled'
         self.captured_phase_degrees = 0
-        qp.emit(self)
+        qp.do_atom(self)
         return self.results
 
     def _value_equality_values_(self):
@@ -194,7 +194,7 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.captured_phase_degrees is not None
-        qp.emit(qp.EndMeasurementBasedComputationOp(self.captured_phase_degrees))
+        qp.do_atom(qp.EndMeasurementBasedComputationOp(self.captured_phase_degrees))
 
 
 @cirq.value_equality

@@ -81,7 +81,7 @@ def test_ixor():
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
         def __rixor__(self, other):
-            qp.emit('yay!')
+            qp.do_atom('yay!')
             return other
     with qp.capture() as out:
         q ^= Rixor()
@@ -114,7 +114,7 @@ def test_iadd_isub():
     # Classes can specify custom behavior via __riadd__.
     class Riadd:
         def __riadd__(self, other):
-            qp.emit('yay!')
+            qp.do_atom('yay!')
             return other
     with qp.capture() as out:
         q += Riadd()
