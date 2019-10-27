@@ -13,7 +13,7 @@ cdef struct BitSpanPtr:
     int bits
 
 
-cdef struct FoundSpan:
+cdef struct IndexOffset:
     int index
     int offset
 
@@ -42,8 +42,8 @@ cdef class BitView:
         memcpy(result.spans + self.num_spans, other.spans, sizeof(BitSpanPtr) * other.num_spans)
         return result
 
-    cdef FoundSpan _bit_to_span_index(self, int index):
-        cdef FoundSpan result
+    cdef IndexOffset _bit_to_span_index(self, int index):
+        cdef IndexOffset result
         assert 0 <= index < self.num_bits
         while self.spans[result.index].bits <= start:
             start -= self.spans[result.index].bits
@@ -71,7 +71,7 @@ cdef class BitView:
         return self.num_bits
 
     def __getitem__(self, index):
-        cdef FoundSpan found
+        cdef IndexOffset found
         cdef size_t start
         cdef size_t stop
         cdef BitView view
