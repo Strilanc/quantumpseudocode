@@ -50,7 +50,7 @@ cdef class BitView:
         result.offset = start
         return result
 
-    cdef void read(self, uint64_t *out):
+    cdef void _read_bits_into(self, uint64_t *out):
         cdef BitSpanPtr s
         cdef int pos = 0
         for i in range(self.num_spans):
@@ -58,12 +58,28 @@ cdef class BitView:
             unaligned_memcpy(out + (pos >> 6), pos & 63, s.loc, s.off, s.bits)
             pos += s.bits
 
-    cdef void write(self, uint64_t *inp):
+    cdef void _xor_bits_into(self, uint64_t *out):
+        cdef BitSpanPtr s
+        cdef int pos = 0
+        for i in range(self.num_spans):
+            s = self.spans[i]
+            unaligned_memxor(out + (pos >> 6), pos & 63, s.loc, s.off, s.bits)
+            pos += s.bits
+
+    cdef void _write_bits_from(self, uint64_t *inp):
         cdef BitSpanPtr s
         cdef int pos = 0
         for i in range(self.num_spans):
             s = self.spans[i]
             unaligned_memcpy(s.loc, s.off, inp + (pos >> 6), pos & 63, s.bits)
+            pos += s.bits
+
+    cdef void _xor_bits_from(self, uint64_t *inp):
+        cdef BitSpanPtr s
+        cdef int pos = 0
+        for i in range(self.num_spans):
+            s = self.spans[i]
+            unaligned_memxor(s.loc, s.off, inp + (pos >> 6), pos & 63, s.bits)
             pos += s.bits
 
     def __len__(self):
@@ -86,7 +102,7 @@ cdef class BitView:
     def uint64s(self):
         cdef size_t words = (self.num_bits + 63) >> 6
         cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out = np.zeros(words, dtype=np.uint64)
-        self.read(<uint64_t*> out.data)
+        self._read_bits_into(<uint64_t*> out.data)
         return out
 
     def write_int(self, v):
@@ -95,7 +111,7 @@ cdef class BitView:
         memset(buf, 0, words * sizeof(uint64_t))
         for i in range(words):
             buf[i] = (v >> (i * 64)) & 63
-        self.write(buf)
+        self._write_bits_from(buf)
         PyMem_Free(buf)
 
     def write_bits(self, bits):
@@ -106,24 +122,19 @@ cdef class BitView:
         for i in range(len(bits)):
             if bits[i]:
                 buf[i >> 6] |= 1ULL << (i & 63)
-        self.write(buf)
+        self._write_bits_from(buf)
         PyMem_Free(buf)
 
     def __ixor__(self, BitView other):
-        assert self.num_bits == other.num_bits
+        if self.num_bits < other.num_bits:
+            raise ValueError(
+                "Can't xor a larger BitView into a smaller BitView.")
         cdef size_t words = (self.num_bits + 63) >> 6
-        cdef int i
         cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
-        cdef uint64_t* buf2 = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
-        memset(buf2, 0, words * sizeof(uint64_t))
-        self.read(buf)
-        other.read(buf2)
-        for i in range(words):
-            buf[i] ^= buf2[i]
-        self.write(buf)
+        other._read_bits_into(buf)
+        self._xor_bits_from(buf)
         PyMem_Free(buf)
-        PyMem_Free(buf2)
         return self
 
     def __int__(self):
@@ -136,7 +147,7 @@ cdef class BitView:
     def bits(self):
         cdef int k
         uint64s = self.uint64s()
-        result = np.zeroes(self.num_bits, dtype=np.bool)
+        result = np.zeros(self.num_bits, dtype=np.bool)
         for k in range(self.num_bits):
             result[k] = (int(uint64s[k >> 6]) >> (k & 63)) & 1
         return result
@@ -265,12 +276,42 @@ cdef void unaligned_partial_word_write(uint64_t* dst, int off, int width, uint64
         dst[0] |= (val & m) << off
 
 
+cdef void unaligned_word_xor(uint64_t* dst, int off, uint64_t val):
+    # Xors a 64 bit word to the given location, with a bit offset that may
+    # spread it across two aligned words in memory.
+    #
+    # Args:
+    #     dst: The word-aligned location to offset from and xor into.
+    #     off: The bit misalignment, between 0 and 63.
+    #     val: The word to xor in.
+    dst[0] ^= val << off
+    if off:
+        dst[1] ^= val >> (64 - off)
+
+
+cdef void unaligned_partial_word_xor(uint64_t* dst, int off, int width, uint64_t val):
+    # Xors up to 64 bits into the given location, with a bit offset that may
+    # spread it across two aligned words in memory.
+    #
+    # Args:
+    #     dst: The word-aligned location to offset from and xor into.
+    #     off: The bit misalignment, between 0 and 63.
+    #     width: The number of bits to write.
+    #     val: The word to xor in.
+    cdef int n1 = min(width, 64 - off)
+    cdef int n2 = width - n1
+    cdef uint64_t m
+    if n2 > 0:
+        dst[1] ^= val >> n1
+    if n1 == 64:
+        dst[0] ^= val
+    else:
+        m = ~(-1ULL << n1)
+        dst[0] ^= (val & m) << off
+
+
 cdef void unaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_off, int bits):
     # A variant of memcpy that can be scoped down to the bit level.
-    #
-    # CAUTION: In order to use this method, both src and dst MUST have one
-    # additional word of padding. Otherwise the code will read past the end of
-    # the array. This could be fixed in the future, but for now play it safe.
     #
     # Args:
     #     dst: Word aligned location of destination buffer.
@@ -293,3 +334,29 @@ cdef void unaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_of
     if bits:
         v = unaligned_partial_word_read(src, src_off, bits)
         unaligned_partial_word_write(dst, dst_off, bits, v)
+
+
+cdef void unaligned_memxor(uint64_t* dst, int dst_off, uint64_t* src, int src_off, int bits):
+    # Xors bits from one place into another place, scoped down to the bit level.
+    #
+    # Args:
+    #     dst: Word aligned location of destination buffer.
+    #     dst_off: Bit misalignment of destination buffer, between 0 and 63.
+    #     src: Word aligned location of source buffer.
+    #     src_off: Bit misalignment of source buffer, between 0 and 63.
+    #     bits: Length of range to xor from src into dst.
+    cdef int i
+    cdef uint64_t v
+
+    # Work word by word where possible.
+    for i in range(0, bits - 63, 64):
+        v = unaligned_word_read(src, src_off)
+        unaligned_word_xor(dst, dst_off, v)
+        src += 1
+        dst += 1
+
+    # Non word sized copy must manually combine with existing bits.
+    bits &= 63
+    if bits:
+        v = unaligned_partial_word_read(src, src_off, bits)
+        unaligned_partial_word_xor(dst, dst_off, bits, v)
