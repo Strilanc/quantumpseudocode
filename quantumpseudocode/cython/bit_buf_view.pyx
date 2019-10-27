@@ -2,6 +2,7 @@ from libc.string cimport memcpy, memset
 from libc.stdint cimport uint64_t
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import numpy as np
+cimport numpy as np
 
 
 cdef struct BitSpanPtr:
@@ -84,13 +85,15 @@ cdef class BitView:
 
     def uint64s(self):
         cdef size_t words = (self.num_bits + 63) >> 6
+        cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out = np.empty(words, dtype=np.uint64)
+
         cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         self.read(buf)
-        out = np.empty(words, dtype=np.uint64)
         for i in range(words):
             out[i] = buf[i]
         PyMem_Free(buf)
+
         return out
 
     def write_int(self, v):
