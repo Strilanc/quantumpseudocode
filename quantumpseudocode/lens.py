@@ -3,26 +3,11 @@ from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterab
 import quantumpseudocode as qp
 
 
-lens_stack = []
+_current_lens: 'qp.Lens' = None
 
-emit_indent = 0
+
 def emit(operation: 'qp.Operation'):
-    global emit_indent
-    emit_indent += 1
-
-    state = [operation]
-
-    for lens in reversed(lens_stack):
-        if not state:
-            break
-        next_state = []
-        for op in state:
-            next_state.extend(lens.modify(op))
-        state = next_state
-
-    for op in state:
-        op.emit_ops(qp.QubitIntersection.ALWAYS)
-    emit_indent -= 1
+    _current_lens.modify(operation)
 
 
 def capture(out: 'Optional[List[qp.Operation]]' = None) -> ContextManager[List['qp.Operation']]:
@@ -43,19 +28,24 @@ class EmptyManager:
 class Lens:
     def __init__(self):
         self.used = False
+        self._prev_simulator = None
 
     def modify(self, operation: 'qp.Operation'
                ) -> Iterable['qp.Operation']:
         raise NotImplementedError()
 
     def __enter__(self):
+        global _current_lens
         assert not self.used
         self.used = True
-        lens_stack.append(self)
+        self._prev_simulator = _current_lens
+        _current_lens = self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        assert lens_stack[-1] is self
-        lens_stack.pop()
+        global _current_lens
+        assert _current_lens is self
+        _current_lens = self._prev_simulator
+        self._prev_simulator = None
 
 
 class CaptureLens(Lens):
@@ -69,15 +59,5 @@ class CaptureLens(Lens):
 
     def modify(self, operation):
         self.out.append(operation)
-        return []
-
-
-class Log(Lens):
-    def __init__(self, max_indent: Optional[int] = None):
-        super().__init__()
-        self.max_indent = max_indent
-
-    def modify(self, operation: 'qp.Operation'):
-        if self.max_indent is None or self.max_indent >= emit_indent - 1:
-            print(' ' * (emit_indent * 4 - 4) + str(operation))
-        return [operation]
+        if self._prev_simulator is not None:
+            self._prev_simulator.modify(operation)

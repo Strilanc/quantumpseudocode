@@ -4,7 +4,6 @@ from quantumpseudocode.lens import (
     EmptyManager,
     emit,
     Lens,
-    Log,
 )
 
 from quantumpseudocode.buf import (

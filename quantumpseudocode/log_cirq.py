@@ -93,7 +93,8 @@ class LogCirqCircuit(qp.Lens):
         # if unknown:
         #     raise NotImplementedError("Unrecognized operation: {!r}".format(operation))
 
-        return [operation]
+        if self._prev_simulator is not None:
+            self._prev_simulator.modify(operation)
 
 
 class CountNots(qp.Lens):
@@ -115,4 +116,5 @@ class CountNots(qp.Lens):
             else:
                 self.counts[len(controls.qubits)] += len(op.targets)
 
-        return [operation]
+        if self._prev_simulator is not None:
+            self._prev_simulator.modify(operation)
