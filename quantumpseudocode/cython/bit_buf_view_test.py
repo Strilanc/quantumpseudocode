@@ -33,3 +33,14 @@ def test_xor():
         s2 ^= s1
         assert list(s1.bits()) == [1] * len(s1)
         assert list(s2.bits()) == [1] * len(s1) + [0] * (len(s2) - len(s1))
+
+
+def test_cython_tests():
+    from quantumpseudocode.cython import bit_buf_view_cython_test
+    for k, v in bit_buf_view_cython_test.__dict__.items():
+        if k.startswith('test_'):
+            try:
+                v()
+            except Exception as ex:
+                raise AssertionError(
+                    f'{k} failed.') from ex

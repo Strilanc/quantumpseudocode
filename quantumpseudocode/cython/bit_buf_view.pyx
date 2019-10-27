@@ -87,7 +87,7 @@ cdef class BitView:
         cdef size_t words = (self.num_bits + 63) >> 6
         cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out = np.empty(words, dtype=np.uint64)
 
-        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         self.read(buf)
         for i in range(words):
@@ -98,7 +98,7 @@ cdef class BitView:
 
     def write_int(self, v):
         cdef size_t words = (self.num_bits + 63) >> 6
-        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         for i in range(words):
             buf[i] = (v >> (i * 64)) & 63
@@ -108,11 +108,11 @@ cdef class BitView:
     def write_bits(self, bits):
         cdef size_t words = (len(bits) + 63) >> 6
         cdef int i
-        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         for i in range(len(bits)):
             if bits[i]:
-                buf[i >> 6] |= 1 << (i & 63)
+                buf[i >> 6] |= 1ULL << (i & 63)
         self.write(buf)
         PyMem_Free(buf)
 
@@ -120,8 +120,8 @@ cdef class BitView:
         assert self.num_bits == other.num_bits
         cdef size_t words = (self.num_bits + 63) >> 6
         cdef int i
-        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
-        cdef uint64_t* buf2 = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
+        cdef uint64_t* buf2 = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         memset(buf2, 0, words * sizeof(uint64_t))
         self.read(buf)
@@ -159,7 +159,7 @@ cdef class BitBuf:
     cdef size_t num_words
 
     def __cinit__(self, size_t words):
-        self.data = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
+        self.data = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
         memset(self.data, 0, words * sizeof(uint64_t))
         self.num_words = words
         if not self.data:
@@ -197,7 +197,7 @@ cdef class BitBuf:
         return NotImplemented
 
 
-cdef uint64_t unaligned_read(uint64_t* src, int off):
+cdef uint64_t unaligned_word_read(uint64_t* src, int off):
     # Reads a 64 bit word from the given location, with a bit offset that may
     # spread it across two aligned words in memory.
     #
@@ -207,12 +207,32 @@ cdef uint64_t unaligned_read(uint64_t* src, int off):
     #
     # Returns:
     #     The bits, packed into a 64 bit unsigned integer.
+    cdef uint64_t result = src[0] >> off
     if off:
-        return (src[0] >> off) | (src[1] << (64 - off))
-    return src[0]
+        result |= src[1] << (64 - off)
+    return result
 
 
-cdef void unaligned_write(uint64_t* dst, int off, uint64_t val):
+cdef uint64_t unaligned_partial_word_read(uint64_t* src, int off, int width):
+    # Reads up to 64 bits from the given location, with a bit offset that may
+    # spread it across two aligned words in memory.
+    #
+    # Args:
+    #     src: The word-aligned location to offset from and read from.
+    #     off: The bit misalignment, between 0 and 63.
+    #     width: The number of bits to read.
+    #
+    # Returns:
+    #     The bits, packed into a 64 bit unsigned integer.
+    cdef uint64_t result = src[0] >> off
+    if 64 - off < width:
+        result |= src[1] << (64 - off)
+    if width != 64:
+        result &= ~(-1ULL << width)
+    return result
+
+
+cdef void unaligned_word_write(uint64_t* dst, int off, uint64_t val):
     # Writes a 64 bit word to the given location, with a bit offset that may
     # spread it across two aligned words in memory.
     #
@@ -221,12 +241,35 @@ cdef void unaligned_write(uint64_t* dst, int off, uint64_t val):
     #     off: The bit misalignment, between 0 and 63.
     #     val: The word to write.
     if off:
-        dst[0] &= (1 << off) - 1
-        dst[1] &= ~(1 << (64 - off))
+        dst[0] &= (1ULL << off) - 1
+        dst[1] &= ~(1ULL << (64 - off))
         dst[0] |= val << off
         dst[1] |= val >> (64 - off)
     else:
         dst[0] = val
+
+
+cdef void unaligned_partial_word_write(uint64_t* dst, int off, int width, uint64_t val):
+    # Writes up to 64 bits to the given location, with a bit offset that may
+    # spread it across two aligned words in memory.
+    #
+    # Args:
+    #     dst: The word-aligned location to offset from and write to.
+    #     off: The bit misalignment, between 0 and 63.
+    #     val: The word to write.
+    #     width: The number of bits to write.
+    cdef int n1 = min(width, 64 - off)
+    cdef int n2 = width - n1
+    cdef uint64_t m
+    if n2 > 0:
+        dst[1] &= -1ULL << n2
+        dst[1] |= val >> n1
+    if n1 == 64:
+        dst[0] = val
+    else:
+        m = ~(-1ULL << n1)
+        dst[0] &= ~(m << off)
+        dst[0] |= (val & m) << off
 
 
 cdef void unaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_off, int bits):
@@ -244,23 +287,16 @@ cdef void unaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_of
     #     bits: Length of range to copy from src to dst.
     cdef int i
     cdef uint64_t v
-    cdef uint64_t v2
 
     # Work word by word where possible.
-    for i in range(0, bits, 64):
-        # Note: throwing away a factor of 2 in performance here.
-        # Note: may touch 1 past end of input and output here.
-        v = unaligned_read(src, src_off)
-        unaligned_write(dst, dst_off, v)
+    for i in range(0, bits - 63, 64):
+        v = unaligned_word_read(src, src_off)
+        unaligned_word_write(dst, dst_off, v)
         src += 1
         dst += 1
 
     # Non word sized copy must manually combine with existing bits.
     bits &= 63
     if bits:
-        # Note: may touch 1 past end of input and output here.
-        v = unaligned_read(src, src_off)
-        v2 = unaligned_read(dst, dst_off)
-        v &= (1 << bits) - 1
-        v2 &= ~((1 << bits) - 1)
-        unaligned_write(dst, dst_off, v | v2)
+        v = unaligned_partial_word_read(src, src_off, bits)
+        unaligned_partial_word_write(dst, dst_off, bits, v)
