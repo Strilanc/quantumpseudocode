@@ -1,8 +1,6 @@
-from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy, memset
 from libc.stdint cimport uint64_t
-from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-from cython.view cimport array as cvarray
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 import numpy as np
 
 
@@ -86,41 +84,41 @@ cdef class BitView:
 
     def uint64s(self):
         cdef size_t words = (self.num_bits + 63) >> 6
-        cdef uint64_t* buf = <uint64_t*> malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         self.read(buf)
         out = np.empty(words, dtype=np.uint64)
         for i in range(words):
             out[i] = buf[i]
-        free(buf)
+        PyMem_Free(buf)
         return out
 
     def write_int(self, v):
         cdef size_t words = (self.num_bits + 63) >> 6
-        cdef uint64_t* buf = <uint64_t*> malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         for i in range(words):
             buf[i] = (v >> (i * 64)) & 63
         self.write(buf)
-        free(buf)
+        PyMem_Free(buf)
 
     def write_bits(self, bits):
         cdef size_t words = (len(bits) + 63) >> 6
         cdef int i
-        cdef uint64_t* buf = <uint64_t*> malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         for i in range(len(bits)):
             if bits[i]:
                 buf[i >> 6] |= 1 << (i & 63)
         self.write(buf)
-        free(buf)
+        PyMem_Free(buf)
 
     def __ixor__(self, BitView other):
         assert self.num_bits == other.num_bits
         cdef size_t words = (self.num_bits + 63) >> 6
         cdef int i
-        cdef uint64_t* buf = <uint64_t*> malloc((words + 1) * sizeof(uint64_t))
-        cdef uint64_t* buf2 = <uint64_t*> malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
+        cdef uint64_t* buf2 = <uint64_t*> PyMem_Malloc((words + 1) * sizeof(uint64_t))
         memset(buf, 0, words * sizeof(uint64_t))
         memset(buf2, 0, words * sizeof(uint64_t))
         self.read(buf)
@@ -128,8 +126,8 @@ cdef class BitView:
         for i in range(words):
             buf[i] ^= buf2[i]
         self.write(buf)
-        free(buf)
-        free(buf2)
+        PyMem_Free(buf)
+        PyMem_Free(buf2)
         return self
 
     def __int__(self):
