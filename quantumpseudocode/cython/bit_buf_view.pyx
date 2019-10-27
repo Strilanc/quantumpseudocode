@@ -19,7 +19,7 @@ cdef struct IndexOffset:
 
 
 cdef class BitView:
-    """Exposes read/write access to possibly misaligned and non-contiguous bits."""
+    """Exposes read/write access to possibly unaligned and non-contiguous bits."""
 
     cdef BitSpanPtr* spans
     cdef size_t num_spans
@@ -56,7 +56,7 @@ cdef class BitView:
         cdef int pos = 0
         for i in range(self.num_spans):
             s = self.spans[i]
-            misaligned_memcpy(out + (pos >> 6), pos & 63, s.loc, s.off, s.bits)
+            unaligned_memcpy(out + (pos >> 6), pos & 63, s.loc, s.off, s.bits)
             pos += s.bits
 
     cdef void write(self, uint64_t *inp):
@@ -64,7 +64,7 @@ cdef class BitView:
         cdef int pos = 0
         for i in range(self.num_spans):
             s = self.spans[i]
-            misaligned_memcpy(s.loc, s.off, inp + (pos >> 6), pos & 63, s.bits)
+            unaligned_memcpy(s.loc, s.off, inp + (pos >> 6), pos & 63, s.bits)
             pos += s.bits
 
     def __len__(self):
@@ -196,7 +196,7 @@ cdef class BitBuf:
         return NotImplemented
 
 
-cdef uint64_t misaligned_read(uint64_t* src, int off):
+cdef uint64_t unaligned_read(uint64_t* src, int off):
     # Reads a 64 bit word from the given location, with a bit offset that may
     # spread it across two aligned words in memory.
     #
@@ -211,7 +211,7 @@ cdef uint64_t misaligned_read(uint64_t* src, int off):
     return src[0]
 
 
-cdef void misaligned_write(uint64_t* dst, int off, uint64_t val):
+cdef void unaligned_write(uint64_t* dst, int off, uint64_t val):
     # Writes a 64 bit word to the given location, with a bit offset that may
     # spread it across two aligned words in memory.
     #
@@ -228,7 +228,7 @@ cdef void misaligned_write(uint64_t* dst, int off, uint64_t val):
         dst[0] = val
 
 
-cdef void misaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_off, int bits):
+cdef void unaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_off, int bits):
     # A variant of memcpy that can be scoped down to the bit level.
     #
     # CAUTION: In order to use this method, both src and dst MUST have one
@@ -249,8 +249,8 @@ cdef void misaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_o
     for i in range(0, bits, 64):
         # Note: throwing away a factor of 2 in performance here.
         # Note: may touch 1 past end of input and output here.
-        v = misaligned_read(src, src_off)
-        misaligned_write(dst, dst_off, v)
+        v = unaligned_read(src, src_off)
+        unaligned_write(dst, dst_off, v)
         src += 1
         dst += 1
 
@@ -258,8 +258,8 @@ cdef void misaligned_memcpy(uint64_t* dst, int dst_off, uint64_t* src, int src_o
     bits &= 63
     if bits:
         # Note: may touch 1 past end of input and output here.
-        v = misaligned_read(src, src_off)
-        v2 = misaligned_read(dst, dst_off)
+        v = unaligned_read(src, src_off)
+        v2 = unaligned_read(dst, dst_off)
         v &= (1 << bits) - 1
         v2 &= ~((1 << bits) - 1)
-        misaligned_write(dst, dst_off, v | v2)
+        unaligned_write(dst, dst_off, v | v2)
