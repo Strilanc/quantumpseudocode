@@ -1,9 +1,9 @@
-from quantumpseudocode.lens import (
+from quantumpseudocode.operating_context import (
     capture,
-    CaptureLens,
+    CaptureContext,
     EmptyManager,
     emit,
-    Lens,
+    OperatingContext,
 )
 
 from quantumpseudocode.buf import (

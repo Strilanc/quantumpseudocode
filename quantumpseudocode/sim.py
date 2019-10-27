@@ -2,11 +2,11 @@ import random
 from typing import List, Union, Callable, Any, Optional, Tuple, Set, Dict, Iterable
 
 import quantumpseudocode as qp
-import quantumpseudocode.lens
+import quantumpseudocode.operating_context
 import quantumpseudocode.ops.operation
 
 
-class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.ClassicalSimState):
+class Sim(quantumpseudocode.operating_context.OperatingContext, quantumpseudocode.ops.operation.ClassicalSimState):
     def __init__(self,
                  enforce_release_at_zero: bool = True,
                  phase_fixup_bias: Optional[bool] = None,
@@ -95,7 +95,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             assert int(b) == 0, 'Failed to uncompute {}={} before release'.format(name, b)
         del self._int_state[name]
 
-    def modify(self, operation: 'qp.Operation'):
+    def do(self, operation: 'qp.Operation'):
         op, cnt = qp.ControlledOperation.split(operation)
         op.validate_controls(cnt)
         if self.resolve_location(cnt, False):

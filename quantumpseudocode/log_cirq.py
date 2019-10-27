@@ -40,7 +40,7 @@ class MeasureResetGate(cirq.SingleQubitGate):
         return 'Mr'
 
 
-class LogCirqCircuit(qp.Lens):
+class LogCirqCircuit(qp.OperatingContext):
     def __init__(self):
         super().__init__()
         self.circuit = cirq.Circuit()
@@ -49,7 +49,7 @@ class LogCirqCircuit(qp.Lens):
         super().__enter__()
         return self.circuit
 
-    def modify(self, operation: 'qp.Operation'):
+    def do(self, operation: 'qp.Operation'):
         unknown = False
 
         op, controls = separate_controls(operation)
@@ -93,11 +93,11 @@ class LogCirqCircuit(qp.Lens):
         # if unknown:
         #     raise NotImplementedError("Unrecognized operation: {!r}".format(operation))
 
-        if self._prev_simulator is not None:
-            self._prev_simulator.modify(operation)
+        if self._outer_context is not None:
+            self._outer_context.do(operation)
 
 
-class CountNots(qp.Lens):
+class CountNots(qp.OperatingContext):
     def __init__(self):
         super().__init__()
         self.counts = collections.Counter()
@@ -106,7 +106,7 @@ class CountNots(qp.Lens):
         super().__enter__()
         return self.counts
 
-    def modify(self, operation: 'qp.Operation'):
+    def do(self, operation: 'qp.Operation'):
         op, controls = separate_controls(operation)
 
         if isinstance(op, qp.Toggle):
@@ -116,5 +116,5 @@ class CountNots(qp.Lens):
             else:
                 self.counts[len(controls.qubits)] += len(op.targets)
 
-        if self._prev_simulator is not None:
-            self._prev_simulator.modify(operation)
+        if self._outer_context is not None:
+            self._outer_context.do(operation)
