@@ -37,8 +37,8 @@ def test_if_less_than_then_circuit():
         with qp.LogCirqCircuit() as circuit:
             with qp.qmanaged_int(bits=4, name='lhs') as lhs:
                 with qp.qmanaged_int(bits=4, name='rhs') as rhs:
-                    with qp.qmanaged(qp.Qubit(name='_or_eq')) as c:
-                        with qp.qmanaged(qp.Qubit(name='t')) as t:
+                    with qp.qmanaged(name='_or_eq') as c:
+                        with qp.qmanaged(name='t') as t:
                             qp.arithmetic.do_if_less_than(
                                 lhs=lhs,
                                 rhs=rhs,

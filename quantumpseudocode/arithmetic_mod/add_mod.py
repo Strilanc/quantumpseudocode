@@ -37,7 +37,7 @@ def do_add_const_mod(
         lvalue_as_quint += offset & qp.controlled_by(control)
         return
 
-    with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
+    with qp.qmanaged(name='mod_cmp') as q:
         q.init(lvalue_as_quint >= modulus - offset, controls=control)
         lvalue_as_quint += offset & qp.controlled_by(control)
         lvalue_as_quint -= modulus & qp.controlled_by(q)
@@ -69,7 +69,7 @@ def do_add_mod(
         return
 
     with offset.hold_padded_to(n) as offset:
-        with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
+        with qp.qmanaged(name='mod_cmp') as q:
             if forward:
                 offset ^= -1
                 offset += modulus + 1

@@ -28,7 +28,7 @@ def test_xor_equal_gate_circuit():
         with qp.LogCirqCircuit() as circuit:
             with qp.qmanaged_int(bits=3, name='a') as a:
                 with qp.qmanaged_int(bits=4, name='t') as t:
-                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+                    with qp.qmanaged(name='_c') as c:
                         t ^= a
                         t ^= a & qp.controlled_by(c)
 
