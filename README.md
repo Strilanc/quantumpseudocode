@@ -56,3 +56,24 @@ def make_coset_register(value: int, length: int, modulus: int) -> Quint:
 
     return reg
 ```
+
+
+# Building
+
+```bash
+cd quantumpseudocode
+
+# Have a virtual environment
+python3.6 -m venv .venv
+source .venv/bin/activate
+
+# Install dependencies
+sudo apt install python3.6-dev
+pip install -r requirements.txt
+
+# Build binaries.
+python setup.py build_ext --inplace
+
+# Run tests.
+pytest
+```
