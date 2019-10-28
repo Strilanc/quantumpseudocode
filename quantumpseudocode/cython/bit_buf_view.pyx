@@ -23,11 +23,13 @@ cdef class BitView:
     cdef BitSpanPtr* spans
     cdef size_t num_spans
     cdef size_t num_bits
+    cdef object refs
 
-    def __cinit__(self, size_t num_spans):
+    def __cinit__(self, size_t num_spans, size_t num_bits, object refs):
         self.spans = <BitSpanPtr*> PyMem_Malloc(num_spans * sizeof(BitSpanPtr))
         self.num_spans = num_spans
-        self.num_bits = 0
+        self.num_bits = num_bits
+        self.refs = refs
         if not self.spans:
             raise MemoryError("Failed to allocate BitView.spans.")
 
@@ -35,8 +37,10 @@ cdef class BitView:
         PyMem_Free(self.spans)
 
     cpdef BitView concat(BitView self, BitView other):
-        cdef BitView result = BitView(self.num_spans + other.num_spans)
-        result.num_bits = self.num_bits + other.num_bits
+        cdef BitView result = BitView(
+            self.num_spans + other.num_spans,
+            self.num_bits + other.num_bits,
+            self.refs + other.refs)
         memcpy(result.spans, self.spans, sizeof(BitSpanPtr) * self.num_spans)
         memcpy(result.spans + self.num_spans, other.spans, sizeof(BitSpanPtr) * other.num_spans)
         return result
@@ -52,10 +56,10 @@ cdef class BitView:
         result.index = 0
         result.offset = 0
         assert 0 <= index < self.num_bits
-        while self.spans[result.index].bits <= start:
-            start -= self.spans[result.index].bits
+        while self.spans[result.index].bits <= index:
+            index -= self.spans[result.index].bits
             result.index += 1
-        result.offset = start
+        result.offset = index
         return result
 
     cdef void _read_bits_into(self, uint64_t *out):
@@ -124,13 +128,13 @@ cdef class BitView:
 
             # Find where the start and stop locations are.
             if start >= stop:
-                return BitView(0)
+                return BitView(0, 0, ())
             f = self._bit_to_span_index(start)
             f2 = self._bit_to_span_index(stop - 1)
 
             # Copy over the relevant spans.
             n = f2.index - f.index + 1
-            view = BitView(n)
+            view = BitView(n, stop - start, self.refs[f.index:f2.index + 1])
             for i in range(n):
                 view.spans[i] = self.spans[f.index + i]
 
@@ -144,11 +148,60 @@ cdef class BitView:
             if n == 1:
                 view.spans[n - 1].bits = stop - start
             else:
-                view.spans[n - 1].bits = f2.offset
+                view.spans[n - 1].bits = f2.offset + 1
 
             return view
 
         return NotImplemented
+
+    def __setitem__(self, index, value):
+        cdef IndexOffset f
+        cdef IndexOffset f2
+        cdef int start
+        cdef int stop
+        cdef int m
+        cdef uint64_t* dst
+        cdef BitView view
+        cdef size_t words
+        cdef uint64_t* buf
+        cdef BitView other
+
+        if isinstance(index, int):
+            start = index
+            if start < 0:
+                start += <int> self.num_bits
+            if not 0 <= start <= self.num_bits:
+                raise IndexError(f'index={repr(slice)}, len={self.num_bits}')
+            m = value
+            if m != 0 and m != 1:
+                raise ValueError(f'Not a bit: {repr(value)}')
+            f = self._bit_to_span_index(start)
+            f.offset += self.spans[f.index].off
+            m <<= f.offset & 63
+            dst = self.spans[f.index].loc + (f.offset >> 6)
+            dst[0] &= ~(1ULL << (f.offset & 63))
+            dst[0] |= m << (f.offset & 63)
+            return
+
+        if isinstance(index, slice):
+            view = self.__getitem__(index)
+            if isinstance(value, int):
+                view.write_int(value & ~(~int(0) << view.num_bits))
+                return
+
+            if isinstance(value, BitView):
+                other = value
+                if view.num_bits != other.num_bits:
+                    raise ValueError("Wrong size.")
+                words = (view.num_bits + 63) >> 6
+                buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
+                memset(buf, 0, words * sizeof(uint64_t))
+                other._read_bits_into(buf)
+                self._write_bits_from(buf)
+                PyMem_Free(buf)
+                return
+
+        raise ValueError(f'Unrecognized value: {repr(value)}')
 
     def uint64s(self) -> np.ndarray:
         cdef size_t words = (self.num_bits + 63) >> 6
@@ -170,7 +223,7 @@ cdef class BitView:
         cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] uint64s = self.uint64s()
         result = np.zeros(self.num_bits, dtype=np.bool)
         for k in range(self.num_bits):
-            result[k] = ((uint64s[k >> 6]) >> (k & 63ULL)) & 1ULL != 0
+            result[k] = (uint64s[k >> 6] >> (k & 63ULL)) & 1ULL != 0
         return result
 
     def write_int(self, v: int):
@@ -220,42 +273,15 @@ cdef class BitBuf:
     def __dealloc__(self):
         PyMem_Free(self.data)
 
-    def __len__(self):
-        """Number of bits."""
-        return self.length << 6
 
-    def __getitem__(self, index):
-        """Get a bit or a view over bits."""
-        cdef int start
-        cdef int stop
-        cdef BitView view
-        cdef int n
-
-        if isinstance(index, int):
-            start = index
-            return (self.data[start >> 6] >> (start & 63)) & 1
-
-        if isinstance(index, slice):
-            # Get indices.
-            n = <int> self.num_words << 6
-            assert index.step is None, 'slice.step not supported'
-            start = index.start or 0
-            stop = n if index.stop is None else index.stop
-            if start < 0:
-                start += n
-            if stop < 0:
-                stop += n
-            if not 0 <= start <= n or not 0 <= stop <= n:
-                raise IndexError(f'slice={repr(slice)}, len={n}')
-
-            view = BitView(1)
-            view.num_bits = stop - start
-            view.spans[0].loc = self.data + (start >> 6)
-            view.spans[0].off = start & 63
-            view.spans[0].bits = stop - start
-            return view
-
-        return NotImplemented
+def create_buffer(bits: int) -> 'quantumpseudocode.BitView':
+    cdef BitBuf buf = BitBuf((bits + 63) >> 6)
+    cdef BitView view = BitView(1, bits, (buf,))
+    view.num_bits = bits
+    view.spans[0].loc = buf.data
+    view.spans[0].off = 0
+    view.spans[0].bits = bits
+    return view
 
 
 cdef uint64_t unaligned_word_read(uint64_t* src, int off):

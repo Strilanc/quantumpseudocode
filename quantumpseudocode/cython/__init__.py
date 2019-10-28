@@ -1,1 +1,1 @@
-from .bit_buf_view import BitBuf, BitView
+from .bit_buf_view import BitView, create_buffer

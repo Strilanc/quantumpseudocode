@@ -96,8 +96,8 @@ from quantumpseudocode.arithmetic import (
 )
 
 from quantumpseudocode.cython import (
-    BitBuf,
     BitView,
+    create_buffer,
 )
 
 from quantumpseudocode.qalloc import (
