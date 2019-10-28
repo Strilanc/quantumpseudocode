@@ -18,11 +18,17 @@ class Qubit(RValue[bool], LValue[bool]):
         # Union[None, 'qp.QubitIntersection', 'qp.Qubit', bool, 'qp.RValue[bool]']
         pass
 
-    def __init__(self,
-                 name: 'Union[qp.UniqueHandle, str]' = '',
-                 index: Optional[int] = None):
-        self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
+    def __init__(self, qureg: 'qp.NamedQureg', index: int):
+        if not isinstance(qureg, qp.NamedQureg):
+            raise ValueError('not isinstance(qureg, qp.NamedQureg)')
+        if not isinstance(index, int):
+            raise ValueError('not isinstance(index, int)')
+        self.qureg = qureg
         self.index = index
+
+    @staticmethod
+    def lonely(name: Union['qp.UniqueHandle', str]) -> 'qp.Qubit':
+        return qp.NamedQureg(name, 1)[0]
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
@@ -32,7 +38,7 @@ class Qubit(RValue[bool], LValue[bool]):
         return self
 
     def make_storage_location(self, name: Optional[str] = None):
-        return qp.Qubit(name)
+        return qp.Qubit.lonely(name)
 
     def init_storage_location(self,
                               location: 'qp.Qubit',
@@ -46,15 +52,15 @@ class Qubit(RValue[bool], LValue[bool]):
             qp.phase_flip(bit & self & controls)
 
     def _value_equality_values_(self):
-        return self.name, self.index
+        return self.qureg, self.index
 
     def __str__(self):
-        if self.index is None:
-            return str(self.name)
-        return '{}[{}]'.format(self.name, self.index)
+        if len(self.qureg) == 1:
+            return str(self.qureg.name)
+        return '{}[{}]'.format(self.qureg.name, self.index)
 
     def __repr__(self):
-        return 'qp.Qubit({!r}, {!r})'.format(self.name, self.index)
+        return 'qp.Qubit({!r}, {!r})'.format(self.qureg, self.index)
 
     def __and__(self, other):
         if isinstance(other, Qubit):

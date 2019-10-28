@@ -26,8 +26,8 @@ def test_len_getitem():
     with pytest.raises(IndexError):
         _ = q[-100]
 
-    assert q[0] == qp.Qubit(h, 0)
-    assert q[-1] == qp.Qubit(h, 9)
+    assert q[0] == qp.Qubit(q.qureg, 0)
+    assert q[-1] == qp.Qubit(q.qureg, 9)
     assert q[2:4] == qp.Quint(qp.RangeQureg(
         qp.NamedQureg(h, 10), range(2, 4)))
 
@@ -36,7 +36,7 @@ def test_set_item_blocks():
     q = qp.Quint(qp.NamedQureg('test', 10))
 
     with pytest.raises(NotImplementedError):
-        q[2] = qp.Qubit()
+        q[2] = qp.Qubit.lonely('')
 
 
 def test_mul_rmul():
@@ -67,7 +67,7 @@ def test_ixor():
     ]
 
     q3 = qp.Quint(qp.NamedQureg('test3', 5))
-    c = qp.Qubit('c')
+    c = qp.Qubit.lonely('c')
     with qp.capture() as out:
         q ^= q3 & qp.controlled_by(c)
     assert out == [

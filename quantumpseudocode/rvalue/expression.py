@@ -116,7 +116,7 @@ class QubitIntersection(RValue[bool]):
         return NotImplemented
 
     def make_storage_location(self, name: Optional[str] = None):
-        return qp.Qubit(name)
+        return qp.Qubit.lonely(name)
 
     def init_storage_location(self,
                               location: 'qp.Qubit',

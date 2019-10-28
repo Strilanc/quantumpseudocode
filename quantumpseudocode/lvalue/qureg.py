@@ -34,10 +34,11 @@ class RawQureg(Qureg):
         return len(self.qubits)
 
     def __getitem__(self, item):
-        r = range(len(self))[item]
-        if isinstance(r, range):
-            return RangeQureg(self, r)
-        return self.qubits[r]
+        if isinstance(item, int):
+            return self.qubits[item]
+        if isinstance(item, slice):
+            return RawQureg(self.qubits[item])
+        raise ValueError(f'unrecognized index: {item}')
 
     def __str__(self):
         return '[{}]'.format(', '.join(str(e) for e in self.qubits))
@@ -61,7 +62,7 @@ class NamedQureg(Qureg):
     def __getitem__(self, item):
         r = range(self.length)[item]
         if isinstance(r, int):
-            return qp.Qubit(self.name, r)
+            return qp.Qubit(self, r)
         if isinstance(r, range):
             return RangeQureg(self, r)
         return NotImplemented

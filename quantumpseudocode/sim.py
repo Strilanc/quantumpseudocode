@@ -114,11 +114,11 @@ def _fuse(qubits: Iterable[qp.Qubit]) -> List[Tuple[str, slice]]:
             result.append((cur_name, slice(cur_start, cur_end)))
 
     for q in qubits:
-        if q.name == cur_name and q.index == cur_end:
+        if q.qureg.name == cur_name and q.index == cur_end:
             cur_end += 1
         else:
             flush()
-            cur_name = q.name
+            cur_name = q.qureg.name
             cur_start = q.index or 0
             cur_end = cur_start + 1
     flush()

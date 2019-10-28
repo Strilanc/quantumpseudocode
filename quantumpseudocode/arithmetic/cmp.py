@@ -56,7 +56,7 @@ class IfLessThanRVal(RValue[bool]):
         self.or_equal = or_equal
 
     def make_storage_location(self, name: Optional[str] = None) -> Any:
-        return qp.Qubit(name)
+        return qp.Qubit.lonely(name)
 
     def phase_flip_if(self, controls: 'qp.QubitIntersection'):
         if controls == qp.QubitIntersection.NEVER:

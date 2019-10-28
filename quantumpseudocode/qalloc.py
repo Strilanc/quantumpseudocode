@@ -8,7 +8,7 @@ from quantumpseudocode.ops import Operation
 
 def qmanaged(val: Union[None, int, 'qp.Qubit', 'qp.Qureg', 'qp.Quint'] = None, *, name: Optional[str] = None) -> 'qp.QallocManager':
     if val is None:
-        q = qp.Qubit('qalloc' if name is None else name)
+        q = qp.Qubit.lonely('qalloc' if name is None else name)
         return QallocManager(qp.RawQureg([q]), q)
 
     if isinstance(val, int):
@@ -78,7 +78,7 @@ def alloc(bit_count: Union[None, int] = None,
         return loc
 
     if bit_count is None:
-        result = qp.Qubit(name or '')
+        result = qp.Qubit.lonely(name or '')
         reg = qp.RawQureg([result])
     elif isinstance(bit_count, int):
         result = qp.NamedQureg(name or '', length=bit_count)
@@ -212,4 +212,4 @@ class ReleaseQuregOperation(Operation):
 def _split_qureg(qureg) -> List[Tuple[str, int]]:
     if isinstance(qureg, qp.NamedQureg):
         return [(qureg.name, len(qureg))]
-    return [(q.name, 1) for q in qureg]
+    return [(q.qureg.name, 1) for q in qureg]

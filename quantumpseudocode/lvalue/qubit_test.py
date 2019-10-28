@@ -7,29 +7,27 @@ import quantumpseudocode as qp
 def test_init():
     eq = cirq.testing.EqualsTester()
 
-    q1 = qp.Qubit('test', 10)
-    q2 = qp.Qubit('test', 10)
+    q1 = qp.NamedQureg('test', 11)[10]
+    q2 = qp.NamedQureg('test', 11)[10]
     assert 'test' in str(q1)
     assert 'test' in str(q2)
     assert str(q1) != str(q2)
 
-    eq.add_equality_group(qp.Qubit())
-    eq.add_equality_group(qp.Qubit())
+    eq.add_equality_group(qp.Qubit.lonely(''))
+    eq.add_equality_group(qp.Qubit.lonely(''))
     eq.add_equality_group(q1)
     eq.add_equality_group(q2)
-    eq.add_equality_group(qp.Qubit('q'))
+    eq.add_equality_group(qp.Qubit.lonely('q'))
 
     h = qp.UniqueHandle('test')
-    eq.add_equality_group(qp.Qubit(h), qp.Qubit(h))
-    eq.add_equality_group(qp.Qubit(h, 5))
-    eq.add_equality_group(qp.Qubit(h, 0), qp.Qubit(h, 0))
+    eq.add_equality_group(qp.Qubit.lonely(h), qp.Qubit.lonely(h))
 
 
 def test_and():
-    a = qp.Qubit('a')
-    b = qp.Qubit('b')
-    c = qp.Qubit('c')
-    d = qp.Qubit('d')
+    a = qp.Qubit.lonely('a')
+    b = qp.Qubit.lonely('b')
+    c = qp.Qubit.lonely('c')
+    d = qp.Qubit.lonely('d')
     s = qp.QubitIntersection((c, d))
     assert a & b == qp.QubitIntersection((a, b))
     assert a & b & c == qp.QubitIntersection((a, b, c))
@@ -41,9 +39,9 @@ def test_and():
 
 
 def test_ixor():
-    q = qp.Qubit('q')
-    c = qp.Qubit('c')
-    d = qp.Qubit('d')
+    q = qp.Qubit.lonely('q')
+    c = qp.Qubit.lonely('c')
+    d = qp.Qubit.lonely('d')
 
     # Unsupported classes cause type error.
     with pytest.raises(TypeError):
@@ -81,9 +79,9 @@ def test_ixor():
 
 def test_repr():
     cirq.testing.assert_equivalent_repr(
-        qp.Qubit('test'),
+        qp.Qubit.lonely('test'),
         setup_code='import quantumpseudocode as qp')
 
     cirq.testing.assert_equivalent_repr(
-        qp.Qubit('test', 10),
+        qp.NamedQureg('test', 11)[10],
         setup_code='import quantumpseudocode as qp')

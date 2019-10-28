@@ -57,10 +57,10 @@ def test_uncompute():
 
 
 def test_intersection_and():
-    a = qp.Qubit('a')
-    b = qp.Qubit('b')
-    c = qp.Qubit('c')
-    d = qp.Qubit('d')
+    a = qp.Qubit.lonely('a')
+    b = qp.Qubit.lonely('b')
+    c = qp.Qubit.lonely('c')
+    d = qp.Qubit.lonely('d')
     assert a & b & c == qp.QubitIntersection((a, b, c))
     assert a & b & c & d == qp.QubitIntersection((a, b, c, d))
     assert (a & b) & c == a & (b & c)
@@ -75,8 +75,8 @@ def test_intersection_and():
 @pytest.mark.parametrize('value', [
     lambda: qp.QubitIntersection.NEVER,
     lambda: qp.QubitIntersection.ALWAYS,
-    lambda: qp.QubitIntersection((qp.Qubit('a'),)),
-    lambda: qp.QubitIntersection((qp.Qubit('a'), qp.Qubit('b'))),
+    lambda: qp.QubitIntersection((qp.Qubit.lonely('a'),)),
+    lambda: qp.QubitIntersection((qp.Qubit.lonely('a'), qp.Qubit.lonely('b'))),
 ])
 def test_intersection_repr(value):
     cirq.testing.assert_equivalent_repr(

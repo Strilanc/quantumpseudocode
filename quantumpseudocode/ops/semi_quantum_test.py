@@ -23,7 +23,7 @@ def test_quint():
     with pytest.raises(TypeError, match='Expected a qp.Quint'):
         _ = f('a')
     with pytest.raises(TypeError, match='Expected a qp.Quint'):
-        _ = f(qp.Qubit('a'))
+        _ = f(qp.Qubit.lonely('a'))
     with pytest.raises(TypeError, match='Expected a qp.Quint'):
         _ = f(qp.IntRValue(2))
 
@@ -78,7 +78,7 @@ def test_qubit():
     @qp.semi_quantum
     def f(x: qp.Qubit):
         return x
-    q = qp.Qubit('a', 10)
+    q = qp.NamedQureg('a', 11)[10]
     assert f(q) is q
     with pytest.raises(TypeError, match='Expected a qp.Qubit'):
         _ = f(2)
@@ -94,7 +94,7 @@ def test_qubit_parens():
     @qp.semi_quantum()
     def f(x: qp.Qubit):
         return x
-    q = qp.Qubit('a', 10)
+    q = qp.NamedQureg('a', 11)[10]
     assert f(q) is q
 
 
@@ -104,7 +104,7 @@ def test_prefix():
         return x
     with qp.capture():
         q = f(False)
-    assert q.name.key == '_test_x'
+    assert q.qureg.name.key == '_test_x'
 
 
 def test_qubit_borrowed():
@@ -112,7 +112,7 @@ def test_qubit_borrowed():
     def f(x: qp.Qubit.Borrowed):
         return x
 
-    q = qp.Qubit('a', 10)
+    q = qp.NamedQureg('a', 11)[10]
     assert f(q) is q
 
     with qp.capture() as out:
@@ -157,8 +157,8 @@ def test_qubit_control():
         assert isinstance(x, qp.QubitIntersection)
         return x
 
-    q = qp.Qubit('a', 10)
-    q2 = qp.Qubit('b', 8)
+    q = qp.NamedQureg('a', 11)[10]
+    q2 = qp.NamedQureg('b', 11)[8]
 
     # Note: The lack of capture context means we are implicitly asserting the following invokations perform no
     # quantum operations such as allocating a qubit.
@@ -196,7 +196,7 @@ def test_qubit_control():
         v = f(rval)
         assert isinstance(v, qp.QubitIntersection)
         q = v.qubits[0]
-        assert q.name.key == '_f_x'
+        assert q.qureg.name.key == '_f_x'
         n = len(out)
         assert n > 6
     assert len(out) == n
