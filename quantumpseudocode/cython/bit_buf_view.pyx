@@ -7,9 +7,9 @@ cimport numpy as np
 
 cdef struct BitSpanPtr:
     # A pointer augmented with bit alignment and length information.
-    uint64_t *loc
-    int off
-    int bits
+    uint64_t *loc  # Aligned pointer to first relevant-bit-containing word.
+    int off  # Bit alignment offset. Must be in [0, 64).
+    int bits  # Length.
 
 
 cdef struct IndexOffset:
@@ -42,7 +42,15 @@ cdef class BitView:
         return result
 
     cdef IndexOffset _bit_to_span_index(self, int index):
+        # Finds where the given bit index is stored.
+        # Returns:
+        #     A struct with index and offset properties.
+        #     index: The index of the containing span in self.spans.
+        #     offset: How many bits to skip within that span (in addition to
+        #         the `off` property of the span).
         cdef IndexOffset result
+        result.index = 0
+        result.offset = 0
         assert 0 <= index < self.num_bits
         while self.spans[result.index].bits <= start:
             start -= self.spans[result.index].bits
@@ -86,33 +94,88 @@ cdef class BitView:
         return self.num_bits
 
     def __getitem__(self, index):
-        cdef IndexOffset found
-        cdef size_t start
-        cdef size_t stop
+        cdef IndexOffset f
+        cdef IndexOffset f2
+        cdef int start
+        cdef int stop
         cdef BitView view
 
         if isinstance(index, int):
-            assert 0 <= index < self.num_bits
-            found = self._bit_to_span_index(index)
-            found.offset += self.spans[found.index].off
-            return (self.spans[found.index].loc[found.offset >> 6] >> (found.offset & 63)) & 1
+            start = index
+            if start < 0:
+                start += <int> self.num_bits
+            if not 0 <= start <= self.num_bits:
+                raise IndexError(f'index={repr(slice)}, len={self.num_bits}')
+            f = self._bit_to_span_index(start)
+            f.offset += self.spans[f.index].off
+            return (self.spans[f.index].loc[f.offset >> 6] >> (f.offset & 63)) & 1
+
+        if isinstance(index, slice):
+            # Get indices.
+            assert index.step is None, 'slice.step not supported'
+            start = index.start or 0
+            stop = <int> self.num_bits if index.stop is None else index.stop
+            if start < 0:
+                start += <int> self.num_bits
+            if stop < 0:
+                stop += <int> self.num_bits
+            if not 0 <= start <= self.num_bits or not 0 <= stop <= self.num_bits:
+                raise IndexError(f'slice={repr(slice)}, len={self.num_bits}')
+
+            # Find where the start and stop locations are.
+            if start >= stop:
+                return BitView(0)
+            f = self._bit_to_span_index(start)
+            f2 = self._bit_to_span_index(stop - 1)
+
+            # Copy over the relevant spans.
+            n = f2.index - f.index + 1
+            view = BitView(n)
+            for i in range(n):
+                view.spans[i] = self.spans[f.index + i]
+
+            # Left-trim start span and canonicalize.
+            view.spans[0].off += f.offset
+            view.spans[0].bits -= f.offset
+            view.spans[0].loc += view.spans[0].off >> 6
+            view.spans[0].off &= 63
+
+            # Right-trim end span.
+            if n == 1:
+                view.spans[n - 1].bits = stop - start
+            else:
+                view.spans[n - 1].bits = f2.offset
+
+            return view
 
         return NotImplemented
 
-    def uint64s(self):
+    def uint64s(self) -> np.ndarray:
         cdef size_t words = (self.num_bits + 63) >> 6
         cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] out = np.zeros(words, dtype=np.uint64)
         self._read_bits_into(<uint64_t*> out.data)
         return out
 
-    def write_int(self, v):
-        cdef size_t words = (self.num_bits + 63) >> 6
-        cdef uint64_t* buf = <uint64_t*> PyMem_Malloc(words * sizeof(uint64_t))
-        memset(buf, 0, words * sizeof(uint64_t))
-        for i in range(words):
-            buf[i] = (v >> (i * 64)) & 63
-        self._write_bits_from(buf)
-        PyMem_Free(buf)
+    def __bytes__(self):
+        return bytes(self.uint64s())
+
+    def __int__(self) -> int:
+        return int.from_bytes(bytes(self), byteorder='little')
+
+    def uint8s(self) -> np.ndarray:
+        return np.frombuffer(self.uint64s(), dtype=np.uint8)
+
+    def bits(self) -> np.ndarray:
+        cdef uint64_t k
+        cdef np.ndarray[np.uint64_t, ndim=1, mode='c'] uint64s = self.uint64s()
+        result = np.zeros(self.num_bits, dtype=np.bool)
+        for k in range(self.num_bits):
+            result[k] = ((uint64s[k >> 6]) >> (k & 63ULL)) & 1ULL != 0
+        return result
+
+    def write_int(self, v: int):
+        cdef bytes data = v.to_bytes(((self.num_bits + 63) >> 6) * 8, 'little')
+        self._write_bits_from(<uint64_t*><char *>data)
 
     def write_bits(self, bits):
         cdef size_t words = (len(bits) + 63) >> 6
@@ -136,21 +199,6 @@ cdef class BitView:
         self._xor_bits_from(buf)
         PyMem_Free(buf)
         return self
-
-    def __int__(self):
-        result = 0
-        for word in self.uint64s():
-            result <<= 64
-            result |= int(word)
-        return result
-
-    def bits(self):
-        cdef int k
-        uint64s = self.uint64s()
-        result = np.zeros(self.num_bits, dtype=np.bool)
-        for k in range(self.num_bits):
-            result[k] = (int(uint64s[k >> 6]) >> (k & 63)) & 1
-        return result
 
     def __str__(self):
         return ''.join(['1' if b else '0' for b in self.bits()])
@@ -178,19 +226,28 @@ cdef class BitBuf:
 
     def __getitem__(self, index):
         """Get a bit or a view over bits."""
-        cdef size_t start
-        cdef size_t stop
+        cdef int start
+        cdef int stop
         cdef BitView view
+        cdef int n
 
         if isinstance(index, int):
             start = index
             return (self.data[start >> 6] >> (start & 63)) & 1
 
         if isinstance(index, slice):
-            assert index.step is None
+            # Get indices.
+            n = <int> self.num_words << 6
+            assert index.step is None, 'slice.step not supported'
             start = index.start or 0
-            stop = index.stop or self.num_words << 6
-            assert 0 <= start < stop <= self.num_words << 6
+            stop = n if index.stop is None else index.stop
+            if start < 0:
+                start += n
+            if stop < 0:
+                stop += n
+            if not 0 <= start <= n or not 0 <= stop <= n:
+                raise IndexError(f'slice={repr(slice)}, len={n}')
+
             view = BitView(1)
             view.num_bits = stop - start
             view.spans[0].loc = self.data + (start >> 6)
@@ -232,7 +289,7 @@ cdef uint64_t unaligned_partial_word_read(uint64_t* src, int off, int width):
     if 64 - off < width:
         result |= src[1] << (64 - off)
     if width != 64:
-        result &= ~(-1ULL << width)
+        result &= ~(~0ULL << width)
     return result
 
 
@@ -266,12 +323,12 @@ cdef void unaligned_partial_word_write(uint64_t* dst, int off, int width, uint64
     cdef int n2 = width - n1
     cdef uint64_t m
     if n2 > 0:
-        dst[1] &= -1ULL << n2
+        dst[1] &= ~0ULL << n2
         dst[1] |= val >> n1
     if n1 == 64:
         dst[0] = val
     else:
-        m = ~(-1ULL << n1)
+        m = ~(~0ULL << n1)
         dst[0] &= ~(m << off)
         dst[0] |= (val & m) << off
 
@@ -306,7 +363,7 @@ cdef void unaligned_partial_word_xor(uint64_t* dst, int off, int width, uint64_t
     if n1 == 64:
         dst[0] ^= val
     else:
-        m = ~(-1ULL << n1)
+        m = ~(~0ULL << n1)
         dst[0] ^= (val & m) << off
 
 
