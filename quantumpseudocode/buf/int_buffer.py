@@ -261,6 +261,12 @@ class IntBuf:
         length = length if isinstance(length, int) else random.choice(length)
         return IntBuf.raw(length=length, val=random.randint(0, 2**length-1))
 
+    @staticmethod
+    def random_mod(modulus: int) -> 'IntBuf':
+        """Generates a minimum length IntBuf for the given modulus, with a random value less than the modulus."""
+        length = (modulus - 1).bit_length()
+        return IntBuf.raw(length=length, val=random.randint(0, modulus - 1))
+
     def copy(self) -> 'IntBuf':
         return IntBuf.raw(length=len(self), val=int(self))
 

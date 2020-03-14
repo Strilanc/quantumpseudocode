@@ -13,6 +13,8 @@ def assert_semi_quantum_func_is_consistent(
         fuzz_space: Dict[str, Any] = None,
         fuzz_count: int = 0,
         fixed: Sequence[Dict[str, Any]] = ()):
+    __tracebackhide__ = True
+
     classical = getattr(func, 'classical', None)
     assert classical is not None, f'Function {func} does not specify a classical= decorator argument.'
     assert fuzz_count or fixed
@@ -29,6 +31,7 @@ def _assert_semi_quantum_func_is_consistent(
         quantum_has_control: bool,
         classical_func: Callable,
         kwargs: Dict[str, Any]):
+    __tracebackhide__ = True
 
     if 'control' not in kwargs and quantum_has_control:
         for control in [False, True]:

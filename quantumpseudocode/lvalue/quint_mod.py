@@ -58,15 +58,19 @@ class QuintMod:
                 return result
 
         if isinstance(other, int):
-            qp.PlusEqualConstMod(lvalue=self[:],
-                                 offset=int(other),
-                                 modulus=self.modulus).emit_ops(controls)
+            qp.arithmetic_mod.do_plus_const_mod(
+                lvalue=self[:],
+                offset=other,
+                modulus=self.modulus,
+                control=controls)
             return self
 
         if isinstance(other, (qp.Quint, qp.RValue)):
-            qp.PlusEqualMod(lvalue=self[:],
-                            offset=other,
-                            modulus=self.modulus).emit_ops(controls)
+            qp.arithmetic_mod.do_plus_mod(
+                lvalue=self[:],
+                offset=other,
+                modulus=self.modulus,
+                control=controls)
             return self
 
         return NotImplemented
@@ -84,17 +88,22 @@ class QuintMod:
                 return result
 
         if isinstance(other, int):
-            qp.PlusEqualConstMod(lvalue=self[:],
-                                 offset=-int(other) % self.modulus,
-                                 modulus=self.modulus).emit_ops(controls)
+            qp.arithmetic_mod.do_plus_const_mod(
+                lvalue=self[:],
+                offset=other,
+                modulus=self.modulus,
+                control=controls,
+                forward=False)
             return self
 
         if isinstance(other, (qp.Quint, qp.RValue)):
             other, controls = qp.ControlledRValue.split(other)
-            qp.minus_mod(control=controls,
-                         lvalue=self[:],
-                         offset=other,
-                         modulus=self.modulus)
+            qp.arithmetic_mod.do_plus_mod(
+                lvalue=self[:],
+                offset=other,
+                modulus=self.modulus,
+                control=controls,
+                forward=False)
             return self
 
         return NotImplemented

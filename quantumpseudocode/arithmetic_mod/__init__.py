@@ -1,5 +1,4 @@
 from .add_mod import (
-    PlusEqualConstMod,
-    PlusEqualMod,
-    minus_mod,
+    do_plus_const_mod,
+    do_plus_mod,
 )

@@ -97,7 +97,11 @@ class ControlledBy:
         return self.__and__(other)
 
 
-def controlled_by(qubits: Union[qp.Qubit, qp.QubitIntersection]):
+def controlled_by(qubits: Union[bool, qp.Qubit, qp.QubitIntersection]):
     if isinstance(qubits, qp.Qubit):
         qubits = qp.QubitIntersection((qubits,))
+    if qubits is False:
+        qubits = qp.QubitIntersection.NEVER
+    if qubits is True:
+        qubits = qp.QubitIntersection.ALWAYS
     return ControlledBy(qubits)

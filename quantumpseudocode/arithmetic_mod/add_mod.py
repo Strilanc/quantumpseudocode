@@ -2,123 +2,96 @@ import quantumpseudocode as qp
 from quantumpseudocode.ops import Op, semi_quantum
 
 
-class PlusEqualConstMod(Op):
-    @staticmethod
-    def alloc_prefix():
-        return '_addc_mod_'
-
-    @staticmethod
-    def biemulate(forward: bool,
-                  *,
-                  lvalue: 'qp.IntBuf',
-                  offset: int,
-                  modulus: int):
-        v = int(lvalue)
-        assert v < modulus
-        sign = 1 if forward else -1
-        lvalue[:] = (v + offset * sign) % modulus
-
-    @staticmethod
-    def do(controls: 'qp.QubitIntersection',
-           *,
-           lvalue: qp.Quint,
-           offset: int,
-           modulus: int):
-        assert 0 <= offset < modulus
-        assert isinstance(lvalue, qp.Quint)
-        assert modulus > 0
-        n = (modulus - 1).bit_length()
-        assert len(lvalue) >= n
-
-        if not modulus & (modulus - 1):
-            lvalue += offset & qp.controlled_by(controls)
-            return
-
-        with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
-            q.init(lvalue >= modulus - offset, controls=controls)
-            lvalue += offset & qp.controlled_by(controls)
-            lvalue -= modulus & qp.controlled_by(q & controls)
-            q.clear(lvalue < offset, controls=controls)
-
-    @staticmethod
-    def describe(*, lvalue, offset, modulus):
-        return '{} += {} (mod {})'.format(lvalue, offset, modulus)
+def do_plus_const_mod_classical(*,
+                                lvalue: qp.IntBuf,
+                                offset: int,
+                                modulus: int,
+                                forward: bool = True):
+    if not forward:
+        offset *= -1
+    lvalue[:] = (int(lvalue) + offset) % modulus
 
 
-class PlusEqualMod(Op):
-    @staticmethod
-    def alloc_prefix():
-        return '_addc_mod_'
-
-    @staticmethod
-    def biemulate(forward: bool,
-                  *,
-                  lvalue: 'qp.IntBuf',
-                  offset: int,
-                  modulus: int):
-        v = int(lvalue)
-        assert v < modulus
-        sign = 1 if forward else -1
-        lvalue[:] = (v + offset * sign) % modulus
-
-    @staticmethod
-    def do(controls: 'qp.QubitIntersection',
-           *,
-           lvalue: qp.Quint,
-           offset: qp.Quint,
-           modulus: int):
-        assert len(offset) <= len(lvalue)
-        assert isinstance(lvalue, qp.Quint)
-        assert modulus > 0
-        n = (modulus - 1).bit_length()
-        assert len(lvalue) >= n
-
-        if not modulus & (modulus - 1):
-            lvalue += offset & qp.controlled_by(controls)
-            return
-
-        with offset.hold_padded_to(n) as offset:
-            with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
-                offset ^= -1
-                offset += modulus + 1
-                q.init(lvalue >= offset, controls=controls)
-                offset -= modulus + 1
-                offset ^= -1
-
-                lvalue += offset & qp.controlled_by(controls)
-                lvalue -= modulus & qp.controlled_by(q & controls)
-                q.clear(lvalue < offset, controls=controls)
-
-    @staticmethod
-    def describe(*, lvalue, offset, modulus):
-        return '{} += {} (mod {})'.format(lvalue, offset, modulus)
+def do_plus_mod_classical(*,
+                          lvalue: qp.IntBuf,
+                          offset: qp.IntBuf,
+                          modulus: int,
+                          forward: bool = True):
+    offset = int(offset)
+    if not forward:
+        offset *= -1
+    lvalue[:] = (int(lvalue) + offset) % modulus
 
 
-@semi_quantum(alloc_prefix='_minus_mod_')
-def minus_mod(control: 'qp.Qubit.Control',
-              *,
-              lvalue: qp.Quint,
-              offset: qp.Quint.Borrowed,
-              modulus: int):
-    assert len(offset) <= len(lvalue)
+@semi_quantum(alloc_prefix='_do_plus_const_mod_', classical=do_plus_const_mod_classical)
+def do_plus_const_mod(*,
+                      control: qp.Qubit.Control = True,
+                      lvalue: qp.Quint,
+                      offset: int,
+                      modulus: int,
+                      forward: bool = True):
+    assert isinstance(control, qp.QubitIntersection) and len(control.qubits) <= 1
     assert isinstance(lvalue, qp.Quint)
+    assert isinstance(offset, int)
+    assert isinstance(modulus, int)
     assert modulus > 0
     n = (modulus - 1).bit_length()
     assert len(lvalue) >= n
+    if not forward:
+        offset *= -1
+    offset %= modulus
 
     if not modulus & (modulus - 1):
-        lvalue -= offset & qp.controlled_by(control)
+        lvalue += offset & qp.controlled_by(control)
+        return
+
+    with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
+        q.init(lvalue >= modulus - offset, controls=control)
+        lvalue += offset & qp.controlled_by(control)
+        lvalue -= modulus & qp.controlled_by(q & control)
+        q.clear(lvalue < offset, controls=control)
+
+
+@semi_quantum(alloc_prefix='_do_plus_mod_', classical=do_plus_mod_classical)
+def do_plus_mod(control: 'qp.Qubit.Control' = True,
+                *,
+                lvalue: qp.Quint,
+                offset: qp.Quint.Borrowed,
+                modulus: int,
+                forward: bool = True):
+    assert isinstance(lvalue, qp.Quint)
+    assert modulus > 0
+    n = (modulus - 1).bit_length()
+    assert len(offset) <= len(lvalue)
+    assert len(lvalue) >= n
+
+    if not modulus & (modulus - 1):
+        if forward:
+            lvalue[:n] += offset & qp.controlled_by(control)
+        else:
+            lvalue[:n] -= offset & qp.controlled_by(control)
         return
 
     with offset.hold_padded_to(n) as offset:
         with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
-            q.init(lvalue < offset, controls=control)
-            lvalue += modulus & qp.controlled_by(q & control)
-            lvalue -= offset & qp.controlled_by(control)
+            if forward:
+                offset ^= -1
+                offset += modulus + 1
+                q.init(lvalue >= offset, controls=control)
+                offset -= modulus + 1
+                offset ^= -1
 
-            offset ^= -1
-            offset += modulus + 1
-            q.clear(lvalue >= offset, controls=control)
-            offset -= modulus + 1
-            offset ^= -1
+                lvalue += offset & qp.controlled_by(control)
+                lvalue -= modulus & qp.controlled_by(q & control)
+                q.clear(lvalue < offset, controls=control)
+            else:
+                q.init(lvalue < offset, controls=control)
+                lvalue += modulus & qp.controlled_by(q & control)
+                lvalue -= offset & qp.controlled_by(control)
+
+                offset ^= -1
+                offset += modulus + 1
+                q.clear(lvalue >= offset, controls=control)
+                offset -= modulus + 1
+                offset ^= -1
 
