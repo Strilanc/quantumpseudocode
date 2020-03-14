@@ -29,6 +29,9 @@ class MultiNot(cirq.Operation):
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs):
         return ['X'] * args.known_qubit_count
 
+    def __repr__(self):
+        return f'qp.MultiNot({self._qubits!r})'
+
 
 class MeasureXFixupGate(cirq.SingleQubitGate):
     def _circuit_diagram_info_(self, args):

@@ -18,6 +18,39 @@ def test_ceil_lg2():
     assert f((1 << 100) + 1) == 101
 
 
+def test_ceil_power_of_two():
+    f = qp.ceil_power_of_two
+    assert f(0) == 1
+    assert f(1) == 1
+    assert f(2) == 2
+    assert f(3) == 4
+    assert f(4) == 4
+    assert f(5) == 8
+    assert f(6) == 8
+    assert f(7) == 8
+    assert f(8) == 8
+    assert f(9) == 16
+    assert f((1 << 100) - 1) == 1 << 100
+    assert f((1 << 100)) == 1 << 100
+    assert f((1 << 100) + 1) == 1 << 101
+
+
+def test_floor_power_of_two():
+    f = qp.floor_power_of_two
+    assert f(1) == 1
+    assert f(2) == 2
+    assert f(3) == 2
+    assert f(4) == 4
+    assert f(5) == 4
+    assert f(6) == 4
+    assert f(7) == 4
+    assert f(8) == 8
+    assert f(9) == 8
+    assert f((1 << 100) - 1) == 1 << 99
+    assert f((1 << 100)) == 1 << 100
+    assert f((1 << 100) + 1) == 1 << 100
+
+
 def test_little_endian_int():
     f = qp.little_endian_int
     assert f([]) == 0

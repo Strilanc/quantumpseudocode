@@ -11,6 +11,7 @@ from .add import (
 from .cmp import (
     IfLessThanRVal,
     EffectIfLessThan,
+    QuintEqConstRVal,
 )
 
 from .mul import (

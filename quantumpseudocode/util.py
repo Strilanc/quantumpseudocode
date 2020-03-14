@@ -1,3 +1,5 @@
+import math
+
 import cirq
 import inspect
 from typing import Callable, TypeVar, Generic, List, Dict, Iterable, Any, get_type_hints, Optional, Tuple
@@ -12,6 +14,14 @@ def ceil_lg2(x: int) -> int:
     if x <= 1:
         return 0
     return (x - 1).bit_length()
+
+
+def ceil_power_of_two(x: int) -> int:
+    return 1 << ceil_lg2(x)
+
+
+def floor_power_of_two(x: int) -> int:
+    return 1 << floor_lg2(x)
 
 
 def floor_lg2(x: int) -> int:

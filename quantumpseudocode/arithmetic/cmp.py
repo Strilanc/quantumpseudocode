@@ -51,6 +51,51 @@ class EffectIfLessThan(Op):
             lhs, rhs, or_equal, effect)
 
 
+class QuintEqConstRVal(RValue[bool]):
+    def __init__(self,
+                 lhs: 'qp.Quint',
+                 rhs: int,
+                 invert: bool = False):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.invert = invert
+
+    def make_storage_location(self, name: Optional[str] = None) -> Any:
+        return qp.Qubit(name)
+
+    def init_storage_location(self,
+                              location: Any,
+                              controls: 'qp.QubitIntersection'):
+        if self.rhs & (-1 << len(self.lhs)):
+            location ^= self.invert
+            return
+        self.lhs ^= ~self.rhs
+        location ^= qp.QubitIntersection(tuple(self.lhs)) & controls
+        location ^= self.invert
+        self.lhs ^= ~self.rhs
+
+    def del_storage_location(self,
+                             location: Any,
+                             controls: 'qp.QubitIntersection'):
+        if self.rhs & (-1 << len(self.lhs)):
+            with qp.measurement_based_uncomputation(location) as b:
+                if b:
+                    qp.phase_flip(self.invert)
+            return
+        with qp.measurement_based_uncomputation(location) as b:
+            if b:
+                self.lhs ^= ~self.rhs
+                qp.phase_flip(qp.QubitIntersection(tuple(self.lhs)) & controls & b)
+                qp.phase_flip(self.invert)
+                self.lhs ^= ~self.rhs
+
+    def __str__(self):
+        return f'{self.lhs} == {self.rhs}'
+
+    def __repr__(self):
+        return f'qp.QuintEqConstRVal({self.lhs!r}, {self.rhs!r})'
+
+
 class IfLessThanRVal(RValue[bool]):
     def __init__(self,
                  lhs: RValue[int],

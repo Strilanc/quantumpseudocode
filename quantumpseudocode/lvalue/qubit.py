@@ -16,6 +16,10 @@ class Qubit:
         self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
         self.index = index
 
+    @property
+    def qureg(self):
+        return qp.RawQureg([self])
+
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
         return buf if allow_mutate else bool(int(buf))

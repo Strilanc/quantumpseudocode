@@ -70,6 +70,7 @@ class QubitIntersection(RValue[bool]):
     def __init__(self, qubits: Tuple['qp.Qubit', ...] = (), bit: bool = True):
         assert all(isinstance(e, qp.Qubit) for e in qubits)
         self.qubits = tuple(qubits) if bit else ()
+        assert len(self.qubits) == len(set(self.qubits))
         self.bit = bool(bit)
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool) -> bool:

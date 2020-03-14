@@ -18,6 +18,46 @@ def test_cmp():
             assert qp.measure(t, reset=True) == 2
 
 
+def test_eq():
+    with qp.Sim():
+        with qp.qmanaged_int(bits=4) as t:
+            t.init(5)
+            for k in range(-2, 60):
+                with qp.hold(t == k) as q:
+                    assert qp.measure(q) == (k == 5)
+            assert qp.measure(t, reset=True) == 5
+
+
+def test_neq():
+    with qp.Sim():
+        with qp.qmanaged_int(bits=4) as t:
+            t.init(5)
+            for k in range(-2, 60):
+                with qp.hold(t != k) as q:
+                    assert qp.measure(q) == (k != 5)
+            assert qp.measure(t, reset=True) == 5
+
+
+def test_eq_circuit():
+    with qp.Sim(enforce_release_at_zero=False, phase_fixup_bias=True):
+        with qp.LogCirqCircuit() as circuit:
+            with qp.qmanaged_int(bits=4, name='lhs') as lhs:
+                with qp.hold(lhs == 5, name='target'):
+                    pass
+
+    cirq.testing.assert_has_diagram(circuit, r"""
+lhs[0]: -------@-----------------@-------
+               |                 |
+lhs[1]: ---X---@---X---------X---@---X---
+           |   |   |         |   |   |
+lhs[2]: ---|---@---|---------|---@---|---
+           |   |   |         |   |   |
+lhs[3]: ---X---@---X---------X---Z---X---
+               |
+target: -------X-------Mxc---------------
+        """, use_unicode_characters=False)
+
+
 def test_if_less_than_then_circuit():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:

@@ -218,16 +218,17 @@ def _lval_qubit_checker(val: 'qp.Qubit') -> 'qp.Qubit':
 
 
 def _control_qubit_manager(val: 'qp.Qubit.Control', name: str) -> ContextManager['qp.QubitIntersection']:
-    if val is None or val in [True, 1, qp.QubitIntersection.ALWAYS]:
-        return qp.EmptyManager(qp.QubitIntersection.ALWAYS)
-    if val in [False, 0, qp.QubitIntersection.NEVER]:
-        return qp.EmptyManager(qp.QubitIntersection.NEVER)
-    if isinstance(val, qp.Qubit):
-        return qp.EmptyManager(qp.QubitIntersection((val,)))
-    if isinstance(val, qp.QubitIntersection) and len(val.qubits) == 1:
-        return qp.EmptyManager(val)
-    if isinstance(val, qp.RValue):
-        return qp.HeldRValueManager(val, name=name)
+    if not isinstance(val, qp.Quint):
+        if val is None or val in [True, 1, qp.QubitIntersection.ALWAYS]:
+            return qp.EmptyManager(qp.QubitIntersection.ALWAYS)
+        if val in [False, 0, qp.QubitIntersection.NEVER]:
+            return qp.EmptyManager(qp.QubitIntersection.NEVER)
+        if isinstance(val, qp.Qubit):
+            return qp.EmptyManager(qp.QubitIntersection((val,)))
+        if isinstance(val, qp.QubitIntersection) and len(val.qubits) == 1:
+            return qp.EmptyManager(val)
+        if isinstance(val, qp.RValue):
+            return qp.HeldRValueManager(val, name=name)
     raise TypeError('Expected a quantum control expression (a None, qubit, or RValue[bool]) '
                     'but got {!r}.'.format(val))
 

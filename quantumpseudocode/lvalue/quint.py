@@ -5,7 +5,6 @@ import cirq
 import quantumpseudocode as qp
 
 
-@cirq.value_equality
 class Quint:
     Borrowed = Union[int, 'qp.Quint', 'qp.RValue[int]']
 
@@ -15,9 +14,6 @@ class Quint:
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         buf = sim_state.quint_buf(self)
         return buf if allow_mutate else int(buf)
-
-    def _value_equality_values_(self):
-        return self.qureg
 
     def hold_padded_to(self, min_len: int) -> ContextManager['qp.Quint']:
         return qp.pad(self, min_len=min_len)
@@ -50,7 +46,7 @@ class Quint:
                 controls or qp.QubitIntersection.ALWAYS))
 
     def __setitem__(self, key, value):
-        if value != self[key]:
+        if value.qureg != self[key].qureg:
             raise NotImplementedError(
                 "quint.__setitem__ is only for syntax like q[0] ^= q[1]. "
                 "Don't know how to write {!r} into quint {!r}.".format(
@@ -74,6 +70,16 @@ class Quint:
         return qp.IfLessThanRVal(qp.rval(self),
                                  qp.rval(other),
                                  qp.rval(False))
+
+    def __eq__(self, other) -> 'qp.RValue[bool]':
+        if isinstance(other, int):
+            return qp.QuintEqConstRVal(self, other)
+        return NotImplemented
+
+    def __ne__(self, other) -> 'qp.RValue[bool]':
+        if isinstance(other, int):
+            return qp.QuintEqConstRVal(self, other, invert=True)
+        return NotImplemented
 
     def __ge__(self, other):
         return qp.IfLessThanRVal(qp.rval(other),

@@ -48,7 +48,9 @@ from quantumpseudocode.util import (
     ArgParameter,
     ArgsAndKwargs,
     ceil_lg2,
+    ceil_power_of_two,
     floor_lg2,
+    floor_power_of_two,
     leading_zero_bit_count,
     modular_multiplicative_inverse,
     MultiWith,
@@ -89,6 +91,7 @@ from quantumpseudocode.ops import (
 
 from quantumpseudocode.arithmetic import (
     IfLessThanRVal,
+    QuintEqConstRVal,
     EffectIfLessThan,
     UnaryRValue,
     LookupRValue,

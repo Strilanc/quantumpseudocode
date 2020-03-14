@@ -7,7 +7,7 @@ import quantumpseudocode as qp
 def test_init():
     q1 = qp.Quint(qp.NamedQureg('test', 10))
     q2 = qp.Quint(qp.NamedQureg('test', 10))
-    assert q1 != q2
+    assert q1.qureg != q2.qureg
     assert 'test' in str(q1)
     assert 'test' in str(q2)
     assert str(q1) != str(q2)
@@ -15,7 +15,7 @@ def test_init():
     h = qp.UniqueHandle('test')
     h1 = qp.Quint(qp.NamedQureg(h, 10))
     h2 = qp.Quint(qp.NamedQureg(h, 10))
-    assert q1 != h1 == h2 != q2
+    assert q1.qureg != h1.qureg == h2.qureg != q2.qureg
 
 
 def test_len_getitem():
@@ -28,8 +28,8 @@ def test_len_getitem():
 
     assert q[0] == qp.Qubit(h, 0)
     assert q[-1] == qp.Qubit(h, 9)
-    assert q[2:4] == qp.Quint(qp.RangeQureg(
-        qp.NamedQureg(h, 10), range(2, 4)))
+    assert q[2:4].qureg == qp.Quint(qp.RangeQureg(
+        qp.NamedQureg(h, 10), range(2, 4))).qureg
 
 
 def test_set_item_blocks():
@@ -107,9 +107,3 @@ def test_iadd_isub():
     with qp.capture() as out:
         q += Riadd()
     assert out == ['yay!']
-
-
-def test_repr():
-    cirq.testing.assert_equivalent_repr(
-        qp.Quint(qp.NamedQureg('test', 10)),
-        setup_code='import quantumpseudocode as qp')
