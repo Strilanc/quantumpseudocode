@@ -45,6 +45,7 @@ def do_if_less_than(*,
                     rhs: 'qp.Quint.Borrowed',
                     or_equal: 'qp.Qubit.Borrowed' = False,
                     effect: Callable[['qp.QubitIntersection'], None]):
+    """Performs an effect controlled by a comparison between two quantum integers."""
     n = max(len(lhs), len(rhs))
     if n == 0:
         effect(control & or_equal)
@@ -57,6 +58,8 @@ def do_if_less_than(*,
 
 
 class QuintEqConstRVal(RValue[bool]):
+    """An equality comparison between a quantum integer and a classical integer."""
+
     def __init__(self,
                  lhs: 'qp.Quint',
                  rhs: int,
@@ -102,6 +105,8 @@ class QuintEqConstRVal(RValue[bool]):
 
 
 class IfLessThanRVal(RValue[bool]):
+    """A comparison operation between two quantum integers."""
+
     def __init__(self,
                  lhs: Union[int, qp.Quint, RValue[int]],
                  rhs: Union[int, qp.Quint, RValue[int]],
