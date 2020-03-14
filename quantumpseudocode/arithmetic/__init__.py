@@ -15,7 +15,7 @@ from .cmp import (
 )
 
 from .mul import (
-    TimesEqual,
+    do_multiplication,
 )
 
 from .mult_add import (

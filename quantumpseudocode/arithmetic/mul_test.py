@@ -34,3 +34,14 @@ def test_correct_result(case):
         'target': t * k % 2**n,
         'k': k,
     })
+
+
+def test_quantum_classical_consistent():
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_multiplication,
+        fuzz_space={
+            'lvalue': lambda: qp.IntBuf.random(range(0, 6)),
+            'factor': lambda: random.randint(0, 31) * 2 + 1,
+            'forward': [False, True],
+        },
+        fuzz_count=100)

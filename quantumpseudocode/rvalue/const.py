@@ -108,12 +108,12 @@ class IntRValue(RValue[bool]):
     def __rimul__(self, other):
         other, controls = qp.ControlledLValue.split(other)
         if isinstance(other, qp.Quint):
-            qp.TimesEqual(lvalue=other, factor=self.val).emit_ops(controls)
+            qp.arithmetic.do_multiplication(lvalue=other, factor=self.val, control=controls)
             return other
         return NotImplemented
 
     def __str__(self):
-        return 'rval({})'.format(self.val)
+        return f'rval({self.val})'
 
     def __repr__(self):
-        return 'qp.IntRValue({!r})'.format(self.val)
+        return f'qp.IntRValue({self.val!r})'
