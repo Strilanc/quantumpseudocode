@@ -73,7 +73,6 @@ from quantumpseudocode.log_cirq import (
 )
 
 from quantumpseudocode.ops import (
-    ControlledOperation,
     Operation,
     semi_quantum,
     ClassicalSimState,

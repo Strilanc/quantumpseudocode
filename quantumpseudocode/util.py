@@ -194,16 +194,17 @@ def little_endian_int(bits: List[bool]) -> int:
     return t
 
 
-def ccz_count(ops: Iterable['qp.Operation']) -> int:
+def ccz_count(record: Iterable[Tuple['qp.Operation', 'qp.QubitIntersection']]) -> int:
     n = 0
-    for op in ops:
-        op, controls = qp.ControlledOperation.split(op)
-        if isinstance(op, qp.Toggle):
-            assert len(controls.qubits) <= 2
-            if len(controls.qubits) == 2:
-                n += 1
-        elif op is qp.OP_PHASE_FLIP:
-            assert len(controls.qubits) <= 3
-            if len(controls.qubits) == 3:
-                n += 1
+    for rec in record:
+        if isinstance(rec, tuple):
+            op, controls = rec
+            if isinstance(op, qp.Toggle):
+                assert len(controls.qubits) <= 2
+                if len(controls.qubits) == 2:
+                    n += 1
+            elif op is qp.OP_PHASE_FLIP:
+                assert len(controls.qubits) <= 3
+                if len(controls.qubits) == 3:
+                    n += 1
     return n

@@ -21,11 +21,3 @@ class Operation(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
-
-    def controlled_by(self, controls: Union['qp.Qubit',
-                                            'qp.QubitIntersection']):
-        if isinstance(controls, qp.Qubit):
-            return qp.ControlledOperation(self, qp.QubitIntersection((controls,)))
-        if controls == qp.QubitIntersection.ALWAYS:
-            return self
-        return qp.ControlledOperation(self, controls)

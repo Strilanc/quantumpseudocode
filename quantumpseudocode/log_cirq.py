@@ -5,12 +5,6 @@ import cirq
 import quantumpseudocode as qp
 
 
-def separate_controls(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitIntersection]':
-    if isinstance(op, qp.ControlledOperation):
-        return op.uncontrolled, op.controls
-    return op, qp.QubitIntersection.ALWAYS
-
-
 class MultiNot(cirq.Operation):
     def __init__(self, qubits):
         self._qubits = tuple(qubits)

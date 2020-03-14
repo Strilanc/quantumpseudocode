@@ -1,4 +1,4 @@
-from typing import List, Optional, ContextManager, cast
+from typing import List, Optional, ContextManager, cast, Tuple, Union
 
 import quantumpseudocode as qp
 
@@ -6,10 +6,8 @@ lens_stack: List['qp.Logger'] = []
 
 
 def emit(operation: 'qp.Operation', controls: 'qp.QubitIntersection'):
-    op, cnt = qp.ControlledOperation.split(operation)
-    cnt = cnt & controls
     for logger in lens_stack:
-        logger.log(op, cnt)
+        logger.log(operation, controls)
 
 
 def capture(out: 'Optional[List[qp.Operation]]' = None,
@@ -55,7 +53,7 @@ class Logger:
 
 
 class CaptureLens(Logger):
-    def __init__(self, out: 'List[qp.Operation]', measure_bias: Optional[float]):
+    def __init__(self, out: List[Union['qp.Operation', Tuple['qp.Operation', 'qp.QubitIntersection']]], measure_bias: Optional[float]):
         super().__init__()
         self.out = out
         self.measure_bias = measure_bias
@@ -65,13 +63,14 @@ class CaptureLens(Logger):
         return self.out
 
     def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
-        if cnt != qp.QubitIntersection.ALWAYS:
-            operation = op.controlled_by(cnt)
+        if self.measure_bias is not None and isinstance(op, qp.MeasureOperation):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            op.take_default_result(bias=self.measure_bias)
+        if self.measure_bias is not None and isinstance(op, qp.StartMeasurementBasedUncomputation):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            op.captured_phase_degrees = 0
+            op.take_default_result(bias=self.measure_bias)
+        if cnt == qp.QubitIntersection.ALWAYS:
+            self.out.append(op)
         else:
-            operation = op
-        if self.measure_bias is not None and isinstance(operation, qp.MeasureOperation):
-            operation.take_default_result(bias=self.measure_bias)
-        if self.measure_bias is not None and isinstance(operation, qp.StartMeasurementBasedUncomputation):
-            operation.captured_phase_degrees = 0
-            operation.take_default_result(bias=self.measure_bias)
-        self.out.append(operation)
+            self.out.append((op, cnt))
