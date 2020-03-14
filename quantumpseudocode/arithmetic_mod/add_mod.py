@@ -1,5 +1,5 @@
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Op, semi_quantum
+from quantumpseudocode.ops import semi_quantum
 
 
 def do_plus_const_mod_classical(*,

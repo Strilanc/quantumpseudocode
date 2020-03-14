@@ -1,7 +1,7 @@
 from typing import Union
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation, Op
+from quantumpseudocode.ops import Operation
 
 
 class _PhaseFlipOp(Operation):
