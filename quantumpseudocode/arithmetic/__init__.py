@@ -1,6 +1,6 @@
 from .xor import (
-    XorEqual,
-    XorEqualConst,
+    do_xor,
+    do_xor_const,
 )
 
 from .add import (

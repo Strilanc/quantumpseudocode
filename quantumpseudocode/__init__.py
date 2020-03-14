@@ -103,8 +103,6 @@ from quantumpseudocode.arithmetic import (
     phase_flip,
     PlusEqualProduct,
     swap,
-    XorEqual,
-    XorEqualConst,
 )
 
 from quantumpseudocode.qalloc import (

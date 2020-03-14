@@ -117,11 +117,11 @@ class Quint:
             return self
 
         if isinstance(other, int):
-            qp.XorEqualConst(lvalue=self, mask=other).emit_ops(controls)
+            qp.arithmetic.do_xor_const(lvalue=self, mask=other, control=controls)
             return self
 
         if isinstance(other, Quint):
-            qp.XorEqual(lvalue=self, mask=other).emit_ops(controls)
+            qp.arithmetic.do_xor(lvalue=self, mask=other, control=controls)
             return self
 
         rev = getattr(other, '__rixor__', None)
