@@ -3,6 +3,7 @@ from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterab
 import cirq
 
 import quantumpseudocode as qp
+from quantumpseudocode.ops import Operation
 
 
 def qmanaged(val: Union[None, int, 'qp.Qubit', 'qp.Qureg', 'qp.Quint'] = None, *, name: Optional[str] = None) -> 'qp.QallocManager':
@@ -115,12 +116,15 @@ def qalloc_int_mod(*,
 
 
 @cirq.value_equality
-class AllocQuregOperation(qp.FlagOperation):
+class AllocQuregOperation(Operation):
     def __init__(self,
                  qureg: 'qp.Qureg',
                  x_basis: bool = False):
         self.qureg = qureg
         self.x_basis = x_basis
+
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        pass
 
     def inverse(self):
         return ReleaseQuregOperation(self.qureg, self.x_basis)
@@ -142,7 +146,7 @@ class AllocQuregOperation(qp.FlagOperation):
 
 
 @cirq.value_equality
-class ReleaseQuregOperation(qp.FlagOperation):
+class ReleaseQuregOperation(Operation):
     def __init__(self,
                  qureg: 'qp.Qureg',
                  x_basis: bool = False,
@@ -150,6 +154,9 @@ class ReleaseQuregOperation(qp.FlagOperation):
         self.qureg = qureg
         self.x_basis = x_basis
         self.dirty = dirty
+
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        pass
 
     def _value_equality_values_(self):
         return self.qureg, self.x_basis, self.dirty

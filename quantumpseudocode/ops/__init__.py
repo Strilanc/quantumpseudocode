@@ -1,8 +1,5 @@
 from .operation import (
     Operation,
-    FlagOperation,
-    LetRValueOperation,
-    DelRValueOperation,
     ClassicalSimState,
 )
 
