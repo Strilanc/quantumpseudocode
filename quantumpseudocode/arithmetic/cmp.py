@@ -121,7 +121,7 @@ class IfLessThanRVal(RValue[bool]):
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=lambda c: qp.emit(qp.OP_PHASE_FLIP, c))
+            effect=qp.phase_flip)
 
     def init_storage_location(self,
                               location: 'qp.Qubit',
