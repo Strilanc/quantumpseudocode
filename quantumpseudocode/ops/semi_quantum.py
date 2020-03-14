@@ -37,7 +37,7 @@ def semi_quantum(func: Callable = None,
             alloc_prefix = '_' + alloc_prefix
         if not alloc_prefix.endswith('_'):
             alloc_prefix = alloc_prefix + '_'
-    type_hints = get_type_hints(func)
+    raw_type_hints = inspect.getfullargspec(func).annotations
 
     # Empty state to be filled in with parameter handling information.
     type_string_map: Dict[str, type] = {}
@@ -57,7 +57,7 @@ def semi_quantum(func: Callable = None,
     # Process each parameter individually.
     for parameter in quantum_sig.parameters.values():
         val = parameter.name
-        t = type_hints[val]
+        t = raw_type_hints[val]
         type_string = f'{getattr(t, "__name__", "type")}_{len(type_string_map)}'
         type_string_map[type_string] = t
         if parameter.default is not inspect.Parameter.empty:
@@ -119,12 +119,12 @@ def semi_quantum(func: Callable = None,
                              exec_globals={**type_string_map, **remap_string_map, 'func': func, 'qp': qp})
     if classical is not None:
         result.classical = classical
-        if 'control' in type_hints and 'control' not in classical_type_hints:
-            assert TYPE_TO_SEMI_DATA[type_hints['control']] is TYPE_TO_SEMI_DATA[qp.Qubit.Control]
+        if 'control' in raw_type_hints and 'control' not in classical_type_hints:
+            assert TYPE_TO_SEMI_DATA[raw_type_hints['control']] is TYPE_TO_SEMI_DATA[qp.Qubit.Control]
             resolve_lines.insert(0, '    if not sim_state.resolve_location(control):')
             resolve_lines.insert(1, '        return')
 
-        new_args = list(classical_type_hints.keys() - type_hints.keys() - {'sim_state'})
+        new_args = list(classical_type_hints.keys() - raw_type_hints.keys() - {'sim_state'})
         for arg in list(new_args):
             if classical_sig.parameters[arg].default is not inspect.Parameter.empty:
                 new_args.remove(arg)
@@ -132,7 +132,7 @@ def semi_quantum(func: Callable = None,
             raise TypeError('classical function cannot introduce new parameters '
                             '(besides sim+state and arguments with default values), '
                             'but {} introduced {!r}'.format(classical, new_args))
-        missing_args = list(set(type_hints.keys()) - classical_type_hints.keys() - {'control'})
+        missing_args = list(set(raw_type_hints.keys()) - classical_type_hints.keys() - {'control'})
         if missing_args:
             raise TypeError('classical function cannot omit parameters (except control), '
                             'but missed {!r}'.format(missing_args))
@@ -272,6 +272,12 @@ def _generate_type_to_transform() -> Dict[type, SemiQuantumTypeData]:
             transform_func=_control_qubit_exposer,
             resolve_func=_mutable_resolve),
     }
+    result['qp.Quint'] = result[qp.Quint]
+    result['qp.Qubit.Borrowed'] = result[qp.Qubit.Borrowed]
+    result['qp.Qubit.Control'] = result[qp.Qubit.Control]
+    result['qp.Qubit'] = result[qp.Qubit]
+    result['qp.Quint.Borrowed'] = result[qp.Quint.Borrowed]
+
     for t, v in list(result.items()):
         def _f() -> t:
             pass
