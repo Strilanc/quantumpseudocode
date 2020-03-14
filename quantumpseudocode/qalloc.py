@@ -126,9 +126,6 @@ class AllocQuregOperation(Operation):
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
 
-    def inverse(self):
-        return ReleaseQuregOperation(self.qureg, self.x_basis)
-
     def _value_equality_values_(self):
         return self.qureg, self.x_basis
 
@@ -160,11 +157,6 @@ class ReleaseQuregOperation(Operation):
 
     def _value_equality_values_(self):
         return self.qureg, self.x_basis, self.dirty
-
-    def inverse(self):
-        if self.dirty:
-            raise NotImplementedError()
-        return AllocQuregOperation(self.qureg, self.x_basis)
 
     def __str__(self):
         return 'RELEASE {} [{}{}]'.format(

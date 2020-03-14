@@ -12,9 +12,6 @@ class _PhaseFlipOp(Operation):
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         qp.emit(self.controlled_by(controls))
 
-    def inverse(self):
-        return self
-
     def __repr__(self):
         return 'qp.OP_PHASE_FLIP'
 

@@ -14,8 +14,5 @@ class Toggle(Operation):
         buf = sim_state.quint_buf(qp.Quint(self.lvalue))
         buf ^= -1
 
-    def inverse(self) -> 'Operation':
-        return self
-
     def __repr__(self):
         return f'qp.Toggle({self.lvalue!r})'

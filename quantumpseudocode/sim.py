@@ -101,15 +101,6 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
                     self._int_state[q.name] = qp.IntBuf.raw(
                         val=random.randint(0, 1) if op.x_basis else 0,
                         length=1)
-        elif self.emulate_additions:
-            emulate = False
-            o = op
-            if isinstance(op, qp.InverseOperation):
-                o = op.sub
-            if isinstance(o, (qp.PlusEqual, qp.EffectIfLessThan)):
-                emulate = True
-            if emulate:
-                operation.mutate_state(sim_state=self, forward=True)
         elif isinstance(op, qp.ReleaseQuregOperation):
             assert cnt == qp.QubitIntersection.ALWAYS
 

@@ -1,7 +1,5 @@
 from typing import Union, Any, Callable
 
-import cirq
-
 import quantumpseudocode as qp
 
 
@@ -24,9 +22,6 @@ class Operation:
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
-
-    def inverse(self) -> 'Operation':
-        return qp.InverseOperation(self)
 
     def controlled_by(self, controls: Union['qp.Qubit',
                                             'qp.QubitIntersection']):

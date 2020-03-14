@@ -116,9 +116,6 @@ class MeasureOperation(Generic[T], Operation):
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         qp.emit(self)
 
-    def inverse(self):
-        raise ValueError(f"{self} is not invertable")
-
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         assert self.raw_results is None
         reg = sim_state.quint_buf(qp.Quint(self.targets))
@@ -156,9 +153,6 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         raise ValueError(f"{self} must be emulated.")
-
-    def inverse(self):
-        raise ValueError(f"{self} is not invertable")
 
     def take_default_result(self, bias: float):
         if self.raw_results is None:
@@ -213,9 +207,6 @@ class EndMeasurementBasedComputationOp(Operation):
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
         qp.emit(self.controlled_by(controls))
-
-    def inverse(self):
-        raise ValueError(f"{self} is not invertible")
 
     def __repr__(self):
         return f'qp.EndMeasurementBasedComputationOp({self.expected_phase_degrees})'
