@@ -4,7 +4,6 @@ from quantumpseudocode.logger import (
     EmptyManager,
     emit,
     Logger,
-    Log,
 )
 
 from quantumpseudocode.buf import (

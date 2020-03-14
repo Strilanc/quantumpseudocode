@@ -39,7 +39,7 @@ def do_xor_lookup(*,
         if phase_instead_of_toggle:
             for k in range(len(lvalue)):
                 if table[0] & (1 << k):
-                    qp.emit(qp.OP_PHASE_FLIP.controlled_by(control & lvalue[k]))
+                    qp.emit(qp.OP_PHASE_FLIP, control & lvalue[k])
         else:
             lvalue ^= table[0] & qp.controlled_by(control)
         return

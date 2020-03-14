@@ -59,10 +59,9 @@ class LogCirqCircuit(qp.Logger):
     def _val(self):
         return self.circuit
 
-    def log(self, operation: 'qp.Operation'):
+    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
         unknown = False
 
-        op, controls = separate_controls(operation)
         if isinstance(op, qp.MeasureOperation):
             qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
             if op.reset:
@@ -80,21 +79,21 @@ class LogCirqCircuit(qp.Logger):
             self.circuit.append(CirqLabelOp(qubits, 'Mxc'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif op == qp.OP_PHASE_FLIP:
-            if controls.bit:
-                if len(controls.qubits):
+            if cnt.bit:
+                if len(cnt.qubits):
                     g = cirq.Z
-                    for _ in range(len(controls.qubits) - 1):
+                    for _ in range(len(cnt.qubits) - 1):
                         g = cirq.ControlledGate(g)
-                    ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
+                    ctrls = [cirq.NamedQubit(str(q)) for q in cnt.qubits]
                     self.circuit.append(g(*ctrls),
                                         cirq.InsertStrategy.NEW_THEN_INLINE)
                 else:
                     self.circuit.append(cirq.GlobalPhaseOperation(-1), cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif isinstance(op, qp.Toggle):
-            ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
+            ctrls = [cirq.NamedQubit(str(q)) for q in cnt.qubits]
             targets = op.lvalue
-            if len(targets) and controls.bit:
+            if len(targets) and cnt.bit:
                 targs = [cirq.NamedQubit(str(q)) for q in targets]
                 self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
@@ -112,7 +111,7 @@ class LogCirqCircuit(qp.Logger):
             unknown = True
 
         if unknown:
-            raise NotImplementedError("Unrecognized operation: {!r}".format(operation))
+            raise NotImplementedError("Unrecognized operation: {!r}".format(op))
 
 
 class CountNots(qp.Logger):
@@ -123,13 +122,11 @@ class CountNots(qp.Logger):
     def _val(self):
         return self.counts
 
-    def log(self, operation: 'qp.Operation'):
-        op, controls = separate_controls(operation)
-
-        if isinstance(op, qp.Toggle):
+    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
+        if isinstance(op, qp.Toggle) and cnt.bit:
             targets = op.lvalue
-            if len(controls.qubits) > 1:
+            if len(cnt.qubits) > 1:
                 self.counts[1] += 2 * (len(targets) - 1)
-                self.counts[len(controls.qubits)] += 1
+                self.counts[len(cnt.qubits)] += 1
             else:
-                self.counts[len(controls.qubits)] += len(targets)
+                self.counts[len(cnt.qubits)] += len(targets)

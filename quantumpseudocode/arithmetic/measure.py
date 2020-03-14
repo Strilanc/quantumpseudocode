@@ -23,8 +23,20 @@ def measure(val: qp.Qureg, *, reset: bool = False) -> List[bool]:
 def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
             *,
             reset: bool = False) -> Union[bool, int, List[bool], T]:
-    op = _measure_op(val, reset=reset)
-    op.emit_ops(qp.QubitIntersection.ALWAYS)
+    if isinstance(val, qp.RValue):
+        with qp.hold(val) as target:
+            return measure(target)
+
+    if isinstance(val, qp.Qubit):
+        op = MeasureOperation(qp.RawQureg([val]), lambda e: bool(e[0]), reset)
+    elif isinstance(val, qp.Qureg):
+        op = MeasureOperation(val, lambda e: e, reset)
+    elif isinstance(val, (qp.Quint, qp.QuintMod)):
+        op = MeasureOperation(val.qureg, qp.little_endian_int, reset)
+    else:
+        raise NotImplementedError(f"Don't know how to measure {val!r}.")
+
+    qp.emit(op, qp.QubitIntersection.ALWAYS)
     assert op.results is not None
     return op.results
 
@@ -41,31 +53,6 @@ def measurement_based_uncomputation(val: qp.Qureg) -> ContextManager[List[bool]]
 def measurement_based_uncomputation(
         val: Union[qp.Qubit, qp.Quint, qp.Qureg]) -> ContextManager[Union[int, bool, List[bool]]]:
     return _measure_op_x(val)
-
-
-def _measure_op(
-        val: Union[qp.RValue[T], qp.Qubit, qp.Qureg, qp.Quint] = None,
-        *,
-        reset: bool = False
-        ) -> Union['MeasureOperation[bool]',
-                   'MeasureOperation[int]',
-                   'MeasureOperation[List[bool]]',
-                   '_MeasureRValueOperation[T]']:
-    if isinstance(val, qp.Qubit):
-        return MeasureOperation(qp.RawQureg([val]),
-                                lambda e: bool(e[0]),
-                                reset)
-
-    if isinstance(val, qp.Qureg):
-        return MeasureOperation(val, lambda e: e, reset)
-
-    if isinstance(val, (qp.Quint, qp.QuintMod)):
-        return MeasureOperation(val.qureg, qp.little_endian_int, reset)
-
-    if isinstance(val, qp.RValue):
-        return _MeasureRValueOperation(val, reset)
-
-    raise NotImplementedError("Don't know {!r}".format(val))
 
 
 def _measure_op_x(
@@ -93,14 +80,8 @@ class _MeasureRValueOperation(Generic[T], Operation):
         self.reset = reset
         self.results = None
 
-    def permute(self, forward: bool, args):
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         pass
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        assert controls == qp.QubitIntersection.ALWAYS, "Not allowed to control measurement."
-
-        with qp.hold(self.target) as target:
-            self.results = measure(target)
 
 
 class MeasureOperation(Generic[T], Operation):
@@ -112,9 +93,6 @@ class MeasureOperation(Generic[T], Operation):
         self.interpret = interpret
         self.reset = reset
         self.raw_results = None
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        qp.emit(self)
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         assert self.raw_results is None
@@ -151,9 +129,6 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
         assert self.raw_results is not None
         return self.interpret(self.raw_results)
 
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError(f"{self} must be emulated.")
-
     def take_default_result(self, bias: float):
         if self.raw_results is None:
             self.raw_results = tuple(random.random() < bias for _ in range(len(self.targets)))
@@ -188,12 +163,13 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
                          "It returns a context manager, not a boolean.")
 
     def __enter__(self):
-        qp.emit(self)
+        qp.emit(self, qp.QubitIntersection.ALWAYS)
         return self.results
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.captured_phase_degrees is not None
-        qp.emit(qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees))
+        qp.emit(qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees),
+                qp.QubitIntersection.ALWAYS)
 
 
 class EndMeasurementBasedComputationOp(Operation):
@@ -204,9 +180,6 @@ class EndMeasurementBasedComputationOp(Operation):
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         if sim_state.phase_degrees != self.expected_phase_degrees:
             raise AssertionError('Failed to uncompute. Measurement based uncomputation failed to fix phase flips.')
-
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        qp.emit(self.controlled_by(controls))
 
     def __repr__(self):
         return f'qp.EndMeasurementBasedComputationOp({self.expected_phase_degrees})'

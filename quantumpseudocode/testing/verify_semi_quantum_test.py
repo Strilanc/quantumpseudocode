@@ -149,7 +149,7 @@ def test_phase_match():
 
     @qp.semi_quantum(classical=cf)
     def qf():
-        qp.emit(qp.OP_PHASE_FLIP)
+        qp.emit(qp.OP_PHASE_FLIP, qp.QubitIntersection.ALWAYS)
 
     qp.testing.assert_semi_quantum_func_is_consistent(
         qf,
@@ -162,7 +162,7 @@ def test_phase_mismatch():
 
     @qp.semi_quantum(classical=cf)
     def qf():
-        qp.emit(qp.OP_PHASE_FLIP)
+        qp.emit(qp.OP_PHASE_FLIP, qp.QubitIntersection.ALWAYS)
 
     with pytest.raises(AssertionError, match='disagreed'):
         qp.testing.assert_semi_quantum_func_is_consistent(

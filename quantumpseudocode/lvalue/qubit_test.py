@@ -84,7 +84,7 @@ q: ---X---
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
         def __rixor__(self, other):
-            qp.emit('yay!')
+            qp.emit('yay!', qp.QubitIntersection.ALWAYS)
             return other
     with qp.capture() as out:
         q ^= Rixor()

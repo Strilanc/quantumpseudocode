@@ -1,4 +1,4 @@
-from typing import Union, Callable, Any
+from typing import Union, Callable, Any, Optional
 
 import quantumpseudocode as qp
 
@@ -18,7 +18,10 @@ def pad_all(*bases: 'Union[qp.Qureg, qp.Quint]',
 
 
 class PaddedQureg:
-    def __init__(self, base: 'qp.Qureg', min_len: int, wrapper: Callable[[Any], Any] = lambda e: e):
+    def __init__(self,
+                 base: 'qp.Qureg',
+                 min_len: int,
+                 wrapper: Callable[[Any], Any] = lambda e: e):
         self.base = base
         self.padded = None
         self.min_len = min_len
@@ -37,7 +40,7 @@ class PaddedQureg:
         assert self.padded is None
         sub_name = str(self.base) if isinstance(self.base, qp.NamedQureg) else ''
         q = qp.NamedQureg('{}_pad'.format(sub_name), self.min_len - len(self.base))
-        qp.emit(qp.AllocQuregOperation(q))
+        qp.emit(qp.AllocQuregOperation(q), qp.QubitIntersection.ALWAYS)
         self.padded = q
         return self.wrapper(qp.RawQureg(list(self.base) + list(q)))
 
@@ -47,5 +50,5 @@ class PaddedQureg:
 
         if exc_type is None:
             assert self.padded is not None
-            qp.emit(qp.ReleaseQuregOperation(self.padded))
+            qp.emit(qp.ReleaseQuregOperation(self.padded), qp.QubitIntersection.ALWAYS)
             self.padded = None

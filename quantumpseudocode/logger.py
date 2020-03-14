@@ -1,14 +1,15 @@
-from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable, ContextManager, cast
+from typing import List, Optional, ContextManager, cast
 
 import quantumpseudocode as qp
 
+lens_stack: List['qp.Logger'] = []
 
-lens_stack = []
 
-
-def emit(operation: 'qp.Operation'):
+def emit(operation: 'qp.Operation', controls: 'qp.QubitIntersection'):
+    op, cnt = qp.ControlledOperation.split(operation)
+    cnt = cnt & controls
     for logger in lens_stack:
-        logger.log(operation)
+        logger.log(op, cnt)
 
 
 def capture(out: 'Optional[List[qp.Operation]]' = None,
@@ -31,7 +32,7 @@ class Logger:
     def __init__(self):
         self.used = False
 
-    def log(self, operation: 'qp.Operation'):
+    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
         raise NotImplementedError()
 
     def _val(self):
@@ -63,35 +64,14 @@ class CaptureLens(Logger):
         super().__enter__()
         return self.out
 
-    def log(self, operation):
+    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
+        if cnt != qp.QubitIntersection.ALWAYS:
+            operation = op.controlled_by(cnt)
+        else:
+            operation = op
         if self.measure_bias is not None and isinstance(operation, qp.MeasureOperation):
             operation.take_default_result(bias=self.measure_bias)
         if self.measure_bias is not None and isinstance(operation, qp.StartMeasurementBasedUncomputation):
             operation.captured_phase_degrees = 0
             operation.take_default_result(bias=self.measure_bias)
         self.out.append(operation)
-
-
-class _ControlLens(CaptureLens):
-    def __init__(self, controls: 'qp.QubitIntersection'):
-        super().__init__([])
-        self.controls = controls
-
-    def __enter__(self):
-        super().__enter__()
-        return None
-
-    def _succeeded(self):
-        if self.controls.bit:
-            for op in self.out:
-                emit(op.controlled_by(self.controls))
-
-
-class Log(Logger):
-    def __init__(self, max_indent: Optional[int] = None):
-        super().__init__()
-        self.max_indent = max_indent
-
-    def log(self, operation: 'qp.Operation'):
-        if self.max_indent is None or self.max_indent >= emit_indent - 1:
-            print(' ' * (emit_indent * 4 - 4) + str(operation))

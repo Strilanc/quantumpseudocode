@@ -1,4 +1,4 @@
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Callable
 
 import quantumpseudocode as qp
 from quantumpseudocode import semi_quantum
@@ -44,15 +44,15 @@ def do_if_less_than(*,
                     lhs: 'qp.Quint.Borrowed',
                     rhs: 'qp.Quint.Borrowed',
                     or_equal: 'qp.Qubit.Borrowed' = False,
-                    effect: 'qp.Operation'):
+                    effect: Callable[['qp.QubitIntersection'], None]):
     n = max(len(lhs), len(rhs))
     if n == 0:
-        effect.emit_ops(control & or_equal)
+        effect(control & or_equal)
         return
 
     with qp.pad_all(lhs, rhs, min_len=n) as (pad_lhs, pad_rhs):
         _forward_sweep(lhs=pad_lhs, rhs=pad_rhs, carry=or_equal)
-        effect.emit_ops(control & pad_rhs[-1])
+        effect(control & pad_rhs[-1])
         _backward_sweep(lhs=pad_lhs, rhs=pad_rhs, carry=or_equal)
 
 
@@ -121,23 +121,34 @@ class IfLessThanRVal(RValue[bool]):
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=qp.OP_PHASE_FLIP)
+            effect=lambda c: qp.emit(qp.OP_PHASE_FLIP, c))
 
     def init_storage_location(self,
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
-        do_if_less_than(
-            control=controls,
-            lhs=self.lhs,
-            rhs=self.rhs,
-            or_equal=self.or_equal,
-            effect=qp.Toggle(lvalue=qp.RawQureg([location])))
+        location ^= self & qp.controlled_by(controls)
 
     def del_storage_location(self,
                              location: 'qp.Qubit',
                              controls: 'qp.QubitIntersection'):
         with qp.measurement_based_uncomputation(location) as b:
             self.phase_flip_if(controls & b)
+
+    def __rixor__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
+        if isinstance(other, qp.Qubit):
+            do_if_less_than(
+                control=controls,
+                lhs=self.lhs,
+                rhs=self.rhs,
+                or_equal=self.or_equal,
+                effect=lambda c: qp.emit(qp.Toggle(lvalue=qp.RawQureg([other])), c))
+            return other
+
+        return NotImplemented
 
     def __str__(self):
         if isinstance(self.or_equal, qp.BoolRValue):

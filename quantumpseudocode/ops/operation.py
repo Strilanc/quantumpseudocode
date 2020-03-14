@@ -1,3 +1,4 @@
+import abc
 from typing import Union, Any, Callable
 
 import quantumpseudocode as qp
@@ -16,12 +17,10 @@ class ClassicalSimState:
         pass
 
 
-class Operation:
-    def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise RuntimeError('Unprocessed terminal operation: {!r}'.format(self))
-
+class Operation(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        raise NotImplementedError('mutate_state not implemented by {!r}'.format(self))
+        pass
 
     def controlled_by(self, controls: Union['qp.Qubit',
                                             'qp.QubitIntersection']):

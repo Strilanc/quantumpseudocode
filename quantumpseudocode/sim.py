@@ -85,8 +85,7 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
             return lambda: self.phase_fixup_bias
         return lambda: random.random() < 0.5
 
-    def log(self, operation: 'qp.Operation'):
-        op, cnt = qp.ControlledOperation.split(operation)
+    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
 
         if isinstance(op, qp.AllocQuregOperation):
             assert cnt == qp.QubitIntersection.ALWAYS
