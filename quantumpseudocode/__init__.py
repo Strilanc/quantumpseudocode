@@ -86,7 +86,6 @@ from quantumpseudocode.ops import (
 from quantumpseudocode.arithmetic import (
     IfLessThanRVal,
     QuintEqConstRVal,
-    EffectIfLessThan,
     UnaryRValue,
     LookupRValue,
     measure,

@@ -62,11 +62,11 @@ def test_if_less_than_then_circuit():
                 with qp.qmanaged_int(bits=4, name='rhs') as rhs:
                     with qp.qmanaged(qp.Qubit(name='_or_eq')) as c:
                         with qp.qmanaged(qp.Qubit(name='t')) as t:
-                            qp.EffectIfLessThan(
+                            qp.arithmetic.do_if_less_than(
                                 lhs=lhs,
                                 rhs=rhs,
                                 or_equal=c,
-                                effect=qp.Toggle(lvalue=qp.RawQureg([t]))).emit_ops(qp.QubitIntersection.ALWAYS)
+                                effect=qp.Toggle(lvalue=qp.RawQureg([t])))
     cirq.testing.assert_has_diagram(circuit, r"""
 _or_eq: -------------------alloc-----------@---X---@-------------------------------------------------------------------------------@---X---@-------------release-----------------------
                                            |   |   |                                                                               |   |   |
