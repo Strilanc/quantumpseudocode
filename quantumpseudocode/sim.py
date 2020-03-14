@@ -112,15 +112,33 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
                 del self._int_state[q.name]
 
     def do_measure_qureg(self, op: 'qp.MeasureOperation'):
-        op.mutate_state(self, True)
+        assert op.raw_results is None
+        reg = self.quint_buf(qp.Quint(op.targets))
+        op.raw_results = tuple(reg[i] for i in range(len(reg)))
+        if op.reset:
+            reg[:] = 0
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
-        op.mutate_state(self, True)
+        op.raw_results = []
+        op.captured_phase_degrees = self.phase_degrees
+        reg = self.quint_buf(qp.Quint(op.targets))
+        chooser = self.measurement_based_uncomputation_result_chooser()
+
+        # Simulate X basis measurements.
+        for i in range(len(op.targets)):
+            result = chooser()
+            op.raw_results.append(result)
+            if result and reg[i]:
+                self.phase_degrees += 180
+
+        # Reset target.
+        reg[:] = 0
 
     def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
-        op.mutate_state(self, True)
+        if self.phase_degrees != op.expected_phase_degrees:
+            raise AssertionError('Failed to uncompute. Measurement based uncomputation failed to fix phase flips.')
 
-    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+    def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         if self.resolve_location(controls, allow_mutate=False):
             self.phase_degrees += 180
 

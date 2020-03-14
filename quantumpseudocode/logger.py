@@ -33,7 +33,7 @@ class Logger(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+    def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         pass
 
     @abc.abstractmethod
@@ -87,7 +87,7 @@ class CaptureLens(Logger):
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
         self.out.append(('release', op))
 
-    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+    def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         self.out.append(('phase_flip', controls))
 
     def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
@@ -110,6 +110,7 @@ class CaptureLens(Logger):
 
 class _GlobalLogger(Logger):
     def __init__(self):
+        super().__init__()
         self.loggers: List['qp.Logger'] = []
 
     def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
@@ -120,9 +121,9 @@ class _GlobalLogger(Logger):
         for logger in self.loggers:
             logger.do_release_qureg(op)
 
-    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+    def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         for logger in self.loggers:
-            logger.do_phase_flip(op, controls)
+            logger.do_phase_flip(controls)
 
     def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         for logger in self.loggers:

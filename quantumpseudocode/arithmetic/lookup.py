@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Iterable, List
 import cirq
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation, semi_quantum
+from quantumpseudocode.ops import semi_quantum
 
 
 def do_classical_xor_lookup(sim_state: 'qp.ClassicalSimState',

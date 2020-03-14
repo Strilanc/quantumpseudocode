@@ -15,9 +15,3 @@ class ClassicalSimState:
 
     def resolve_location(self, loc: Any, allow_mutate: bool) -> Any:
         pass
-
-
-class Operation(metaclass=abc.ABCMeta):
-    @abc.abstractmethod
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        pass

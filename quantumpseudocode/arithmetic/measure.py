@@ -2,7 +2,6 @@ import random
 from typing import List, Union, Callable, Any, Optional, TypeVar, Generic, overload, ContextManager
 
 import quantumpseudocode as qp
-from quantumpseudocode.ops import Operation
 
 
 T = TypeVar('T')
@@ -72,19 +71,7 @@ def _measure_op_x(
     raise NotImplementedError("Don't know {!r}".format(val))
 
 
-class _MeasureRValueOperation(Generic[T], Operation):
-    def __init__(self,
-                 target: qp.RValue[T],
-                 reset: bool):
-        self.target = target
-        self.reset = reset
-        self.results = None
-
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        pass
-
-
-class MeasureOperation(Generic[T], Operation):
+class MeasureOperation(Generic[T]):
     def __init__(self,
                  targets: qp.Qureg,
                  interpret: Callable[[List[bool]], T],
@@ -93,13 +80,6 @@ class MeasureOperation(Generic[T], Operation):
         self.interpret = interpret
         self.reset = reset
         self.raw_results = None
-
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        assert self.raw_results is None
-        reg = sim_state.quint_buf(qp.Quint(self.targets))
-        self.raw_results = tuple(reg[i] for i in range(len(reg)))
-        if self.reset:
-            reg[:] = 0
 
     def take_default_result(self, bias: float):
         if self.raw_results is None:
@@ -115,7 +95,7 @@ class MeasureOperation(Generic[T], Operation):
             self.targets, self.interpret, self.reset)
 
 
-class StartMeasurementBasedUncomputation(Generic[T], Operation):
+class StartMeasurementBasedUncomputation(Generic[T]):
     def __init__(self,
                  targets: qp.Qureg,
                  interpret: Callable[[List[bool]], T]):
@@ -132,24 +112,6 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
     def take_default_result(self, bias: float):
         if self.raw_results is None:
             self.raw_results = tuple(random.random() < bias for _ in range(len(self.targets)))
-
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        assert forward
-
-        self.raw_results = []
-        self.captured_phase_degrees = sim_state.phase_degrees
-        reg = sim_state.quint_buf(qp.Quint(self.targets))
-        chooser = sim_state.measurement_based_uncomputation_result_chooser()
-
-        # Simulate X basis measurements.
-        for i in range(len(self.targets)):
-            result = chooser()
-            self.raw_results.append(result)
-            if result and reg[i]:
-                sim_state.phase_degrees += 180
-
-        # Reset target.
-        reg[:] = 0
 
     def __str__(self):
         return "Mxc({})".format(self.targets)
@@ -172,14 +134,10 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
             qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees))
 
 
-class EndMeasurementBasedComputationOp(Operation):
+class EndMeasurementBasedComputationOp:
     def __init__(self, targets: qp.Qureg, expected_phase_degrees: int):
         self.targets = targets
         self.expected_phase_degrees = expected_phase_degrees
-
-    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
-        if sim_state.phase_degrees != self.expected_phase_degrees:
-            raise AssertionError('Failed to uncompute. Measurement based uncomputation failed to fix phase flips.')
 
     def __repr__(self):
         return f'qp.EndMeasurementBasedComputationOp({self.expected_phase_degrees})'

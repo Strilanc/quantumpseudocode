@@ -73,7 +73,6 @@ from quantumpseudocode.log_cirq import (
 )
 
 from quantumpseudocode.ops import (
-    Operation,
     semi_quantum,
     ClassicalSimState,
 )
@@ -88,7 +87,6 @@ from quantumpseudocode.arithmetic import (
     MeasureOperation,
     StartMeasurementBasedUncomputation,
     EndMeasurementBasedComputationOp,
-    OP_PHASE_FLIP,
     phase_flip,
     swap,
 )

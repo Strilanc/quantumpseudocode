@@ -61,7 +61,7 @@ class LogCirqCircuit(qp.Logger):
         targets = [cirq.NamedQubit(str(q)) for q in op.qureg]
         self.circuit.append(CirqLabelOp(targets, 'release'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+    def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         if controls.bit:
             if len(controls.qubits):
                 g = cirq.Z
@@ -115,7 +115,7 @@ class CountNots(qp.Logger):
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
         pass
 
-    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+    def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         if controls.bit:
             if len(controls.qubits) > 0:
                 self.counts[len(controls.qubits) - 1] += 1

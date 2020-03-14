@@ -1,5 +1,4 @@
 from .operation import (
-    Operation,
     ClassicalSimState,
 )
 
