@@ -35,7 +35,7 @@ class QuintMod:
               controls: 'qp.QubitIntersection' = None):
         if controls is None:
             controls = qp.QubitIntersection.ALWAYS
-        value.del_storage_location(self[:], controls)
+        value.clear_storage_location(self[:], controls)
 
     def __setitem__(self, key, value):
         if value != self[key]:

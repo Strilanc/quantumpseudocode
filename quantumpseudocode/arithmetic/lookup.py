@@ -82,7 +82,7 @@ def del_xor_lookup(*,
     address = address[:qp.ceil_lg2(len(table))]
 
     if all(e == table[0] for e in table):
-        qp.IntRValue(table[0]).del_storage_location(lvalue, control)
+        qp.IntRValue(table[0]).clear_storage_location(lvalue, control)
         return
 
     split = min(
@@ -149,12 +149,6 @@ class LookupRValue(qp.RValue[int]):
 
         return NotImplemented
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return [self.address.qureg]
-
-    def value_from_resolved_deps(self, args: Tuple[int]) -> int:
-        return self.table[args[0]]
-
     def make_storage_location(self,
                               name: Optional[str] = None) -> 'qp.Quint':
         return qp.Quint(qp.NamedQureg(name, self.table.output_len()))
@@ -169,9 +163,9 @@ class LookupRValue(qp.RValue[int]):
             phase_instead_of_toggle=False,
             control=controls)
 
-    def del_storage_location(self,
-                             location: 'qp.Quint',
-                             controls: 'qp.QubitIntersection'):
+    def clear_storage_location(self,
+                               location: 'qp.Quint',
+                               controls: 'qp.QubitIntersection'):
         del_xor_lookup(
             lvalue=location,
             table=self.table,

@@ -82,9 +82,9 @@ class QuintEqConstRVal(RValue[bool]):
         location ^= self.invert
         self.lhs ^= ~self.rhs
 
-    def del_storage_location(self,
-                             location: Any,
-                             controls: 'qp.QubitIntersection'):
+    def clear_storage_location(self,
+                               location: Any,
+                               controls: 'qp.QubitIntersection'):
         if self.rhs & (-1 << len(self.lhs)):
             with qp.measurement_based_uncomputation(location) as b:
                 if b:
@@ -118,26 +118,23 @@ class IfLessThanRVal(RValue[bool]):
     def make_storage_location(self, name: Optional[str] = None) -> Any:
         return qp.Qubit(name)
 
-    def phase_flip_if(self, controls: 'qp.QubitIntersection'):
-        if controls == qp.QubitIntersection.NEVER:
-            return
-        do_if_less_than(
-            control=controls,
-            lhs=self.lhs,
-            rhs=self.rhs,
-            or_equal=self.or_equal,
-            effect=qp.phase_flip)
-
     def init_storage_location(self,
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
         location ^= self & qp.controlled_by(controls)
 
-    def del_storage_location(self,
-                             location: 'qp.Qubit',
-                             controls: 'qp.QubitIntersection'):
+    def clear_storage_location(self,
+                               location: 'qp.Qubit',
+                               controls: 'qp.QubitIntersection'):
         with qp.measurement_based_uncomputation(location) as b:
-            self.phase_flip_if(controls & b)
+            c = controls & b
+            if c.bit:
+                do_if_less_than(
+                    control=c,
+                    lhs=self.lhs,
+                    rhs=self.rhs,
+                    or_equal=self.or_equal,
+                    effect=qp.phase_flip)
 
     def __rixor__(self, other):
         other, controls = qp.ControlledLValue.split(other)

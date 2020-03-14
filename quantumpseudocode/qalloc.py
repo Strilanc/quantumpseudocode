@@ -76,7 +76,7 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
           dirty: bool = False):
 
     if equivalent_expression is not None:
-        qp.rval(equivalent_expression).del_storage_location(
+        qp.rval(equivalent_expression).clear_storage_location(
             target, qp.QubitIntersection.ALWAYS)
 
     if isinstance(target, qp.Qubit):

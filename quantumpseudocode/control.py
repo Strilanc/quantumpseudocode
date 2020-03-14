@@ -36,10 +36,10 @@ class ControlledRValue(qp.RValue):
                               controls: 'qp.QubitIntersection'):
         self.rvalue.init_storage_location(location, controls & self.controls)
 
-    def del_storage_location(self,
-                             location: Any,
-                            controls: 'qp.QubitIntersection'):
-        self.rvalue.del_storage_location(location, controls & self.controls)
+    def clear_storage_location(self,
+                               location: Any,
+                               controls: 'qp.QubitIntersection'):
+        self.rvalue.clear_storage_location(location, controls & self.controls)
 
     def __str__(self):
         return 'controlled({}, {})'.format(self.rvalue, self.controls)

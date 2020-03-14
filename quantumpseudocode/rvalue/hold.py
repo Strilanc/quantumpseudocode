@@ -90,5 +90,5 @@ class HeldRValueManager(Generic[T]):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.qalloc is not None and exc_type is None:
-            self.rvalue.del_storage_location(self.location, self.controls)
+            self.rvalue.clear_storage_location(self.location, self.controls)
             self.qalloc.__exit__(exc_type, exc_val, exc_tb)

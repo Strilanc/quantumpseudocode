@@ -43,7 +43,7 @@ class Quint:
               controls: 'qp.QubitIntersection' = None):
         if controls is None:
             controls = qp.QubitIntersection.ALWAYS
-        qp.rval(value).del_storage_location(self, controls)
+        qp.rval(value).clear_storage_location(self, controls)
 
     def __setitem__(self, key, value):
         if value.qureg != self[key].qureg:

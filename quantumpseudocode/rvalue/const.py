@@ -20,13 +20,6 @@ class BoolRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return []
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> bool:
-        return self.val
-
     def make_storage_location(self, name: Optional[str] = None):
         return qp.Qubit(name)
 
@@ -35,9 +28,9 @@ class BoolRValue(RValue[bool]):
                               controls: 'qp.QubitIntersection'):
         location ^= self.val & qp.controlled_by(controls)
 
-    def del_storage_location(self,
-                             location: 'qp.Qubit',
-                             controls: 'qp.QubitIntersection'):
+    def clear_storage_location(self,
+                               location: 'qp.Qubit',
+                               controls: 'qp.QubitIntersection'):
         with qp.measurement_based_uncomputation(location) as b:
             if self.val and b:
                 qp.phase_flip(controls)
@@ -63,13 +56,6 @@ class IntRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return []
-
-    def value_from_resolved_deps(self, args: Tuple[int, ...]
-                                 ) -> int:
-        return self.val
-
     def make_storage_location(self, name: str = ''):
         return qp.Quint(qp.NamedQureg(name, self.val.bit_length()))
 
@@ -81,9 +67,9 @@ class IntRValue(RValue[bool]):
                               controls: 'qp.QubitIntersection'):
         location ^= self.val & qp.controlled_by(controls)
 
-    def del_storage_location(self,
-                             location: 'qp.Quint',
-                             controls: 'qp.QubitIntersection'):
+    def clear_storage_location(self,
+                               location: 'qp.Quint',
+                               controls: 'qp.QubitIntersection'):
         with qp.measurement_based_uncomputation(location) as r:
             if qp.popcnt(r & self.val) & 1:
                 qp.phase_flip(controls)

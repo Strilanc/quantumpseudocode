@@ -21,12 +21,6 @@ class UnaryRValue(qp.RValue[int]):
 
         return NotImplemented
 
-    def qureg_deps(self) -> Iterable['qp.Qureg']:
-        return [self.binary.qureg]
-
-    def value_from_resolved_deps(self, args: Tuple[int]) -> int:
-        return 1 << args[0]
-
     def make_storage_location(self,
                               name: Optional[str] = None) -> 'qp.Quint':
         return qp.Quint(qp.NamedQureg(name, 1 << len(self.binary)))
@@ -42,9 +36,9 @@ class UnaryRValue(qp.RValue[int]):
                 location[j + s].init(location[j] & q)
                 location[j] ^= location[j + s]
 
-    def del_storage_location(self,
-                             location: 'qp.Quint',
-                             controls: 'qp.QubitIntersection'):
+    def clear_storage_location(self,
+                               location: 'qp.Quint',
+                               controls: 'qp.QubitIntersection'):
         assert len(location) >= 1 << len(self.binary)
         for i, q in list(enumerate(self.binary))[::-1]:
             s = 1 << i
