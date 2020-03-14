@@ -24,7 +24,7 @@ def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
             *,
             reset: bool = False) -> Union[bool, int, List[bool], T]:
     op = _measure_op(val, reset=reset)
-    qp.emit(op)
+    op.emit_ops(qp.QubitIntersection.ALWAYS)
     assert op.results is not None
     return op.results
 
@@ -114,7 +114,7 @@ class MeasureOperation(Generic[T], Operation):
         self.raw_results = None
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError(f"{self} must be emulated.")
+        qp.emit(self)
 
     def inverse(self):
         raise ValueError(f"{self} is not invertable")
@@ -125,6 +125,10 @@ class MeasureOperation(Generic[T], Operation):
         self.raw_results = tuple(reg[i] for i in range(len(reg)))
         if self.reset:
             reg[:] = 0
+
+    def take_default_result(self, bias: float):
+        if self.raw_results is None:
+            self.raw_results = tuple(random.random() < bias for _ in range(len(self.targets)))
 
     @property
     def results(self) -> T:
@@ -155,6 +159,10 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
 
     def inverse(self):
         raise ValueError(f"{self} is not invertable")
+
+    def take_default_result(self, bias: float):
+        if self.raw_results is None:
+            self.raw_results = tuple(random.random() < bias for _ in range(len(self.targets)))
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
         assert forward
@@ -191,11 +199,12 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.captured_phase_degrees is not None
-        qp.emit(qp.EndMeasurementBasedComputationOp(self.captured_phase_degrees))
+        qp.emit(qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees))
 
 
 class EndMeasurementBasedComputationOp(Operation):
-    def __init__(self, expected_phase_degrees: int):
+    def __init__(self, targets: qp.Qureg, expected_phase_degrees: int):
+        self.targets = targets
         self.expected_phase_degrees = expected_phase_degrees
 
     def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
@@ -203,10 +212,10 @@ class EndMeasurementBasedComputationOp(Operation):
             raise AssertionError('Failed to uncompute. Measurement based uncomputation failed to fix phase flips.')
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError(f"{self} must be emulated.")
+        qp.emit(self.controlled_by(controls))
 
     def inverse(self):
-        raise ValueError(f"{self} is not invertable")
+        raise ValueError(f"{self} is not invertible")
 
     def __repr__(self):
         return f'qp.EndMeasurementBasedComputationOp({self.expected_phase_degrees})'

@@ -1,5 +1,6 @@
 from typing import Union
 
+import cirq
 import pytest
 
 import quantumpseudocode as qp
@@ -36,39 +37,45 @@ def test_quint_borrowed():
     q = qp.Quint(qp.NamedQureg('a', 10))
     assert f(q) is q
 
-    with qp.capture() as out:
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         v = f(2)
         assert isinstance(v, qp.Quint)
-        assert out == [
-            qp.AllocQuregOperation(v.qureg),
-            qp.LetRValueOperation(qp.rval(2), v),
-            qp.DelRValueOperation(qp.rval(2), v),
-            qp.ReleaseQuregOperation(v.qureg),
-        ]
-    assert len(out) == 4
+    cirq.testing.assert_has_diagram(circuit, """
+_f_x[0]: -------alloc-------Mxc--------cxM---release---
+                |           |          |     |
+_f_x[1]: -------alloc---X---Mxc--------cxM---release---
 
-    with qp.capture() as out:
+global phase:                     pi
+    """, use_unicode_characters=False)
+
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         v = f(True)
         assert isinstance(v, qp.Quint)
-        assert out == [
-            qp.AllocQuregOperation(v.qureg),
-            qp.LetRValueOperation(qp.rval(1), v),
-            qp.DelRValueOperation(qp.rval(1), v),
-            qp.ReleaseQuregOperation(v.qureg),
-        ]
-    assert len(out) == 4
+    cirq.testing.assert_has_diagram(circuit, """
+_f_x_1[0]: -----alloc---X---Mxc--------cxM---release---
 
-    with qp.capture() as out:
+global phase:                     pi
+        """, use_unicode_characters=False)
+
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         rval = qp.LookupTable([1, 2, 3])[q]
         v = f(rval)
         assert isinstance(v, qp.Quint)
-        assert out == [
-            qp.AllocQuregOperation(v.qureg),
-            qp.LetRValueOperation(rval, v),
-            qp.DelRValueOperation(rval, v),
-            qp.ReleaseQuregOperation(v.qureg),
-        ]
-    assert len(out) == 4
+    cirq.testing.assert_has_diagram(circuit, """
+_f_x[0]: ------------alloc-----------------------------------X-----------------------------------------X-----------------------------Mxc---X---@---X-------------------Z-------------------------------------X---------@---------Mxc--------cxM---cxM---release---
+                     |                                       |                                         |                             |         |   |                   |                                     |         |                          |     |
+_f_x[1]: ------------alloc-----------------------------------|-------X---------------------------------X-----------------------------Mxc-------X---@-------------------|---Z---------------------------------@---Mxc---|---cxM--------------------cxM---release---
+                                                             |       |                                 |                                       |                       |   |                                           |
+_lookup_prefix: -------------alloc---X---X-----------@---@---|---@---|---------@-------------------X---@---Mxc-------cxM---release-------------|-------alloc---X---X---@---@---X---Mxc-------cxM---release-------------|------------------------------------------
+                                     |               |   |   |   |   |         |                                                               |               |                                                       |
+_lookup_prefix_1: -------------------|-------alloc---X---X---@---X---@---Mxc---|---cxM---release-----------------------------------------------|---------------|-------------------------------------------------------|------------------------------------------
+                                     |               |                         |                                                               |               |                                                       |
+a[0]: -------------------------------|---------------@-------------------------Z---------------------------------------------------------------@---------------|-------------------------------------------------------Z------------------------------------------
+                                     |                                                                                                                         |
+a[1]: -------------------------------@---------------------------------------------------------------------------Z---------------------------------------------@-------------------------Z------------------------------------------------------------------------
+
+global phase:                                                                                                                                                                                                                          pi
+            """, use_unicode_characters=False)
 
     with pytest.raises(TypeError, match='quantum integer expression'):
         _ = f('test')
@@ -102,7 +109,7 @@ def test_prefix():
     @qp.semi_quantum(alloc_prefix='_test_')
     def f(x: qp.Qubit.Borrowed):
         return x
-    with qp.capture():
+    with qp.capture(measure_bias=0.5):
         q = f(False)
     assert q.name.key == '_test_x'
 
@@ -115,39 +122,46 @@ def test_qubit_borrowed():
     q = qp.Qubit('a', 10)
     assert f(q) is q
 
-    with qp.capture() as out:
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         v = f(True)
         assert isinstance(v, qp.Qubit)
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg([v])),
-            qp.LetRValueOperation(qp.rval(True), v),
-            qp.DelRValueOperation(qp.rval(True), v),
-            qp.ReleaseQuregOperation(qp.RawQureg([v])),
-        ]
-    assert len(out) == 4
+        del v
+    cirq.testing.assert_has_diagram(circuit, """
+_f_x: ----------alloc---X---Mxc--------cxM---release---
 
-    with qp.capture() as out:
+global phase:                     pi
+                """, use_unicode_characters=False)
+
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         v = f(0)
         assert isinstance(v, qp.Qubit)
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg([v])),
-            qp.LetRValueOperation(qp.rval(False), v),
-            qp.DelRValueOperation(qp.rval(False), v),
-            qp.ReleaseQuregOperation(qp.RawQureg([v])),
-        ]
-    assert len(out) == 4
+        del v
+    cirq.testing.assert_has_diagram(circuit, """
+_f_x: ---alloc---Mxc---cxM---release---
+                """, use_unicode_characters=False)
 
-    with qp.capture() as out:
-        rval = qp.Quint(qp.NamedQureg('a', 10)) > qp.Quint(qp.NamedQureg('b', 10))
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
+        rval = qp.Quint(qp.NamedQureg('a', 3)) > qp.Quint(qp.NamedQureg('b', 3))
         v = f(rval)
         assert isinstance(v, qp.Qubit)
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg([v])),
-            qp.LetRValueOperation(rval, v),
-            qp.DelRValueOperation(rval, v),
-            qp.ReleaseQuregOperation(qp.RawQureg([v])),
-        ]
-    assert len(out) == 4
+        del v
+    cirq.testing.assert_has_diagram(circuit, """
+_0: ---------------alloc---@---X---@-------------------------------------------------------@---X---@---Mxc---cxM---release---------alloc---@---X---@-------------------------------------------------------@---X---@---Mxc---cxM---release-------------------
+                           |   |   |                                                       |   |   |                                       |   |   |                                                       |   |   |
+_f_x: -----alloc-----------|---|---|---------------------------X---------------------------|---|---|-------------------------Mxc-----------|---|---|-------------------------------------------------------|---|---|-------------------------cxM---release---
+                           |   |   |                           |                           |   |   |                                       |   |   |                                                       |   |   |
+a_1[0]: -------------------|---@---X---@---X---@---------------|---------------@---X---@---X---@---|---------------------------------------|---@---X---@---X---@-------------------------------@---X---@---X---@---|-----------------------------------------
+                           |       |   |   |   |               |               |   |   |   |       |                                       |       |   |   |   |                               |   |   |   |       |
+a_1[1]: -------------------|-------|---|---@---X---@---X---@---|---@---X---@---X---@---|---|-------|---------------------------------------|-------|---|---@---X---@---X---@-------@---X---@---X---@---|---|-------|-----------------------------------------
+                           |       |   |       |   |   |   |   |   |   |   |   |       |   |       |                                       |       |   |       |   |   |   |       |   |   |   |       |   |       |
+a_1[2]: -------------------|-------|---|-------|---|---@---X---@---X---@---|---|-------|---|-------|---------------------------------------|-------|---|-------|---|---@---X---Z---X---@---|---|-------|---|-------|-----------------------------------------
+                           |       |   |       |   |       |       |       |   |       |   |       |                                       |       |   |       |   |       |       |       |   |       |   |       |
+b[0]: ---------------------X-------@---|-------|---|-------|-------|-------|---|-------|---@-------X---------------------------------------X-------@---|-------|---|-------|-------|-------|---|-------|---@-------X-----------------------------------------
+                                       |       |   |       |       |       |   |       |                                                               |       |   |       |       |       |   |       |
+b[1]: ---------------------------------X-------@---|-------|-------|-------|---@-------X---------------------------------------------------------------X-------@---|-------|-------|-------|---@-------X-----------------------------------------------------
+                                                   |       |       |       |                                                                                       |       |       |       |
+b[2]: ---------------------------------------------X-------@-------@-------X---------------------------------------------------------------------------------------X-------@-------@-------X-----------------------------------------------------------------
+        """, use_unicode_characters=False)
 
     with pytest.raises(TypeError, match='quantum boolean expression'):
         _ = f('test')
@@ -178,31 +192,40 @@ def test_qubit_control():
     assert f(qp.QubitIntersection((q,))) == qp.QubitIntersection((q,))
 
     # Multi qubit intersection.
-    with qp.capture() as out:
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         v = f(q & q2)
         assert isinstance(v, qp.QubitIntersection)
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg(v.qubits)),
-            qp.LetRValueOperation(q & q2, v.qubits[0]),
-            qp.DelRValueOperation(q & q2, v.qubits[0]),
-            qp.ReleaseQuregOperation(qp.RawQureg(v.qubits)),
-        ]
-    assert len(out) == 4
+        del v
+    cirq.testing.assert_has_diagram(circuit, """
+_f_x: ----alloc---X---Mxc-------cxM---release---
+                  |
+a[10]: -----------@---------@-------------------
+                  |         |
+b[8]: ------------@---------Z-------------------
+        """, use_unicode_characters=False)
 
     # Arbitrary expression
-    with qp.capture() as out:
-        rval = qp.Quint(qp.NamedQureg('a', 10)) > qp.Quint(qp.NamedQureg('b', 10))
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
+        rval = qp.Quint(qp.NamedQureg('a', 2)) > qp.Quint(qp.NamedQureg('b', 2))
         v = f(rval)
         assert isinstance(v, qp.QubitIntersection)
         q = v.qubits[0]
         assert q.name.key == '_f_x'
-        assert out == [
-            qp.AllocQuregOperation(qp.RawQureg([q])),
-            qp.LetRValueOperation(rval, v.qubits[0]),
-            qp.DelRValueOperation(rval, v.qubits[0]),
-            qp.ReleaseQuregOperation(qp.RawQureg([q])),
-        ]
-    assert len(out) == 4
+        del q
+        del v
+    cirq.testing.assert_has_diagram(circuit, """
+_0: ---------------alloc---@---X---@-------------------------------@---X---@---Mxc---cxM---release---------alloc---@---X---@-------------------------------@---X---@---Mxc---cxM---release-------------------
+                           |   |   |                               |   |   |                                       |   |   |                               |   |   |
+_f_x: -----alloc-----------|---|---|---------------X---------------|---|---|-------------------------Mxc-----------|---|---|-------------------------------|---|---|-------------------------cxM---release---
+                           |   |   |               |               |   |   |                                       |   |   |                               |   |   |
+a_1[0]: -------------------|---@---X---@---X---@---|---@---X---@---X---@---|---------------------------------------|---@---X---@---X---@-------@---X---@---X---@---|-----------------------------------------
+                           |       |   |   |   |   |   |   |   |   |       |                                       |       |   |   |   |       |   |   |   |       |
+a_1[1]: -------------------|-------|---|---@---X---@---X---@---|---|-------|---------------------------------------|-------|---|---@---X---Z---X---@---|---|-------|-----------------------------------------
+                           |       |   |       |       |       |   |       |                                       |       |   |       |       |       |   |       |
+b_1[0]: -------------------X-------@---|-------|-------|-------|---@-------X---------------------------------------X-------@---|-------|-------|-------|---@-------X-----------------------------------------
+                                       |       |       |       |                                                               |       |       |       |
+b_1[1]: -------------------------------X-------@-------@-------X---------------------------------------------------------------X-------@-------@-------X-----------------------------------------------------
+        """, use_unicode_characters=False)
 
     with pytest.raises(TypeError, match='quantum control expression'):
         _ = f('test')
@@ -221,9 +244,9 @@ def test_multiple():
         target += offset & qp.controlled_by(control)
 
     a = qp.Quint(qp.NamedQureg('a', 5))
-    with qp.capture() as out:
+    with qp.LogCirqCircuit(measure_bias=1) as circuit:
         add(a, 10, control=True)
-    assert len(out) >= 5
+    assert len(circuit) >= 5
 
 
 def test_classical():

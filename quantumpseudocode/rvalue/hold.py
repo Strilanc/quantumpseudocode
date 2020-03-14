@@ -85,12 +85,10 @@ class HeldRValueManager(Generic[T]):
             self.location = self.rvalue.make_storage_location(self.name)
             self.qalloc = qp.qmanaged(self.location)
             self.qalloc.__enter__()
-            qp.emit(qp.LetRValueOperation(
-                self.rvalue, self.location).controlled_by(self.controls))
+            self.rvalue.init_storage_location(self.location, self.controls)
         return self.location
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.qalloc is not None and exc_type is None:
-            qp.emit(qp.DelRValueOperation(
-                self.rvalue, self.location).controlled_by(self.controls))
+            self.rvalue.del_storage_location(self.location, self.controls)
             self.qalloc.__exit__(exc_type, exc_val, exc_tb)

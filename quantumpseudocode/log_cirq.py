@@ -11,10 +11,6 @@ def separate_controls(op: 'qp.Operation') -> 'Tuple[qp.Operation, qp.QubitInters
     return op, qp.QubitIntersection.ALWAYS
 
 
-def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
-    return lvalue
-
-
 class MultiNot(cirq.Operation):
     def __init__(self, qubits):
         self._qubits = tuple(qubits)
@@ -33,25 +29,37 @@ class MultiNot(cirq.Operation):
         return f'qp.MultiNot({self._qubits!r})'
 
 
-class MeasureXFixupGate(cirq.SingleQubitGate):
-    def _circuit_diagram_info_(self, args):
-        return 'Mxc'
-
-
 class MeasureResetGate(cirq.SingleQubitGate):
     def _circuit_diagram_info_(self, args):
         return 'Mr'
 
 
-class LogCirqCircuit(qp.Lens):
-    def __init__(self):
+class CirqLabelOp(cirq.Operation):
+    def __init__(self, qubits, label: str):
+        self._qubits = tuple(qubits)
+        self.label = label
+
+    @property
+    def qubits(self) -> Tuple['cirq.Qid', ...]:
+        return self._qubits
+
+    def with_qubits(self, *new_qubits: 'cirq.Qid') -> 'cirq.Operation':
+        raise NotImplementedError()
+
+    def _circuit_diagram_info_(self, args):
+        return (self.label,) * len(self.qubits)
+
+
+class LogCirqCircuit(qp.Logger):
+    def __init__(self, measure_bias: Optional[float] = None):
         super().__init__()
         self.circuit = cirq.Circuit()
+        self.measure_bias = measure_bias
 
     def _val(self):
         return self.circuit
 
-    def modify(self, operation: 'qp.Operation'):
+    def log(self, operation: 'qp.Operation'):
         unknown = False
 
         op, controls = separate_controls(operation)
@@ -65,41 +73,49 @@ class LogCirqCircuit(qp.Lens):
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif isinstance(op, qp.StartMeasurementBasedUncomputation):
+            if self.measure_bias is not None:
+                op.captured_phase_degrees = 0
+                op.take_default_result(bias=self.measure_bias)
             qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
-            self.circuit.append(MeasureXFixupGate().on_each(*qubits),
-                                cirq.InsertStrategy.NEW_THEN_INLINE)
+            self.circuit.append(CirqLabelOp(qubits, 'Mxc'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif op == qp.OP_PHASE_FLIP:
-            if controls.bit and len(controls.qubits):
-                g = cirq.Z
-                for _ in range(len(controls.qubits) - 1):
-                    g = cirq.ControlledGate(g)
-                ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
-                self.circuit.append(g(*ctrls),
-                                    cirq.InsertStrategy.NEW_THEN_INLINE)
+            if controls.bit:
+                if len(controls.qubits):
+                    g = cirq.Z
+                    for _ in range(len(controls.qubits) - 1):
+                        g = cirq.ControlledGate(g)
+                    ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
+                    self.circuit.append(g(*ctrls),
+                                        cirq.InsertStrategy.NEW_THEN_INLINE)
+                else:
+                    self.circuit.append(cirq.GlobalPhaseOperation(-1), cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif isinstance(op, qp.Toggle):
             ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
-            targets = op._args.pass_into(_toggle_targets)
+            targets = op.lvalue
             if len(targets) and controls.bit:
                 targs = [cirq.NamedQubit(str(q)) for q in targets]
                 self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
                                     cirq.InsertStrategy.NEW_THEN_INLINE)
 
         elif isinstance(op, qp.AllocQuregOperation):
-            pass
+            targs = [cirq.NamedQubit(str(q)) for q in op.qureg]
+            self.circuit.append(CirqLabelOp(targs, 'alloc'), cirq.InsertStrategy.NEW_THEN_INLINE)
         elif isinstance(op, qp.ReleaseQuregOperation):
-            pass
+            targs = [cirq.NamedQubit(str(q)) for q in op.qureg]
+            self.circuit.append(CirqLabelOp(targs, 'release'), cirq.InsertStrategy.NEW_THEN_INLINE)
+        elif isinstance(op, qp.EndMeasurementBasedComputationOp):
+            targs = [cirq.NamedQubit(str(q)) for q in op.targets]
+            self.circuit.append(CirqLabelOp(targs, 'cxM'), cirq.InsertStrategy.NEW_THEN_INLINE)
         else:
             unknown = True
 
-        # if unknown:
-        #     raise NotImplementedError("Unrecognized operation: {!r}".format(operation))
-
-        return [operation]
+        if unknown:
+            raise NotImplementedError("Unrecognized operation: {!r}".format(operation))
 
 
-class CountNots(qp.Lens):
+class CountNots(qp.Logger):
     def __init__(self):
         super().__init__()
         self.counts = collections.Counter()
@@ -107,15 +123,13 @@ class CountNots(qp.Lens):
     def _val(self):
         return self.counts
 
-    def modify(self, operation: 'qp.Operation'):
+    def log(self, operation: 'qp.Operation'):
         op, controls = separate_controls(operation)
 
         if isinstance(op, qp.Toggle):
-            targets = op._args.pass_into(_toggle_targets)
+            targets = op.lvalue
             if len(controls.qubits) > 1:
                 self.counts[1] += 2 * (len(targets) - 1)
                 self.counts[len(controls.qubits)] += 1
             else:
                 self.counts[len(controls.qubits)] += len(targets)
-
-        return [operation]

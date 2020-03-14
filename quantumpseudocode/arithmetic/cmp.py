@@ -3,52 +3,81 @@ from typing import Any, Optional
 import quantumpseudocode as qp
 
 from quantumpseudocode.rvalue import RValue
-from .add import uma_sweep
-from quantumpseudocode.ops import Op
+from quantumpseudocode.ops import Operation
 
 
-class EffectIfLessThan(Op):
-    def alloc_prefix(self):
-        return '_cmp_'
+def _forward_sweep(*,
+                   lhs: qp.Quint,
+                   rhs: qp.Quint,
+                   carry: qp.Qubit):
+    assert len(lhs) == len(rhs)
+    carry_then_rhs = [carry] + list(rhs)
 
-    @staticmethod
-    def biemulate(forward: bool,
-                  *,
-                  lhs: int,
-                  rhs: int,
-                  or_equal: bool,
-                  effect: 'qp.SubEffect'):
-        condition = lhs <= rhs if or_equal else lhs < rhs
+    for i in range(len(lhs)):
+        a = carry_then_rhs[i]
+        b = rhs[i]
+        c = lhs[i]
+
+        c ^= a
+        a ^= b
+        b ^= a & c
+
+
+def _backward_sweep(lhs: qp.Quint,
+                    rhs: qp.Quint,
+                    carry: qp.Qubit):
+    assert len(lhs) == len(rhs)
+    carry_then_rhs = [carry] + list(rhs)
+
+    for i in range(len(lhs))[::-1]:
+        a = carry_then_rhs[i]
+        b = rhs[i]
+        c = lhs[i]
+
+        b ^= a & c
+        a ^= b
+        c ^= a
+
+
+class EffectIfLessThan(Operation):
+    def __init__(self,
+                 *,
+                 lhs: 'qp.RValue[int]',
+                 rhs: 'qp.RValue[int]',
+                 or_equal: 'qp.RValue[bool]',
+                 effect: 'qp.Operation'):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.or_equal = or_equal
+        self.effect = effect
+
+    def emit_ops(self, controls: 'qp.QubitIntersection'):
+        with qp.hold(self.lhs) as lhs:
+            with qp.hold(self.rhs) as rhs:
+                with qp.hold(self.or_equal) as or_equal:
+                    n = max(len(lhs), len(rhs))
+                    if n == 0:
+                        self.effect.emit_ops(controls & or_equal)
+                        return
+
+                    with qp.pad_all(lhs, rhs, min_len=n) as (pad_lhs, pad_rhs):
+                        _forward_sweep(lhs=pad_lhs, rhs=pad_rhs, carry=or_equal)
+                        self.effect.emit_ops(controls & pad_rhs[-1])
+                        _backward_sweep(lhs=pad_lhs, rhs=pad_rhs, carry=or_equal)
+
+    def mutate_state(self, sim_state: 'qp.ClassicalSimState', forward: bool) -> None:
+        a = sim_state.resolve_location(self.lhs, allow_mutate=False)
+        b = sim_state.resolve_location(self.rhs, allow_mutate=False)
+        e = sim_state.resolve_location(self.or_equal, e)
+        condition = a <= b if e else a < b
         if condition:
-            effect.op.mutate_state(forward, effect.args)
+            self.effect.mutate_state(sim_state, forward=forward)
 
-    @staticmethod
-    def do(controls: 'qp.QubitIntersection',
-           *,
-           lhs: 'qp.Quint',
-           rhs: 'qp.Quint',
-           or_equal: 'qp.Qubit',
-           effect: 'qp.Operation'):
-        n = max(len(lhs), len(rhs))
-        if n == 0:
-            qp.emit(qp.ControlledOperation(effect, controls & or_equal))
-            return
+    def inverse(self) -> 'Operation':
+        return EffectIfLessThan(self.lhs, self.rhs, self.or_equal, self.effect.inverse())
 
-        with qp.pad_all(lhs, rhs, min_len=n) as (lhs, rhs):
-            # Propagate carries.
-            with qp.invert():
-                uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
-
-            # Apply effect.
-            qp.emit(qp.ControlledOperation(effect, controls & rhs[-1]))
-
-            # Uncompute carries.
-            uma_sweep(lhs, or_equal, rhs, qp.QubitIntersection.ALWAYS)
-
-    @staticmethod
-    def describe(lhs, rhs, or_equal, effect):
-        return 'IF {} < {} + {} THEN {}'.format(
-            lhs, rhs, or_equal, effect)
+    def __repr__(self):
+        return f'qp.EffectIfLessThan({self.lhs!r}, {self.rhs!r}, {self.or_equal!r}, {self.effect!r})'
 
 
 class QuintEqConstRVal(RValue[bool]):
@@ -111,23 +140,24 @@ class IfLessThanRVal(RValue[bool]):
     def phase_flip_if(self, controls: 'qp.QubitIntersection'):
         if controls == qp.QubitIntersection.NEVER:
             return
-        qp.emit(EffectIfLessThan(
+        EffectIfLessThan(
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=qp.OP_PHASE_FLIP.controlled_by(controls)))
+            effect=qp.OP_PHASE_FLIP).emit_ops(controls)
 
     def init_storage_location(self,
-                              location: Any,
+                              location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
-        qp.emit(EffectIfLessThan(
+        EffectIfLessThan(
             lhs=self.lhs,
             rhs=self.rhs,
             or_equal=self.or_equal,
-            effect=qp.Toggle(lvalue=qp.RawQureg([location])).controlled_by(controls)))
+            effect=qp.Toggle(lvalue=qp.RawQureg([location]))
+        ).emit_ops(controls)
 
     def del_storage_location(self,
-                             location: Any,
+                             location: 'qp.Qubit',
                              controls: 'qp.QubitIntersection'):
         with qp.measurement_based_uncomputation(location) as b:
             self.phase_flip_if(controls & b)

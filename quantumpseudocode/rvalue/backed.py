@@ -36,12 +36,13 @@ class QubitRValue(RValue[bool]):
     def init_storage_location(self,
                               location: Any,
                               controls: 'qp.QubitIntersection'):
-        raise ValueError('existing storage')
+        location ^= self.val & controls
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        raise ValueError('existing storage')
+        with qp.measurement_based_uncomputation(location) as b:
+            qp.phase_flip(self.val & controls & b)
 
     def __str__(self):
         return 'rval({})'.format(self.val)
@@ -80,12 +81,12 @@ class QuintRValue(RValue[int]):
     def init_storage_location(self,
                               location: Any,
                               controls: 'qp.QubitIntersection'):
-        qp.emit(qp.XorEqual(lvalue=location, mask=self.val).controlled_by(controls))
+        qp.XorEqual(lvalue=location, mask=self.val).emit_ops(controls)
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        qp.emit(qp.XorEqual(lvalue=location, mask=self.val).controlled_by(controls))
+        qp.XorEqual(lvalue=location, mask=self.val).emit_ops(controls)
 
     def __str__(self):
         return 'rval({})'.format(self.val)

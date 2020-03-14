@@ -1,10 +1,9 @@
-from quantumpseudocode.lens import (
+from quantumpseudocode.logger import (
     capture,
     CaptureLens,
     EmptyManager,
     emit,
-    invert,
-    Lens,
+    Logger,
     Log,
 )
 
@@ -78,7 +77,6 @@ from quantumpseudocode.ops import (
     ControlledOperation,
     FlagOperation,
     HeldMultipleRValue,
-    InverseOperation,
     Op,
     Operation,
     LetRValueOperation,
@@ -125,6 +123,7 @@ from quantumpseudocode.qalloc import (
 from quantumpseudocode.arithmetic_mod import (
     PlusEqualConstMod,
     PlusEqualMod,
+    minus_mod,
 )
 
 import quantumpseudocode.testing as testing

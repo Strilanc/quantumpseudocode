@@ -62,8 +62,9 @@ def do_subtraction(*,
                    lvalue: qp.Quint,
                    offset: qp.Quint.Borrowed,
                    carry_in: qp.Qubit.Borrowed = False):
-    with qp.invert():
-        do_addition(control=control, lvalue=lvalue, offset=offset, carry_in=carry_in)
+    lvalue ^= -1
+    do_addition(control=control, lvalue=lvalue, offset=offset, carry_in=carry_in)
+    lvalue ^= -1
 
 
 def maj_sweep(lvalue: Union[qp.Quint, List[qp.Qubit], qp.Qureg],

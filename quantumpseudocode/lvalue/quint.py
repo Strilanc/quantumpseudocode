@@ -32,18 +32,18 @@ class Quint:
         return NotImplemented
 
     def init(self,
-             value: 'qp.RValue[int]',
+             value: Union[int, 'qp.RValue[int]'],
              controls: 'qp.QubitIntersection' = None):
-        qp.emit(
-            qp.LetRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
+        qp.rval(value).init_storage_location(self, controls)
 
     def clear(self,
-              value: 'qp.RValue[int]',
+              value: Union[int, 'qp.RValue[int]'],
               controls: 'qp.QubitIntersection' = None):
-        qp.emit(
-            qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
+        qp.rval(value).del_storage_location(self, controls)
 
     def __setitem__(self, key, value):
         if value.qureg != self[key].qureg:
@@ -62,31 +62,51 @@ class Quint:
         return self.__mul__(other)
 
     def __le__(self, other):
+        if isinstance(other, int):
+            if other < 0:
+                return qp.rval(False)
+            if other == 0:
+                return self == 0
         return qp.IfLessThanRVal(qp.rval(self),
                                  qp.rval(other),
                                  qp.rval(True))
 
     def __lt__(self, other):
+        if isinstance(other, int):
+            if other <= 0:
+                return qp.rval(False)
         return qp.IfLessThanRVal(qp.rval(self),
                                  qp.rval(other),
                                  qp.rval(False))
 
     def __eq__(self, other) -> 'qp.RValue[bool]':
         if isinstance(other, int):
+            if other < 0:
+                return qp.rval(False)
             return qp.QuintEqConstRVal(self, other)
         return NotImplemented
 
     def __ne__(self, other) -> 'qp.RValue[bool]':
         if isinstance(other, int):
+            if other < 0:
+                return qp.rval(True)
             return qp.QuintEqConstRVal(self, other, invert=True)
         return NotImplemented
 
     def __ge__(self, other):
+        if isinstance(other, int):
+            if other <= 0:
+                return qp.rval(True)
         return qp.IfLessThanRVal(qp.rval(other),
                                  qp.rval(self),
                                  qp.rval(True))
 
     def __gt__(self, other):
+        if isinstance(other, int):
+            if other < 0:
+                return qp.rval(True)
+            if other == 0:
+                return self != 0
         return qp.IfLessThanRVal(qp.rval(other),
                                  qp.rval(self),
                                  qp.rval(False))
@@ -97,11 +117,11 @@ class Quint:
             return self
 
         if isinstance(other, int):
-            qp.emit(qp.XorEqualConst(lvalue=self, mask=other).controlled_by(controls))
+            qp.XorEqualConst(lvalue=self, mask=other).emit_ops(controls)
             return self
 
         if isinstance(other, Quint):
-            qp.emit(qp.XorEqual(lvalue=self, mask=other).controlled_by(controls))
+            qp.XorEqual(lvalue=self, mask=other).emit_ops(controls)
             return self
 
         rev = getattr(other, '__rixor__', None)
@@ -149,8 +169,11 @@ class Quint:
         return NotImplemented
 
     def __isub__(self, other):
-        with qp.invert():
-            return self.__iadd__(other)
+        lvalue = self
+        lvalue ^= -1
+        lvalue += other
+        lvalue ^= -1
+        return lvalue
 
     def __str__(self):
         return str(self.qureg)

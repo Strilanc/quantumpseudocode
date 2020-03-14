@@ -6,10 +6,6 @@ from .operation import (
     ClassicalSimState,
 )
 
-from .inverse_operation import (
-    InverseOperation,
-)
-
 from .controlled_operation import (
     ControlledOperation,
 )

@@ -54,20 +54,32 @@ def test_ixor():
         q ^= C()
 
     # False does nothing. True causes toggle.
-    with qp.capture() as out:
+    with qp.LogCirqCircuit() as circuit:
         q ^= False
-    assert out == []
-    with qp.capture() as out:
+    assert len(circuit) == 0
+    with qp.LogCirqCircuit() as circuit:
         q ^= True
-    assert out == [qp.Toggle(lvalue=qp.RawQureg([q]))]
+    cirq.testing.assert_has_diagram(circuit, """
+q: ---X---    
+    """, use_unicode_characters=False)
 
     # Qubit and qubit intersection cause controlled toggle.
-    with qp.capture() as out:
+    with qp.LogCirqCircuit() as circuit:
         q ^= c
-    assert out == [qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(c)]
-    with qp.capture() as out:
+    cirq.testing.assert_has_diagram(circuit, """
+c: ---@---
+      |
+q: ---X---    
+        """, use_unicode_characters=False)
+    with qp.LogCirqCircuit() as circuit:
         q ^= c & d
-    assert out == [qp.Toggle(lvalue=qp.RawQureg([q])).controlled_by(c & d)]
+    cirq.testing.assert_has_diagram(circuit, """
+c: ---@---
+      |
+d: ---@---
+      |
+q: ---X---    
+        """, use_unicode_characters=False)
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:

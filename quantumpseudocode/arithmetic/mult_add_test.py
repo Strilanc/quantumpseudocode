@@ -15,6 +15,6 @@ def test_vs_emulation():
                     lvalue=lvalue,
                     quantum_factor=random.randint(0, 1 << bits),
                     const_factor=random.randint(0, 1 << bits))
-                qp.emit(op)
+                op.emit_ops(qp.QubitIntersection.ALWAYS)
                 op.mutate_state(sim_state=sim, forward=False)
                 assert sim.snapshot() == old_state

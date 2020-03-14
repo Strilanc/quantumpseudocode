@@ -31,13 +31,12 @@ class RValue(Generic[T]):
     def init_storage_location(self,
                               location: Any,
                               controls: 'qp.QubitIntersection'):
-        raise NotImplementedError()
+        raise NotImplementedError(f'{type(self)}.init_storage_location')
 
     def del_storage_location(self,
                              location: Any,
                              controls: 'qp.QubitIntersection'):
-        with qp.invert():
-            self.init_storage_location(location, controls)
+        raise NotImplementedError(f'{type(self)}.del_storage_Location')
 
 
 @overload

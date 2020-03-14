@@ -5,28 +5,15 @@ import quantumpseudocode as qp
 
 lens_stack = []
 
-emit_indent = 0
+
 def emit(operation: 'qp.Operation'):
-    global emit_indent
-    emit_indent += 1
-
-    state = [operation]
-
-    for lens in reversed(lens_stack):
-        if not state:
-            break
-        next_state = []
-        for op in state:
-            next_state.extend(lens.modify(op))
-        state = next_state
-
-    for op in state:
-        op.emit_ops(qp.QubitIntersection.ALWAYS)
-    emit_indent -= 1
+    for logger in lens_stack:
+        logger.log(operation)
 
 
-def capture(out: 'Optional[List[qp.Operation]]' = None) -> ContextManager[List['qp.Operation']]:
-    return cast(ContextManager, CaptureLens([] if out is None else out))
+def capture(out: 'Optional[List[qp.Operation]]' = None,
+            measure_bias: Optional[float] = None) -> ContextManager[List['qp.Operation']]:
+    return cast(ContextManager, CaptureLens([] if out is None else out, measure_bias=measure_bias))
 
 
 class EmptyManager:
@@ -40,16 +27,11 @@ class EmptyManager:
         pass
 
 
-def invert() -> ContextManager[None]:
-    return cast(ContextManager[None], _InvertLens())
-
-
-class Lens:
+class Logger:
     def __init__(self):
         self.used = False
 
-    def modify(self, operation: 'qp.Operation'
-               ) -> Iterable['qp.Operation']:
+    def log(self, operation: 'qp.Operation'):
         raise NotImplementedError()
 
     def _val(self):
@@ -71,18 +53,23 @@ class Lens:
             self._succeeded()
 
 
-class CaptureLens(Lens):
-    def __init__(self, out: 'List[qp.Operation]'):
+class CaptureLens(Logger):
+    def __init__(self, out: 'List[qp.Operation]', measure_bias: Optional[float]):
         super().__init__()
         self.out = out
+        self.measure_bias = measure_bias
 
     def __enter__(self):
         super().__enter__()
         return self.out
 
-    def modify(self, operation):
+    def log(self, operation):
+        if self.measure_bias is not None and isinstance(operation, qp.MeasureOperation):
+            operation.take_default_result(bias=self.measure_bias)
+        if self.measure_bias is not None and isinstance(operation, qp.StartMeasurementBasedUncomputation):
+            operation.captured_phase_degrees = 0
+            operation.take_default_result(bias=self.measure_bias)
         self.out.append(operation)
-        return []
 
 
 class _ControlLens(CaptureLens):
@@ -100,25 +87,11 @@ class _ControlLens(CaptureLens):
                 emit(op.controlled_by(self.controls))
 
 
-class _InvertLens(CaptureLens):
-    def __init__(self):
-        super().__init__([])
-
-    def __enter__(self):
-        super().__enter__()
-        return None
-
-    def _succeeded(self):
-        for op in reversed(self.out):
-            emit(op.inverse())
-
-
-class Log(Lens):
+class Log(Logger):
     def __init__(self, max_indent: Optional[int] = None):
         super().__init__()
         self.max_indent = max_indent
 
-    def modify(self, operation: 'qp.Operation'):
+    def log(self, operation: 'qp.Operation'):
         if self.max_indent is None or self.max_indent >= emit_indent - 1:
             print(' ' * (emit_indent * 4 - 4) + str(operation))
-        return [operation]

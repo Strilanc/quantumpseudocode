@@ -1,3 +1,5 @@
+from typing import Union
+
 import cirq
 
 import quantumpseudocode as qp
@@ -22,18 +24,18 @@ class QuintMod:
         return qp.Quint(self.qureg[item])
 
     def init(self,
-             value: 'qp.RValue[int]',
+             value: Union[int, 'qp.RValue[int]'],
              controls: 'qp.QubitIntersection' = None):
-        qp.emit(
-            qp.LetRValueOperation(value, self[:]).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
+            qp.rval(value).init_storage_location(self[:], controls)
 
     def clear(self,
               value: 'qp.RValue[int]',
               controls: 'qp.QubitIntersection' = None):
-        qp.emit(
-            qp.DelRValueOperation(value, self).controlled_by(
-                controls or qp.QubitIntersection.ALWAYS))
+        if controls is None:
+            controls = qp.QubitIntersection.ALWAYS
+        value.del_storage_location(self[:], controls)
 
     def __setitem__(self, key, value):
         if value != self[key]:
@@ -56,22 +58,46 @@ class QuintMod:
                 return result
 
         if isinstance(other, int):
-            qp.emit(qp.PlusEqualConstMod(lvalue=self[:],
-                                         offset=int(other),
-                                         modulus=self.modulus).controlled_by(controls))
+            qp.PlusEqualConstMod(lvalue=self[:],
+                                 offset=int(other),
+                                 modulus=self.modulus).emit_ops(controls)
             return self
 
         if isinstance(other, (qp.Quint, qp.RValue)):
-            qp.emit(qp.PlusEqualMod(lvalue=self[:],
-                                    offset=other,
-                                    modulus=self.modulus).controlled_by(controls))
+            qp.PlusEqualMod(lvalue=self[:],
+                            offset=other,
+                            modulus=self.modulus).emit_ops(controls)
             return self
 
         return NotImplemented
 
     def __isub__(self, other):
-        with qp.invert():
-            return self.__iadd__(other)
+        other, controls = qp.ControlledRValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return self
+
+        rval_other = qp.rval(other, default=other)
+        rev = getattr(rval_other, '__risub__', None)
+        if rev is not None:
+            result = rev(qp.ControlledLValue(controls, self))
+            if result is not NotImplemented:
+                return result
+
+        if isinstance(other, int):
+            qp.PlusEqualConstMod(lvalue=self[:],
+                                 offset=-int(other) % self.modulus,
+                                 modulus=self.modulus).emit_ops(controls)
+            return self
+
+        if isinstance(other, (qp.Quint, qp.RValue)):
+            other, controls = qp.ControlledRValue.split(other)
+            qp.minus_mod(control=controls,
+                         lvalue=self[:],
+                         offset=other,
+                         modulus=self.modulus)
+            return self
+
+        return NotImplemented
 
     def __str__(self):
         return '{} (mod {})'.format(self.qureg, self.modulus)

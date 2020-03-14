@@ -2,7 +2,7 @@ import random
 from typing import List, Union, Callable, Any, Optional, Tuple, Set, Dict, Iterable
 
 import quantumpseudocode as qp
-import quantumpseudocode.lens
+import quantumpseudocode.logger
 import quantumpseudocode.ops.operation
 
 
@@ -10,7 +10,7 @@ def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
     return lvalue
 
 
-class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.ClassicalSimState):
+class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.ClassicalSimState):
     def __init__(self,
                  enforce_release_at_zero: bool = True,
                  phase_fixup_bias: Optional[bool] = None,
@@ -85,7 +85,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
             return lambda: self.phase_fixup_bias
         return lambda: random.random() < 0.5
 
-    def modify(self, operation: 'qp.Operation'):
+    def log(self, operation: 'qp.Operation'):
         op, cnt = qp.ControlledOperation.split(operation)
 
         if isinstance(op, qp.AllocQuregOperation):
@@ -101,9 +101,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
                     self._int_state[q.name] = qp.IntBuf.raw(
                         val=random.randint(0, 1) if op.x_basis else 0,
                         length=1)
-            return []
-
-        if self.emulate_additions:
+        elif self.emulate_additions:
             emulate = False
             o = op
             if isinstance(op, qp.InverseOperation):
@@ -112,9 +110,7 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
                 emulate = True
             if emulate:
                 operation.mutate_state(sim_state=self, forward=True)
-                return []
-
-        if isinstance(op, qp.ReleaseQuregOperation):
+        elif isinstance(op, qp.ReleaseQuregOperation):
             assert cnt == qp.QubitIntersection.ALWAYS
 
             for q in op.qureg:
@@ -128,30 +124,22 @@ class Sim(quantumpseudocode.lens.Lens, quantumpseudocode.ops.operation.Classical
                 for q in op.qureg:
                     assert q.name in self._int_state
                     del self._int_state[q.name]
-
-            return []
-
-        if isinstance(op, (qp.MeasureOperation,
-                           qp.StartMeasurementBasedUncomputation,
-                           qp.EndMeasurementBasedComputationOp)):
+        elif isinstance(op, (qp.MeasureOperation,
+                             qp.StartMeasurementBasedUncomputation,
+                             qp.EndMeasurementBasedComputationOp)):
             assert cnt == qp.QubitIntersection.ALWAYS
             op.mutate_state(self, True)
-            return []
-
-        if isinstance(op, qp.Toggle):
-            targets = op._args.pass_into(_toggle_targets)
+        elif isinstance(op, qp.Toggle):
+            targets = op.lvalue
             assert set(targets).isdisjoint(cnt.qubits)
             if cnt.bit and all(self._read_qubit(q) for q in cnt.qubits):
                 for t in targets:
                     self._write_qubit(t, not self._read_qubit(t))
-            return []
-
-        if op == qp.OP_PHASE_FLIP:
-            if self.resolve_location(cnt, False):
+        elif op == qp.OP_PHASE_FLIP:
+            if self.resolve_location(cnt, allow_mutate=False):
                 self.phase_degrees += 180
-            return []
-
-        return [operation]
+        else:
+            raise NotImplementedError(f"Unrecognized operation: {op!r}")
 
 
 def _fuse(qubits: Iterable[qp.Qubit]) -> List[Tuple[str, slice]]:

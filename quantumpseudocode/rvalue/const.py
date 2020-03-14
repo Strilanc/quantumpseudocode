@@ -106,9 +106,9 @@ class IntRValue(RValue[bool]):
         return NotImplemented
 
     def __rimul__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
         if isinstance(other, qp.Quint):
-            qp.emit(qp.TimesEqual(lvalue=other,
-                                  factor=self.val))
+            qp.TimesEqual(lvalue=other, factor=self.val).emit_ops(controls)
             return other
         return NotImplemented
 

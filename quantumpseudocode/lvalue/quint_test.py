@@ -51,20 +51,66 @@ def test_ixor():
     with pytest.raises(TypeError):
         q ^= None
 
-    with qp.capture() as out:
+    with qp.LogCirqCircuit() as circuit:
         q ^= 5
-    assert out == [qp.XorEqualConst(lvalue=q, mask=5)]
+    cirq.testing.assert_has_diagram(circuit, """
+test[0]: ---X---
+            |
+test[2]: ---X---
+    """, use_unicode_characters=False)
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
-    with qp.capture() as out:
+    with qp.LogCirqCircuit() as circuit:
         q ^= q2
-    assert out == [qp.XorEqual(lvalue=q, mask=q2)]
+        cirq.testing.assert_has_diagram(circuit, """
+test2[0]: ---@-------------------
+             |
+test2[1]: ---|---@---------------
+             |   |
+test2[2]: ---|---|---@-----------
+             |   |   |
+test2[3]: ---|---|---|---@-------
+             |   |   |   |
+test2[4]: ---|---|---|---|---@---
+             |   |   |   |   |
+test[0]: ----X---|---|---|---|---
+                 |   |   |   |
+test[1]: --------X---|---|---|---
+                     |   |   |
+test[2]: ------------X---|---|---
+                         |   |
+test[3]: ----------------X---|---
+                             |
+test[4]: --------------------X---
+        """, use_unicode_characters=False)
 
     q3 = qp.Quint(qp.NamedQureg('test3', 5))
     c = qp.Qubit('c')
-    with qp.capture() as out:
+    with qp.LogCirqCircuit() as circuit:
         q ^= q3 & qp.controlled_by(c)
-    assert out == [qp.XorEqual(lvalue=q, mask=q3).controlled_by(c)]
+        cirq.testing.assert_has_diagram(circuit, """
+c: ----------@---@---@---@---@---
+             |   |   |   |   |
+test3[0]: ---@---|---|---|---|---
+             |   |   |   |   |
+test3[1]: ---|---@---|---|---|---
+             |   |   |   |   |
+test3[2]: ---|---|---@---|---|---
+             |   |   |   |   |
+test3[3]: ---|---|---|---@---|---
+             |   |   |   |   |
+test3[4]: ---|---|---|---|---@---
+             |   |   |   |   |
+test[0]: ----X---|---|---|---|---
+                 |   |   |   |
+test[1]: --------X---|---|---|---
+                     |   |   |
+test[2]: ------------X---|---|---
+                         |   |
+test[3]: ----------------X---|---
+                             |
+test[4]: --------------------X---
+            """, use_unicode_characters=False)
 
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
@@ -82,20 +128,20 @@ def test_iadd_isub():
     with pytest.raises(TypeError):
         q += None
 
-    with qp.capture() as out:
+    with qp.capture(measure_bias=0.5) as out:
         q += 5
     assert qp.ccz_count(out) == 18
 
-    with qp.capture() as out:
+    with qp.capture(measure_bias=0.5) as out:
         q += 4
     assert qp.ccz_count(out) == 14
 
-    with qp.capture() as out:
+    with qp.capture(measure_bias=0.5) as out:
         q -= 3
     assert qp.ccz_count(out) == 18
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
-    with qp.capture() as out:
+    with qp.capture(measure_bias=0.5) as out:
         q += q2
     assert qp.ccz_count(out) == 18
 

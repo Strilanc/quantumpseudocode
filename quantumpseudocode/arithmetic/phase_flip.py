@@ -10,7 +10,7 @@ class _PhaseFlipOp(Operation):
         sim_state.phase_degrees %= 360
 
     def emit_ops(self, controls: 'qp.QubitIntersection'):
-        raise ValueError("The phase flip gate is fundamental.")
+        qp.emit(self.controlled_by(controls))
 
     def inverse(self):
         return self
@@ -24,11 +24,13 @@ def phase_flip(condition: 'Union[bool, qp.Qubit, qp.QubitIntersection, qp.RValue
         pass
     elif condition is True or condition == qp.QubitIntersection.ALWAYS:
         qp.emit(OP_PHASE_FLIP)
-    elif isinstance(condition, (qp.Qubit, qp.QubitIntersection)):
-        qp.emit(OP_PHASE_FLIP.controlled_by(condition))
-    elif isinstance(condition, qp.RValue):
+    elif isinstance(condition, qp.QubitIntersection):
+        OP_PHASE_FLIP.emit_ops(condition)
+    elif isinstance(condition, qp.Qubit):
+        OP_PHASE_FLIP.emit_ops(qp.QubitIntersection((condition,)))
+    elif isinstance(condition, (qp.Qubit, qp.RValue)):
         with qp.hold(condition) as q:
-            qp.emit(OP_PHASE_FLIP.controlled_by(q))
+            OP_PHASE_FLIP.emit_ops(qp.QubitIntersection((q,)))
     else:
         raise NotImplementedError("Unknown phase flip condition: {!r}".format(condition))
 

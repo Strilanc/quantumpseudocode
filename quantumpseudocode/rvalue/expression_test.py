@@ -13,11 +13,11 @@ def test_let_and_circuit():
                 q[0].init(q[1] & q[2])
 
     cirq.testing.assert_has_diagram(circuit, r"""
-q[0]: ---X---
-         |
-q[1]: ---@---
-         |
-q[2]: ---@---
+q[0]: ---alloc---X---release---
+         |       |   |
+q[1]: ---alloc---@---release---
+         |       |   |
+q[2]: ---alloc---@---release---
         """, use_unicode_characters=False)
 
 
@@ -28,11 +28,11 @@ def test_del_and_circuit():
                 q[0].clear(q[1] & q[2])
 
     cirq.testing.assert_has_diagram(circuit, r"""
-q[0]: ---Mxc-------
-
-q[1]: ---------@---
-               |
-q[2]: ---------Z---
+q[0]: ---alloc---Mxc-------cxM---release---
+         |                       |
+q[1]: ---alloc---------@---------release---
+         |             |         |
+q[2]: ---alloc---------Z---------release---
         """, use_unicode_characters=False)
 
     with qp.Sim(enforce_release_at_zero=False, phase_fixup_bias=False):
@@ -41,7 +41,11 @@ q[2]: ---------Z---
                 q[0].clear(q[1] & q[2])
 
     cirq.testing.assert_has_diagram(circuit, r"""
-b[0]: ---Mxc---
+b[0]: ---alloc---Mxc---cxM---release---
+         |                   |
+b[1]: ---alloc---------------release---
+         |                   |
+b[2]: ---alloc---------------release---
         """, use_unicode_characters=False)
 
 

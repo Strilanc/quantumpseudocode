@@ -25,8 +25,6 @@ class Op(Operation):
     def alloc_prefix(self):
         return ''
     def do(self, controls: 'qp.QubitIntersection', *args, **kwargs):
-        if self.inv_type() is not None:
-            qp.emit(qp.InverseOperation(self.inverse()))
         raise NotImplemented()
     def describe(self, *args, **kwargs):
         raise NotImplemented()
