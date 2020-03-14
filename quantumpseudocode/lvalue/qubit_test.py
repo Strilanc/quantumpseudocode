@@ -84,11 +84,11 @@ q: ---X---
     # Classes can specify custom behavior via __rixor__.
     class Rixor:
         def __rixor__(self, other):
-            qp.emit('yay!', qp.QubitIntersection.ALWAYS)
+            qp.phase_flip()
             return other
     with qp.capture() as out:
         q ^= Rixor()
-    assert out == ['yay!']
+    assert out == [qp.OP_PHASE_FLIP]
 
 
 def test_repr():

@@ -1,3 +1,4 @@
+import abc
 from typing import List, Optional, ContextManager, cast, Tuple, Union
 
 import quantumpseudocode as qp
@@ -26,12 +27,60 @@ class EmptyManager:
         pass
 
 
-class Logger:
+class Logger(metaclass=abc.ABCMeta):
     def __init__(self):
         self.used = False
 
     def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
-        raise NotImplementedError()
+        if isinstance(op, qp.AllocQuregOperation):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            self.do_allocate_qureg(op)
+        elif isinstance(op, qp.ReleaseQuregOperation):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            self.do_release_qureg(op)
+        elif isinstance(op, qp.Toggle):
+            self.do_toggle_qureg(op, cnt)
+        elif op == qp.OP_PHASE_FLIP:
+            self.do_phase_flip(op, cnt)
+        elif isinstance(op, qp.MeasureOperation):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            self.do_measure_qureg(op)
+        elif isinstance(op, qp.StartMeasurementBasedUncomputation):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            self.do_start_measurement_based_uncomputation(op)
+        elif isinstance(op, qp.EndMeasurementBasedComputationOp):
+            assert cnt == qp.QubitIntersection.ALWAYS
+            self.do_end_measurement_based_uncomputation(op)
+        else:
+            raise NotImplementedError(f"Unrecognized operation: {op!r}")
+
+    @abc.abstractmethod
+    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+        pass
+
+    @abc.abstractmethod
+    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+        pass
+
+    @abc.abstractmethod
+    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+        pass
+
+    @abc.abstractmethod
+    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
+        pass
+
+    @abc.abstractmethod
+    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+        pass
+
+    @abc.abstractmethod
+    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
+        pass
+
+    @abc.abstractmethod
+    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
+        pass
 
     def _val(self):
         return self
@@ -62,15 +111,32 @@ class CaptureLens(Logger):
         super().__enter__()
         return self.out
 
-    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
-        if self.measure_bias is not None and isinstance(op, qp.MeasureOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            op.take_default_result(bias=self.measure_bias)
-        if self.measure_bias is not None and isinstance(op, qp.StartMeasurementBasedUncomputation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            op.captured_phase_degrees = 0
-            op.take_default_result(bias=self.measure_bias)
-        if cnt == qp.QubitIntersection.ALWAYS:
+    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+        self.out.append(op)
+
+    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+        self.out.append(op)
+
+    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+        if controls == qp.QubitIntersection.ALWAYS:
             self.out.append(op)
         else:
-            self.out.append((op, cnt))
+            self.out.append((op, controls))
+
+    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
+        if controls == qp.QubitIntersection.ALWAYS:
+            self.out.append(op)
+        else:
+            self.out.append((op, controls))
+
+    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+        if self.measure_bias is not None:
+            op.take_default_result(bias=self.measure_bias)
+
+    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
+        if self.measure_bias is not None:
+            op.captured_phase_degrees = 0
+            op.take_default_result(bias=self.measure_bias)
+
+    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
+        pass

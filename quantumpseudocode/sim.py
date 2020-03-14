@@ -85,51 +85,51 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
             return lambda: self.phase_fixup_bias
         return lambda: random.random() < 0.5
 
-    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
-
-        if isinstance(op, qp.AllocQuregOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            if isinstance(op.qureg, qp.NamedQureg):
-                assert op.qureg.name not in self._int_state, "Double allocated {}".format(op.qureg.name)
-                self._int_state[op.qureg.name] = qp.IntBuf.raw(
-                    val=random.randint(0, (1 << len(op.qureg)) - 1) if op.x_basis else 0,
-                    length=len(op.qureg))
-            else:
-                for q in op.qureg:
-                    assert q.name not in self._int_state, "Double allocated {}".format(q.name)
-                    self._int_state[q.name] = qp.IntBuf.raw(
-                        val=random.randint(0, 1) if op.x_basis else 0,
-                        length=1)
-        elif isinstance(op, qp.ReleaseQuregOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-
-            for q in op.qureg:
-                if self.enforce_release_at_zero and not op.dirty:
-                    assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
-
-            if isinstance(op.qureg, qp.NamedQureg):
-                assert op.qureg.name in self._int_state
-                del self._int_state[op.qureg.name]
-            else:
-                for q in op.qureg:
-                    assert q.name in self._int_state
-                    del self._int_state[q.name]
-        elif isinstance(op, (qp.MeasureOperation,
-                             qp.StartMeasurementBasedUncomputation,
-                             qp.EndMeasurementBasedComputationOp)):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            op.mutate_state(self, True)
-        elif isinstance(op, qp.Toggle):
-            targets = op.lvalue
-            assert set(targets).isdisjoint(cnt.qubits)
-            if cnt.bit and all(self._read_qubit(q) for q in cnt.qubits):
-                for t in targets:
-                    self._write_qubit(t, not self._read_qubit(t))
-        elif op == qp.OP_PHASE_FLIP:
-            if self.resolve_location(cnt, allow_mutate=False):
-                self.phase_degrees += 180
+    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+        if isinstance(op.qureg, qp.NamedQureg):
+            assert op.qureg.name not in self._int_state, "Double allocated {}".format(op.qureg.name)
+            self._int_state[op.qureg.name] = qp.IntBuf.raw(
+                val=random.randint(0, (1 << len(op.qureg)) - 1) if op.x_basis else 0,
+                length=len(op.qureg))
         else:
-            raise NotImplementedError(f"Unrecognized operation: {op!r}")
+            for q in op.qureg:
+                assert q.name not in self._int_state, "Double allocated {}".format(q.name)
+                self._int_state[q.name] = qp.IntBuf.raw(
+                    val=random.randint(0, 1) if op.x_basis else 0,
+                    length=1)
+
+    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+        for q in op.qureg:
+            if self.enforce_release_at_zero and not op.dirty:
+                assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
+
+        if isinstance(op.qureg, qp.NamedQureg):
+            assert op.qureg.name in self._int_state
+            del self._int_state[op.qureg.name]
+        else:
+            for q in op.qureg:
+                assert q.name in self._int_state
+                del self._int_state[q.name]
+
+    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+        op.mutate_state(self, True)
+
+    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
+        op.mutate_state(self, True)
+
+    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
+        op.mutate_state(self, True)
+
+    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+        if self.resolve_location(controls, allow_mutate=False):
+            self.phase_degrees += 180
+
+    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
+        targets = op.lvalue
+        assert set(targets).isdisjoint(controls.qubits)
+        if controls.bit and all(self._read_qubit(q) for q in controls.qubits):
+            for t in targets:
+                self._write_qubit(t, not self._read_qubit(t))
 
 
 def _fuse(qubits: Iterable[qp.Qubit]) -> List[Tuple[str, slice]]:
