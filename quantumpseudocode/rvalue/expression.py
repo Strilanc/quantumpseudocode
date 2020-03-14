@@ -30,11 +30,29 @@ class ScaledIntRValue(RValue[int]):
             return other
 
         if isinstance(other, qp.Quint):
-            qp.PlusEqualProduct(
+            qp.arithmetic.do_plus_product(
                 lvalue=other,
                 quantum_factor=self.coherent,
                 const_factor=self.constant,
-            ).emit_ops(controls)
+                control=controls,
+            )
+            return other
+
+        return NotImplemented
+
+    def __risub__(self, other):
+        other, controls = qp.ControlledLValue.split(other)
+        if controls == qp.QubitIntersection.NEVER:
+            return other
+
+        if isinstance(other, qp.Quint):
+            qp.arithmetic.do_plus_product(
+                lvalue=other,
+                quantum_factor=self.coherent,
+                const_factor=self.constant,
+                control=controls,
+                forward=False,
+            )
             return other
 
         return NotImplemented

@@ -3,18 +3,13 @@ import random
 import quantumpseudocode as qp
 
 
-def test_vs_emulation():
-    with qp.Sim(enforce_release_at_zero=False) as sim:
-        bits = 4
-        with qp.qmanaged_int(bits=bits, name='lvalue') as lvalue:
-            for _ in range(10):
-                sim.randomize_location(lvalue)
-
-                old_state = sim.snapshot()
-                op = qp.PlusEqualProduct(
-                    lvalue=lvalue,
-                    quantum_factor=random.randint(0, 1 << bits),
-                    const_factor=random.randint(0, 1 << bits))
-                op.emit_ops(qp.QubitIntersection.ALWAYS)
-                op.mutate_state(sim_state=sim, forward=False)
-                assert sim.snapshot() == old_state
+def test_quantum_classical_consistent():
+    qp.testing.assert_semi_quantum_func_is_consistent(
+        qp.arithmetic.do_plus_product,
+        fuzz_space={
+            'lvalue': lambda: qp.IntBuf.random(range(0, 6)),
+            'quantum_factor': lambda: random.randint(0, 99),
+            'const_factor': lambda: random.randint(0, 99),
+            'forward': [False, True],
+        },
+        fuzz_count=100)

@@ -19,7 +19,7 @@ from .mul import (
 )
 
 from .mult_add import (
-    PlusEqualProduct,
+    do_plus_product,
 )
 
 from .measure import (
