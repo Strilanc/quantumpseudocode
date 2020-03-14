@@ -41,10 +41,6 @@ from .phase_flip import (
     phase_flip,
 )
 
-from .toggle import (
-    Toggle,
-)
-
 from .unary import (
     UnaryRValue,
 )

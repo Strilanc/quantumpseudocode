@@ -125,7 +125,7 @@ class QubitIntersection(RValue[bool]):
 
         if isinstance(other, qp.Qubit):
             if self.bit:
-                qp.emit(qp.Toggle(lvalue=qp.RawQureg([other])), self & controls)
+                qp.global_logger.do_toggle_qureg(qp.RawQureg([other]), self & controls)
             return other
 
         return NotImplemented
@@ -137,7 +137,7 @@ class QubitIntersection(RValue[bool]):
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
         t = qp.RawQureg([location])
-        qp.emit(qp.Toggle(lvalue=t), self & controls)
+        qp.global_logger.do_toggle_qureg(t, self & controls)
 
     def del_storage_location(self,
                              location: Any,

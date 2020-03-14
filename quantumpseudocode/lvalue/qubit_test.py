@@ -88,7 +88,7 @@ q: ---X---
             return other
     with qp.capture() as out:
         q ^= Rixor()
-    assert out == [qp.OP_PHASE_FLIP]
+    assert out == [('phase_flip', qp.QubitIntersection.ALWAYS)]
 
 
 def test_repr():

@@ -1,14 +1,7 @@
 import abc
-from typing import List, Optional, ContextManager, cast, Tuple, Union
+from typing import List, Optional, ContextManager, cast, Tuple, Union, Any
 
 import quantumpseudocode as qp
-
-lens_stack: List['qp.Logger'] = []
-
-
-def emit(operation: 'qp.Operation', controls: 'qp.QubitIntersection'):
-    for logger in lens_stack:
-        logger.log(operation, controls)
 
 
 def capture(out: 'Optional[List[qp.Operation]]' = None,
@@ -31,29 +24,6 @@ class Logger(metaclass=abc.ABCMeta):
     def __init__(self):
         self.used = False
 
-    def log(self, op: 'qp.Operation', cnt: 'qp.QubitIntersection'):
-        if isinstance(op, qp.AllocQuregOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            self.do_allocate_qureg(op)
-        elif isinstance(op, qp.ReleaseQuregOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            self.do_release_qureg(op)
-        elif isinstance(op, qp.Toggle):
-            self.do_toggle_qureg(op, cnt)
-        elif op == qp.OP_PHASE_FLIP:
-            self.do_phase_flip(op, cnt)
-        elif isinstance(op, qp.MeasureOperation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            self.do_measure_qureg(op)
-        elif isinstance(op, qp.StartMeasurementBasedUncomputation):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            self.do_start_measurement_based_uncomputation(op)
-        elif isinstance(op, qp.EndMeasurementBasedComputationOp):
-            assert cnt == qp.QubitIntersection.ALWAYS
-            self.do_end_measurement_based_uncomputation(op)
-        else:
-            raise NotImplementedError(f"Unrecognized operation: {op!r}")
-
     @abc.abstractmethod
     def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
         pass
@@ -67,7 +37,7 @@ class Logger(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
+    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         pass
 
     @abc.abstractmethod
@@ -91,18 +61,18 @@ class Logger(metaclass=abc.ABCMeta):
     def __enter__(self):
         assert not self.used
         self.used = True
-        lens_stack.append(self)
+        global_logger.loggers.append(self)
         return self._val()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        assert lens_stack[-1] is self
-        lens_stack.pop()
+        assert global_logger.loggers[-1] is self
+        global_logger.loggers.pop()
         if exc_type is None:
             self._succeeded()
 
 
 class CaptureLens(Logger):
-    def __init__(self, out: List[Union['qp.Operation', Tuple['qp.Operation', 'qp.QubitIntersection']]], measure_bias: Optional[float]):
+    def __init__(self, out: List[Tuple[str, Any]], measure_bias: Optional[float]):
         super().__init__()
         self.out = out
         self.measure_bias = measure_bias
@@ -112,31 +82,63 @@ class CaptureLens(Logger):
         return self.out
 
     def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
-        self.out.append(op)
+        self.out.append(('alloc', op))
 
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
-        self.out.append(op)
+        self.out.append(('release', op))
 
     def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
-        if controls == qp.QubitIntersection.ALWAYS:
-            self.out.append(op)
-        else:
-            self.out.append((op, controls))
+        self.out.append(('phase_flip', controls))
 
-    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
-        if controls == qp.QubitIntersection.ALWAYS:
-            self.out.append(op)
-        else:
-            self.out.append((op, controls))
+    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+        self.out.append(('toggle', (targets, controls)))
 
     def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+        self.out.append(('measure', op))
         if self.measure_bias is not None:
             op.take_default_result(bias=self.measure_bias)
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
+        self.out.append(('start_measurement_based_uncomputation', op))
         if self.measure_bias is not None:
             op.captured_phase_degrees = 0
             op.take_default_result(bias=self.measure_bias)
 
     def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
-        pass
+        self.out.append(('end_measurement_based_uncomputation', op))
+
+
+class _GlobalLogger(Logger):
+    def __init__(self):
+        self.loggers: List['qp.Logger'] = []
+
+    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+        for logger in self.loggers:
+            logger.do_allocate_qureg(op)
+
+    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+        for logger in self.loggers:
+            logger.do_release_qureg(op)
+
+    def do_phase_flip(self, op, controls: 'qp.QubitIntersection'):
+        for logger in self.loggers:
+            logger.do_phase_flip(op, controls)
+
+    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+        for logger in self.loggers:
+            logger.do_toggle_qureg(targets, controls)
+
+    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+        for logger in self.loggers:
+            logger.do_measure_qureg(op)
+
+    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
+        for logger in self.loggers:
+            logger.do_start_measurement_based_uncomputation(op)
+
+    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
+        for logger in self.loggers:
+            logger.do_end_measurement_based_uncomputation(op)
+
+
+global_logger = _GlobalLogger()

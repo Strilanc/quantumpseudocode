@@ -119,7 +119,7 @@ test[4]: --------------------X---
             return other
     with qp.capture() as out:
         q ^= Rixor()
-    assert out == [qp.OP_PHASE_FLIP]
+    assert out == [('phase_flip', qp.QubitIntersection.ALWAYS)]
 
 
 def test_iadd_isub():
@@ -152,4 +152,4 @@ def test_iadd_isub():
             return other
     with qp.capture() as out:
         q += Riadd()
-    assert out == [qp.OP_PHASE_FLIP]
+    assert out == [('phase_flip', qp.QubitIntersection.ALWAYS)]

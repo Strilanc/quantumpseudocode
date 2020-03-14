@@ -45,12 +45,12 @@ class QallocManager:
 
     def __enter__(self):
         if len(self.qureg):
-            qp.emit(AllocQuregOperation(self.qureg), qp.QubitIntersection.ALWAYS)
+            qp.global_logger.do_allocate_qureg(AllocQuregOperation(self.qureg))
         return self.wrap
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if len(self.qureg) and exc_type is None:
-            qp.emit(ReleaseQuregOperation(self.qureg), qp.QubitIntersection.ALWAYS)
+            qp.global_logger.do_release_qureg(ReleaseQuregOperation(self.qureg))
 
 
 def qalloc(val: Union[None, int] = None,
@@ -67,7 +67,7 @@ def qalloc(val: Union[None, int] = None,
         raise NotImplementedError()
 
     if len(reg):
-        qp.emit(AllocQuregOperation(reg, x_basis), qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_allocate_qureg(AllocQuregOperation(reg, x_basis))
 
     return result
 
@@ -91,7 +91,7 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
     else:
         raise NotImplementedError()
     if len(reg):
-        qp.emit(qp.ReleaseQuregOperation(reg, dirty=dirty), qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_release_qureg(qp.ReleaseQuregOperation(reg, dirty=dirty))
 
 
 def qalloc_int(*,
@@ -99,7 +99,7 @@ def qalloc_int(*,
                name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
     result = qp.Quint(qureg=qp.NamedQureg(length=bits, name=name or ''))
     if bits:
-        qp.emit(AllocQuregOperation(result.qureg), qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_allocate_qureg(AllocQuregOperation(result.qureg))
     return result
 
 
@@ -111,7 +111,7 @@ def qalloc_int_mod(*,
     result = qp.QuintMod(qureg=qp.NamedQureg(length=bits, name=name or ''),
                          modulus=modulus)
     if bits:
-        qp.emit(AllocQuregOperation(result.qureg), qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_allocate_qureg(qp.AllocQuregOperation(result.qureg))
     return result
 
 

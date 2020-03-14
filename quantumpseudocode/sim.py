@@ -124,8 +124,7 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
         if self.resolve_location(controls, allow_mutate=False):
             self.phase_degrees += 180
 
-    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
-        targets = op.lvalue
+    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         assert set(targets).isdisjoint(controls.qubits)
         if controls.bit and all(self._read_qubit(q) for q in controls.qubits):
             for t in targets:

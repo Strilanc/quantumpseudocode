@@ -66,7 +66,7 @@ def test_if_less_than_then_circuit():
                                 lhs=lhs,
                                 rhs=rhs,
                                 or_equal=c,
-                                effect=lambda control: qp.emit(qp.Toggle(lvalue=qp.RawQureg([t])), control))
+                                effect=lambda control: qp.global_logger.do_toggle_qureg(qp.RawQureg([t]), control))
     cirq.testing.assert_has_diagram(circuit, r"""
 _or_eq: -------------------alloc-----------@---X---@-------------------------------------------------------------------------------@---X---@-------------release-----------------------
                                            |   |   |                                                                               |   |   |

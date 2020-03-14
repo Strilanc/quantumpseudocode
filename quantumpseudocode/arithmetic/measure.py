@@ -36,7 +36,7 @@ def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
     else:
         raise NotImplementedError(f"Don't know how to measure {val!r}.")
 
-    qp.emit(op, qp.QubitIntersection.ALWAYS)
+    qp.global_logger.do_measure_qureg(op)
     assert op.results is not None
     return op.results
 
@@ -163,13 +163,13 @@ class StartMeasurementBasedUncomputation(Generic[T], Operation):
                          "It returns a context manager, not a boolean.")
 
     def __enter__(self):
-        qp.emit(self, qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_start_measurement_based_uncomputation(self)
         return self.results
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.captured_phase_degrees is not None
-        qp.emit(qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees),
-                qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_end_measurement_based_uncomputation(
+            qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees))
 
 
 class EndMeasurementBasedComputationOp(Operation):

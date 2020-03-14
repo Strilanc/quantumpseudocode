@@ -40,7 +40,7 @@ class PaddedQureg:
         assert self.padded is None
         sub_name = str(self.base) if isinstance(self.base, qp.NamedQureg) else ''
         q = qp.NamedQureg('{}_pad'.format(sub_name), self.min_len - len(self.base))
-        qp.emit(qp.AllocQuregOperation(q), qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_allocate_qureg(qp.AllocQuregOperation(q))
         self.padded = q
         return self.wrapper(qp.RawQureg(list(self.base) + list(q)))
 
@@ -50,5 +50,5 @@ class PaddedQureg:
 
         if exc_type is None:
             assert self.padded is not None
-            qp.emit(qp.ReleaseQuregOperation(self.padded), qp.QubitIntersection.ALWAYS)
+            qp.global_logger.do_release_qureg(qp.ReleaseQuregOperation(self.padded))
             self.padded = None

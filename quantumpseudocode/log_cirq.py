@@ -73,9 +73,8 @@ class LogCirqCircuit(qp.Logger):
             else:
                 self.circuit.append(cirq.GlobalPhaseOperation(-1), cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
+    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
-        targets = op.lvalue
         if len(targets) and controls.bit:
             targs = [cirq.NamedQubit(str(q)) for q in targets]
             self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
@@ -121,9 +120,8 @@ class CountNots(qp.Logger):
             if len(controls.qubits) > 0:
                 self.counts[len(controls.qubits) - 1] += 1
 
-    def do_toggle_qureg(self, op: 'qp.Toggle', controls: 'qp.QubitIntersection'):
+    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         if controls.bit:
-            targets = op.lvalue
             if len(controls.qubits) > 1:
                 self.counts[1] += 2 * (len(targets) - 1)
                 self.counts[len(controls.qubits)] += 1

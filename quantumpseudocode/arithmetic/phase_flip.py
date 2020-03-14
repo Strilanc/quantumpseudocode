@@ -17,14 +17,14 @@ def phase_flip(condition: 'Union[bool, qp.Qubit, qp.QubitIntersection, qp.RValue
     if condition is False or condition == qp.QubitIntersection.NEVER:
         pass
     elif condition is True or condition == qp.QubitIntersection.ALWAYS:
-        qp.emit(OP_PHASE_FLIP, qp.QubitIntersection.ALWAYS)
+        qp.global_logger.do_phase_flip(OP_PHASE_FLIP, qp.QubitIntersection.ALWAYS)
     elif isinstance(condition, qp.QubitIntersection):
-        qp.emit(OP_PHASE_FLIP, condition)
+        qp.global_logger.do_phase_flip(OP_PHASE_FLIP, condition)
     elif isinstance(condition, qp.Qubit):
-        qp.emit(OP_PHASE_FLIP, qp.QubitIntersection((condition,)))
+        qp.global_logger.do_phase_flip(OP_PHASE_FLIP, qp.QubitIntersection((condition,)))
     elif isinstance(condition, (qp.Qubit, qp.RValue)):
         with qp.hold(condition) as q:
-            qp.emit(OP_PHASE_FLIP, qp.QubitIntersection((q,)))
+            qp.global_logger.do_phase_flip(OP_PHASE_FLIP, qp.QubitIntersection((q,)))
     else:
         raise NotImplementedError("Unknown phase flip condition: {!r}".format(condition))
 

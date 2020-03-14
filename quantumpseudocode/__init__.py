@@ -2,7 +2,7 @@ from quantumpseudocode.logger import (
     capture,
     CaptureLens,
     EmptyManager,
-    emit,
+    global_logger,
     Logger,
 )
 
@@ -89,7 +89,6 @@ from quantumpseudocode.arithmetic import (
     StartMeasurementBasedUncomputation,
     EndMeasurementBasedComputationOp,
     OP_PHASE_FLIP,
-    Toggle,
     phase_flip,
     swap,
 )
