@@ -262,7 +262,7 @@ def test_classical():
     assert f.classical is g
 
     with qp.Sim() as sim_state:
-        q = qp.qalloc_int(bits=5)
+        q = qp.qalloc(len=5)
         assert sim_state.resolve_location(q, False) == 0
         f.sim(sim_state, q, 3)
         assert sim_state.resolve_location(q, False) == 3

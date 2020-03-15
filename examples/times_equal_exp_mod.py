@@ -12,7 +12,7 @@ def times_equal_exp_mod(target: QuintMod,
     assert ki is not None
 
     a = target
-    b = qalloc_int_mod(modulus=N)
+    b = qalloc(modulus=N)
 
     for i in range(0, len(e), e_window):
         ei = e[i:i + e_window]

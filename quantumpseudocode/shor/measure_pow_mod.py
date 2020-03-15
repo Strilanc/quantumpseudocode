@@ -57,7 +57,7 @@ def measure_pow_mod(base: int, exponent: Quint, modulus: int) -> int:
 
 
 def make_coset_register(value: int, length: int, modulus: int) -> Quint:
-    reg = qalloc_int(bits=length, name='coset')
+    reg = qalloc(len=length, name='coset')
     reg ^= value % modulus
 
     # Add coherent multiple of modulus into reg.

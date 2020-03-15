@@ -53,8 +53,8 @@ def test_init_mul():
 def test_init_square_circuit():
     with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qalloc_int(bits=2, name='f') as factor:
-                with qp.qalloc_int(bits=4, name='s') as out:
+            with qp.qalloc(len=2, name='f') as factor:
+                with qp.qalloc(len=4, name='s') as out:
                         init_square(factor=factor, clean_out=out)
     cirq.testing.assert_has_diagram(circuit, r"""
 _add_carry_in: ---------------------------------------alloc---X-------@---------------------------------------------------------------@---@-------X---Mxc---cxM---release-----------------alloc---X-------@-------------------------------@---@-------X---Mxc---cxM---release---------------------------------

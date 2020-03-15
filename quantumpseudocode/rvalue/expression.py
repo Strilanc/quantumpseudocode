@@ -58,7 +58,7 @@ class ScaledIntRValue(RValue[int]):
         return NotImplemented
 
     def alloc_storage_location(self, name: Optional[str] = None):
-        return qp.qalloc_int(name=name, bits=len(self.coherent) + self.constant.bit_length())
+        return qp.qalloc(len=len(self.coherent) + self.constant.bit_length(), name=name)
 
     def init_storage_location(self,
                               location: 'qp.Quint',

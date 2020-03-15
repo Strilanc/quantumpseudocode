@@ -1,24 +1,57 @@
-from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable, Any
+from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable, Any, overload
 
 import cirq
 
 import quantumpseudocode as qp
 
 
-def qalloc(val: Union[None, int] = None,
-           *,
+@overload
+def qalloc(*,
+           len: int,
+           name: Optional[str] = None,
+           x_basis: bool = False) -> 'qp.Quint':
+    pass
+
+
+@overload
+def qalloc(*,
+           modulus: int,
+           name: Optional[str] = None,
+           x_basis: bool = False) -> 'qp.QuintMod':
+    pass
+
+
+@overload
+def qalloc(*,
+           name: Optional[str] = None,
+           x_basis: bool = False) -> 'qp.Qubit':
+    pass
+
+
+def qalloc(*,
+           len: Optional[int] = None,
+           modulus: Optional[int] = None,
            name: Optional[str] = None,
            x_basis: bool = False) -> 'Any':
-    assert val is None or isinstance(val, int)
-    alloc_op = AllocArgs(qureg_name=name or '',
-                         qureg_length=1 if val is None else val,
-                         x_basis=x_basis)
+    if len is None and modulus is None:
+        n = 1
+        wrap = lambda e: e[0]
+    elif len is not None and modulus is None:
+        n = len
+        wrap = qp.Quint
+    elif len is None and modulus is not None:
+        assert modulus > 0
+        n = (modulus - 1).bit_length()
+        wrap = lambda e: qp.QuintMod(e, modulus)
+    else:
+        raise ValueError(f'Incompatible argument combination.')
 
-    qureg = qp.global_logger.do_allocate_qureg(alloc_op)
-    assert isinstance(qureg, qp.Qureg)
-    if val is None:
-        return qureg[0]
-    return qureg
+    qureg = qp.global_logger.do_allocate_qureg(AllocArgs(
+        qureg_name=name or '',
+        qureg_length=n,
+        x_basis=x_basis))
+
+    return wrap(qureg)
 
 
 def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
@@ -41,22 +74,6 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
         raise NotImplementedError()
     if len(reg):
         qp.global_logger.do_release_qureg(qp.ReleaseQuregOperation(reg, dirty=dirty))
-
-
-def qalloc_int(*,
-               bits: int,
-               name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
-    qureg = qp.global_logger.do_allocate_qureg(AllocArgs(qureg_name=name, qureg_length=bits))
-    return qp.Quint(qureg=qureg)
-
-
-def qalloc_int_mod(*,
-                   modulus: int,
-                   name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
-    assert modulus > 0
-    bits = qp.ceil_lg2(modulus)
-    qureg = qp.global_logger.do_allocate_qureg(qp.AllocArgs(qureg_length=bits, qureg_name=name))
-    return qp.QuintMod(qureg=qureg, modulus=modulus)
 
 
 class AllocArgs:

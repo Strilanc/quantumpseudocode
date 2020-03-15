@@ -26,8 +26,8 @@ def test_quantum_classical_consistent():
 def test_xor_equal_gate_circuit():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qalloc_int(bits=3, name='a') as a:
-                with qp.qalloc_int(bits=4, name='t') as t:
+            with qp.qalloc(len=3, name='a') as a:
+                with qp.qalloc(len=4, name='t') as t:
                     with qp.qalloc(name='_c') as c:
                         qp.arithmetic.do_xor(lvalue=t, mask=a)
                         qp.arithmetic.do_xor(lvalue=t, mask=a, control=c)
@@ -54,8 +54,8 @@ t[3]: -----------alloc---------------------------------------------release------
 def test_xor_equal_gate_circuit_2():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qalloc_int(bits=3, name='a') as a:
-                with qp.qalloc_int(bits=4, name='t') as t:
+            with qp.qalloc(len=3, name='a') as a:
+                with qp.qalloc(len=4, name='t') as t:
                     with qp.qalloc(name='_c') as c:
                         t ^= a
                         t ^= a & qp.controlled_by(c)

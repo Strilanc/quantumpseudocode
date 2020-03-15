@@ -43,7 +43,7 @@ For example:
 from quantumpseudocode import *
 
 def make_coset_register(value: int, length: int, modulus: int) -> Quint:
-    reg = qalloc_int(bits=length)
+    reg: Quint = qalloc(len=length)
     reg ^= value % modulus
 
     # Add coherent multiple of modulus into reg.

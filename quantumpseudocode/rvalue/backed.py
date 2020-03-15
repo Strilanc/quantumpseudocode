@@ -62,7 +62,7 @@ class QuintRValue(RValue[int]):
         return self.val
 
     def alloc_storage_location(self, name: Optional[str] = None):
-        return qp.qalloc_int(name=name, bits=len(self.val))
+        return qp.qalloc(len=len(self.val), name=name)
 
     def init_storage_location(self,
                               location: Any,

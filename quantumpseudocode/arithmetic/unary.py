@@ -22,7 +22,7 @@ class UnaryRValue(qp.RValue[int]):
         return NotImplemented
 
     def alloc_storage_location(self, name: Optional[str] = None):
-        return qp.qalloc_int(name=name, bits=1 << len(self.binary))
+        return qp.qalloc(len=1 << len(self.binary), name=name)
 
     def init_storage_location(self,
                               location: 'qp.Quint',

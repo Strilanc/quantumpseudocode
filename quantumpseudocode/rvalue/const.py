@@ -57,7 +57,7 @@ class IntRValue(RValue[bool]):
         return self.val
 
     def alloc_storage_location(self, name: Optional[str] = None):
-        return qp.qalloc_int(name=name, bits=self.val.bit_length())
+        return qp.qalloc(len=self.val.bit_length(), name=name)
 
     def __int__(self):
         return self.val

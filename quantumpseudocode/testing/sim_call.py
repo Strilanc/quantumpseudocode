@@ -24,14 +24,14 @@ def sim_call(func: Callable,
                 n = a.arg.bit_length()
             else:
                 raise ValueError('Unsupported Quint input: {}'.format(a))
-            result = qp.qalloc_int(bits=n, name=a.parameter.name)
+            result = qp.qalloc(len=n, name=a.parameter.name)
             result.init(a.arg)
             return result
 
         if a.parameter_type is qp.QuintMod:
             assert isinstance(a.arg, ModInt)
-            result = qp.qalloc_int_mod(modulus=a.arg.modulus,
-                                       name=a.parameter.name)
+            result = qp.qalloc(modulus=a.arg.modulus,
+                               name=a.parameter.name)
             result.init(a.arg.val)
             return result
 

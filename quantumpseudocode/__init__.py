@@ -94,8 +94,6 @@ from quantumpseudocode.arithmetic import (
 from quantumpseudocode.qalloc import (
     AllocArgs,
     qalloc,
-    qalloc_int,
-    qalloc_int_mod,
     qfree,
     ReleaseQuregOperation,
 )
