@@ -1,4 +1,5 @@
 import abc
+import random
 from typing import List, Optional, ContextManager, cast, Tuple, Union, Any
 
 import quantumpseudocode as qp
@@ -46,7 +47,11 @@ class Sink(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def do_measure(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
+        pass
+
+    @abc.abstractmethod
+    def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
         pass
 
     @abc.abstractmethod
@@ -98,10 +103,16 @@ class CaptureLens(Sink):
     def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         self.out.append(('toggle', (targets, controls)))
 
-    def do_measure(self, op: 'qp.MeasureOperation'):
-        self.out.append(('measure', op))
-        if self.measure_bias is not None:
-            op.take_default_result(bias=self.measure_bias)
+    def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
+        if self.measure_bias is None:
+            raise NotImplementedError()
+        bits = tuple(random.random() < self.measure_bias for _ in range(len(qureg)))
+        result = qp.little_endian_int(bits)
+        self.did_measure(qureg, reset, result)
+        return result
+
+    def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
+        self.out.append(('measure', (qureg, reset, result)))
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
         self.out.append(('start_measurement_based_uncomputation', op))
@@ -140,9 +151,15 @@ class _GlobalSink(Sink):
         for sink in self.sinks:
             sink.do_toggle(targets, controls)
 
-    def do_measure(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
+        result = self.sinks[0].do_measure(qureg, reset)
+        for sink in self.sinks[1:]:
+            sink.did_measure(qureg, result, result)
+        return result
+
+    def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
         for sink in self.sinks:
-            sink.do_measure(op)
+            sink.did_measure(qureg, reset, result)
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
         for sink in self.sinks:

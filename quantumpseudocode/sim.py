@@ -115,12 +115,15 @@ class Sim(quantumpseudocode.sink.Sink, quantumpseudocode.ops.operation.Classical
                 assert q.name in self._int_state
                 del self._int_state[q.name]
 
-    def do_measure(self, op: 'qp.MeasureOperation'):
-        assert op.raw_results is None
-        reg = self.quint_buf(qp.Quint(op.targets))
-        op.raw_results = tuple(reg[i] for i in range(len(reg)))
-        if op.reset:
+    def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
+        reg = self.quint_buf(qp.Quint(qureg))
+        result = int(reg)
+        if reset:
             reg[:] = 0
+        return result
+
+    def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
+        pass
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
         op.raw_results = []

@@ -35,17 +35,19 @@ def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
             return measure(target)
 
     if isinstance(val, qp.Qubit):
-        op = MeasureOperation(qp.RawQureg([val]), lambda e: bool(e[0]), reset)
+        qureg = val.qureg
+        wrap = bool
     elif isinstance(val, qp.Qureg):
-        op = MeasureOperation(val, lambda e: e, reset)
+        qureg = val
+        wrap = qp.little_endian_bits()
     elif isinstance(val, (qp.Quint, qp.QuintMod)):
-        op = MeasureOperation(val.qureg, qp.little_endian_int, reset)
+        qureg = val.qureg
+        wrap = lambda e: e
     else:
         raise NotImplementedError(f"Don't know how to measure {val!r}.")
 
-    sink.global_sink.do_measure(op)
-    assert op.results is not None
-    return op.results
+    result = sink.global_sink.do_measure(qureg, reset)
+    return wrap(result)
 
 
 @overload
@@ -75,30 +77,6 @@ def measurement_based_uncomputation(
         return qp.StartMeasurementBasedUncomputation(val.qureg, qp.little_endian_int)
 
     raise NotImplementedError(f"Don't know {val!r}")
-
-
-class MeasureOperation(Generic[T]):
-    def __init__(self,
-                 targets: qp.Qureg,
-                 interpret: Callable[[List[bool]], T],
-                 reset: bool):
-        self.targets = targets
-        self.interpret = interpret
-        self.reset = reset
-        self.raw_results = None
-
-    def take_default_result(self, bias: float):
-        if self.raw_results is None:
-            self.raw_results = tuple(random.random() < bias for _ in range(len(self.targets)))
-
-    @property
-    def results(self) -> T:
-        assert self.raw_results is not None
-        return self.interpret(self.raw_results)
-
-    def __repr__(self):
-        return 'qp.MeasureOperation({!r}, {!r}, {!r})'.format(
-            self.targets, self.interpret, self.reset)
 
 
 class StartMeasurementBasedUncomputation(Generic[T]):

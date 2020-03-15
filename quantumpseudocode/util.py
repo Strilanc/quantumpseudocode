@@ -2,7 +2,7 @@ import math
 
 import cirq
 import inspect
-from typing import Callable, TypeVar, Generic, List, Dict, Iterable, Any, get_type_hints, Optional, Tuple
+from typing import Callable, TypeVar, Generic, List, Dict, Iterable, Any, get_type_hints, Optional, Tuple, Sequence
 import quantumpseudocode as qp
 
 T = TypeVar('T')
@@ -185,13 +185,17 @@ def popcnt(x: int) -> int:
     return t
 
 
-def little_endian_int(bits: List[bool]) -> int:
+def little_endian_int(bits: Sequence[bool]) -> int:
     t = 0
     for b in reversed(bits):
         t <<= 1
         if b:
             t |= 1
     return t
+
+
+def little_endian_bits(val: int, length: int) -> Tuple[bool, ...]:
+    return tuple(bool(val & (1 << k)) for k in range(length))
 
 
 def ccz_count(record: Iterable[Tuple[str, Any]]) -> int:

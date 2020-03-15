@@ -1,4 +1,5 @@
 import collections
+import random
 from typing import List, Union, Callable, Any, Optional, Tuple
 
 import cirq
@@ -85,11 +86,19 @@ class LogCirqCircuit(qp.Sink):
             self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_measure(self, op: 'qp.MeasureOperation'):
-        qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
+    def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
+        if self.measure_bias is None:
+            raise NotImplementedError()
+        bits = tuple(random.random() < self.measure_bias for _ in range(len(qureg)))
+        result = qp.little_endian_int(bits)
+        self.did_measure(qureg, reset, result)
+        return result
+
+    def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
+        qubits = [cirq.NamedQubit(str(q)) for q in qureg]
         if not qubits:
             return
-        if op.reset:
+        if reset:
             self.circuit.append(MeasureResetGate().on_each(*qubits),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
         else:
@@ -139,7 +148,10 @@ class CountNots(qp.Sink):
             else:
                 self.counts[len(controls.qubits)] += len(targets)
 
-    def do_measure(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
+        raise NotImplementedError()
+
+    def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
         pass
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):

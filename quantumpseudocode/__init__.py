@@ -53,6 +53,7 @@ from quantumpseudocode.util import (
     MultiWith,
     popcnt,
     little_endian_int,
+    little_endian_bits,
     ccz_count,
 )
 
@@ -83,7 +84,6 @@ from quantumpseudocode.arithmetic import (
     LookupRValue,
     measure,
     measurement_based_uncomputation,
-    MeasureOperation,
     StartMeasurementBasedUncomputation,
     EndMeasurementBasedComputationOp,
     phase_flip,

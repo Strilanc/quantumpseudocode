@@ -62,6 +62,14 @@ def test_little_endian_int():
     assert f([True, True]) == 3
 
 
+def test_little_endian_bits():
+    f = qp.little_endian_bits
+    assert f(0, 4) == (False, False, False, False)
+    assert f(3, 4) == (True, True, False, False)
+    assert f(5, 4) == (True, False, True, False)
+    assert f(5, 6) == (True, False, True, False, False, False)
+
+
 def test_floor_lg2():
     f = qp.floor_lg2
     assert f(1) == 0
