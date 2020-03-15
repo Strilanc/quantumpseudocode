@@ -11,21 +11,29 @@ def hold(val: 'qp.Qubit',
          name: Optional[str] = None,
          controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[bool]':
     pass
+
+
 @overload
 def hold(val: 'qp.Quint',
          name: Optional[str] = None,
          controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[int]':
     pass
+
+
 @overload
 def hold(val: 'int',
          name: Optional[str] = None,
          controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[int]':
     pass
+
+
 @overload
 def hold(val: 'bool',
          name: Optional[str] = None,
          controls: 'Optional[qp.QubitIntersection]' = None) -> 'qp.HeldRValueManager[bool]':
     pass
+
+
 @overload
 def hold(val: 'qp.RValue[T]',
          name: Optional[str] = None,

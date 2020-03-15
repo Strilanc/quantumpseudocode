@@ -1,4 +1,4 @@
-from typing import List, Optional, Union, Tuple, Callable, TYPE_CHECKING, Iterable, Any, overload
+from typing import Optional, Union, Any, overload
 
 import cirq
 
@@ -33,6 +33,21 @@ def qalloc(*,
            modulus: Optional[int] = None,
            name: Optional[str] = None,
            x_basis: bool = False) -> 'Any':
+    """Allocates new quantum objects.
+
+    If no arguments are given, allocates a qubit.
+    If the `len` argument is given, allocates a quint.
+    If the `modulus` argument is given, allocates a modular quint.
+
+    Args:
+        len: Causes a quint to be allocated. Number of qubits in the quint register.
+        modulus: Causes a modular quint, storing values modulo this modulus, to be allocated.
+        name: Debug information to associate with the allocated object.
+        x_basis: If set, the register is initialized into a uniform superposition instead of into the zero state.
+
+    Returns:
+        A qubit, quint, or modular quint.
+    """
     if len is None and modulus is None:
         n = 1
         wrap = lambda e: e[0]
@@ -57,6 +72,14 @@ def qalloc(*,
 def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
           equivalent_expression: 'Union[None, bool, int, qp.RValue[Any]]' = None,
           dirty: bool = False):
+    """Deallocates quantum objects.
+
+    Args:
+        target: The quantum object to free.
+        equivalent_expression: An entangled expression with the same computational basis value as the quantum object.
+            Used to uncompute the quantum object before freeing it, to avoid revealing information.
+        dirty: Indicates that the quantum object is not expected to be zero'd.
+    """
 
     if equivalent_expression is not None:
         qp.rval(equivalent_expression).clear_storage_location(
