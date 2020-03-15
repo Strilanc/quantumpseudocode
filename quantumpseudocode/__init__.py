@@ -1,7 +1,9 @@
 from quantumpseudocode.sink import (
     capture,
     CaptureLens,
+    StartMeasurementBasedUncomputationResult,
     EmptyManager,
+    RandomSim,
     Sink,
 )
 
@@ -38,7 +40,6 @@ from quantumpseudocode.lvalue import (
     Quint,
     QuintMod,
     Qureg,
-    UniqueHandle,
 )
 
 from quantumpseudocode.util import (
@@ -84,8 +85,6 @@ from quantumpseudocode.arithmetic import (
     LookupRValue,
     measure,
     measurement_based_uncomputation,
-    StartMeasurementBasedUncomputation,
-    EndMeasurementBasedComputationOp,
     phase_flip,
     swap,
 )

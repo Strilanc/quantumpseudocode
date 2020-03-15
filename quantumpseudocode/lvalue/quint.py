@@ -1,7 +1,5 @@
 from typing import Union, ContextManager
 
-import cirq
-
 import quantumpseudocode as qp
 
 

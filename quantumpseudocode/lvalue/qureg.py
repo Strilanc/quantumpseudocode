@@ -44,8 +44,8 @@ class RawQureg(Qureg):
 
 @cirq.value_equality
 class NamedQureg(Qureg):
-    def __init__(self, name: 'Union[qp.UniqueHandle, str]', length: int):
-        self.name = name if isinstance(name, qp.UniqueHandle) else qp.UniqueHandle(name)
+    def __init__(self, name: str, length: int):
+        self.name = name
         self.length = length
 
     def _value_equality_values_(self):

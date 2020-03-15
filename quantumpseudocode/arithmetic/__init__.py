@@ -23,8 +23,6 @@ from .mult_add import (
 
 from .measure import (
     measure,
-    StartMeasurementBasedUncomputation,
-    EndMeasurementBasedComputationOp,
     measurement_based_uncomputation,
 )
 

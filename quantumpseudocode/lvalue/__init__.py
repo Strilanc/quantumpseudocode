@@ -22,7 +22,3 @@ from .padded import (
     pad_all,
     PaddedQureg,
 )
-
-from .unique import (
-    UniqueHandle,
-)

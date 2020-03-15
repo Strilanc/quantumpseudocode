@@ -7,19 +7,12 @@ import quantumpseudocode as qp
 def test_init():
     q1 = qp.Quint(qp.NamedQureg('test', 10))
     q2 = qp.Quint(qp.NamedQureg('test', 10))
-    assert q1.qureg != q2.qureg
-    assert 'test' in str(q1)
-    assert 'test' in str(q2)
-    assert str(q1) != str(q2)
-
-    h = qp.UniqueHandle('test')
-    h1 = qp.Quint(qp.NamedQureg(h, 10))
-    h2 = qp.Quint(qp.NamedQureg(h, 10))
-    assert q1.qureg != h1.qureg == h2.qureg != q2.qureg
+    assert q1.qureg == q2.qureg
+    assert str(q1) == str(q2) == 'test'
 
 
 def test_len_getitem():
-    h = qp.UniqueHandle('test')
+    h = 'test'
     q = qp.Quint(qp.NamedQureg(h, 10))
     assert len(q) == 10
 
@@ -128,21 +121,25 @@ def test_iadd_isub():
     with pytest.raises(TypeError):
         q += None
 
-    with qp.capture(measure_bias=0.5) as out:
-        q += 5
+    with qp.RandomSim(measure_bias=0.5):
+        with qp.capture() as out:
+            q += 5
     assert qp.ccz_count(out) == 18
 
-    with qp.capture(measure_bias=0.5) as out:
-        q += 4
+    with qp.RandomSim(measure_bias=0.5):
+        with qp.capture() as out:
+            q += 4
     assert qp.ccz_count(out) == 14
 
-    with qp.capture(measure_bias=0.5) as out:
-        q -= 3
+    with qp.RandomSim(measure_bias=0.5):
+        with qp.capture() as out:
+            q -= 3
     assert qp.ccz_count(out) == 18
 
     q2 = qp.Quint(qp.NamedQureg('test2', 5))
-    with qp.capture(measure_bias=0.5) as out:
-        q += q2
+    with qp.RandomSim(measure_bias=0.5):
+        with qp.capture() as out:
+            q += q2
     assert qp.ccz_count(out) == 18
 
     # Classes can specify custom behavior via __riadd__.

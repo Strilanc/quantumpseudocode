@@ -9,20 +9,11 @@ def test_init():
 
     q1 = qp.Qubit('test', 10)
     q2 = qp.Qubit('test', 10)
-    assert 'test' in str(q1)
-    assert 'test' in str(q2)
-    assert str(q1) != str(q2)
+    assert str(q1) == str(q2) == 'test[10]'
 
-    eq.add_equality_group(qp.Qubit())
-    eq.add_equality_group(qp.Qubit())
-    eq.add_equality_group(q1)
-    eq.add_equality_group(q2)
+    eq.add_equality_group(qp.Qubit(), qp.Qubit())
+    eq.add_equality_group(q1, q2)
     eq.add_equality_group(qp.Qubit('q'))
-
-    h = qp.UniqueHandle('test')
-    eq.add_equality_group(qp.Qubit(h), qp.Qubit(h))
-    eq.add_equality_group(qp.Qubit(h, 5))
-    eq.add_equality_group(qp.Qubit(h, 0), qp.Qubit(h, 0))
 
 
 def test_and():

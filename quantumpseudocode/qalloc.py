@@ -105,9 +105,9 @@ class AllocArgs:
     def __init__(self,
                  *,
                  qureg_length: int,
-                 qureg_name: Union[None, str, 'qp.UniqueHandle'] = None,
+                 qureg_name: Optional[str] = None,
                  x_basis: bool = False):
-        assert qureg_name is None or isinstance(qureg_name, (str, qp.UniqueHandle))
+        assert qureg_name is None or isinstance(qureg_name, str)
         self.qureg_length = qureg_length
         self.qureg_name = qureg_name
         self.x_basis = x_basis

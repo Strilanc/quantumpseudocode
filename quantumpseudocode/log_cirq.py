@@ -49,10 +49,9 @@ class CirqLabelOp(cirq.Operation):
 
 
 class LogCirqCircuit(qp.Sink):
-    def __init__(self, measure_bias: Optional[float] = None):
+    def __init__(self):
         super().__init__()
         self.circuit = cirq.Circuit()
-        self.measure_bias = measure_bias
 
     def _val(self):
         return self.circuit
@@ -87,12 +86,7 @@ class LogCirqCircuit(qp.Sink):
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
     def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
-        if self.measure_bias is None:
-            raise NotImplementedError()
-        bits = tuple(random.random() < self.measure_bias for _ in range(len(qureg)))
-        result = qp.little_endian_int(bits)
-        self.did_measure(qureg, reset, result)
-        return result
+        raise NotImplementedError()
 
     def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
         qubits = [cirq.NamedQubit(str(q)) for q in qureg]
@@ -105,17 +99,17 @@ class LogCirqCircuit(qp.Sink):
             self.circuit.append(cirq.measure(*qubits),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
-        if self.measure_bias is not None:
-            op.captured_phase_degrees = 0
-            op.take_default_result(bias=self.measure_bias)
-        qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
+    def do_start_measurement_based_uncomputation(self, qureg: 'qp.Qureg') -> 'qp.StartMeasurementBasedUncomputationResult':
+        raise NotImplementedError()
+
+    def did_start_measurement_based_uncomputation(self, qureg: 'qp.Qureg', result: 'qp.StartMeasurementBasedUncomputationResult'):
+        qubits = [cirq.NamedQubit(str(q)) for q in qureg]
         if not qubits:
             return
         self.circuit.append(CirqLabelOp(qubits, 'Mxc'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
-        targets = [cirq.NamedQubit(str(q)) for q in op.targets]
+    def do_end_measurement_based_uncomputation(self, qureg: 'qp.Qureg', start: 'qp.StartMeasurementBasedUncomputationResult'):
+        targets = [cirq.NamedQubit(str(q)) for q in qureg]
         if not targets:
             return
         self.circuit.append(CirqLabelOp(targets, 'cxM'), cirq.InsertStrategy.NEW_THEN_INLINE)
@@ -154,8 +148,12 @@ class CountNots(qp.Sink):
     def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
         pass
 
-    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
+    def do_start_measurement_based_uncomputation(self, qureg: 'qp.Qureg') -> 'qp.StartMeasurementBasedUncomputationResult':
+        raise NotImplementedError()
+
+    def did_start_measurement_based_uncomputation(self, qureg: 'qp.Qureg',
+                                                  result: 'qp.StartMeasurementBasedUncomputationResult'):
         pass
 
-    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
+    def do_end_measurement_based_uncomputation(self, qureg: 'qp.Qureg', start: 'qp.StartMeasurementBasedUncomputationResult'):
         pass

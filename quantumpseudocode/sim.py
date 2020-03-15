@@ -30,12 +30,6 @@ class Sim(quantumpseudocode.sink.Sink, quantumpseudocode.ops.operation.Classical
     def phase_degrees(self, new_value):
         self._phase_degrees = new_value % 360
 
-    def __enter__(self):
-        # HACK: Prevent name pollution across simulation runs.
-        qp.UniqueHandle._free_handles = {}
-        qp.UniqueHandle._next_handle = {}
-        return super().__enter__()
-
     def snapshot(self):
         return dict(self._int_state)
 
@@ -92,8 +86,15 @@ class Sim(quantumpseudocode.sink.Sink, quantumpseudocode.ops.operation.Classical
         else:
             name = args.qureg_name
 
+        if name in self._int_state:
+            k = 1
+            while True:
+                candidate = f'{name}_{k}'
+                if candidate not in self._int_state:
+                    break
+                k += 1
+            name = candidate
         result = qp.NamedQureg(name=name, length=args.qureg_length)
-        assert result.name not in self._int_state, f"Double allocated {result.name!r}"
         self._int_state[result.name] = qp.IntBuf.raw(
             val=random.randint(0, (1 << args.qureg_length) - 1) if args.x_basis else 0,
             length=args.qureg_length)
@@ -103,17 +104,14 @@ class Sim(quantumpseudocode.sink.Sink, quantumpseudocode.ops.operation.Classical
         pass
 
     def do_release(self, op: 'qp.ReleaseQuregOperation'):
-        for q in op.qureg:
-            if self.enforce_release_at_zero and not op.dirty:
-                assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
+        if self.enforce_release_at_zero and not op.dirty:
+            v = self.do_measure(op.qureg, reset=False)
+            if v:
+                raise ValueError(f'Failed to uncompute {op.qureg!r} before release. It had value {v}.')
 
-        if isinstance(op.qureg, qp.NamedQureg):
-            assert op.qureg.name in self._int_state
-            del self._int_state[op.qureg.name]
-        else:
-            for q in op.qureg:
-                assert q.name in self._int_state
-                del self._int_state[q.name]
+        assert isinstance(op.qureg, qp.NamedQureg)
+        assert op.qureg.name in self._int_state
+        del self._int_state[op.qureg.name]
 
     def do_measure(self, qureg: 'qp.Qureg', reset: bool) -> int:
         reg = self.quint_buf(qp.Quint(qureg))
@@ -125,24 +123,27 @@ class Sim(quantumpseudocode.sink.Sink, quantumpseudocode.ops.operation.Classical
     def did_measure(self, qureg: 'qp.Qureg', reset: bool, result: int):
         pass
 
-    def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
-        op.raw_results = []
-        op.captured_phase_degrees = self.phase_degrees
-        reg = self.quint_buf(qp.Quint(op.targets))
-        chooser = self.measurement_based_uncomputation_result_chooser()
+    def do_start_measurement_based_uncomputation(self, qureg: 'qp.Qureg') -> 'qp.StartMeasurementBasedUncomputationResult':
+        captured_phase_degrees = self.phase_degrees
+        z_result = self.do_measure(qureg, reset=True)
 
         # Simulate X basis measurements.
-        for i in range(len(op.targets)):
-            result = chooser()
-            op.raw_results.append(result)
-            if result and reg[i]:
-                self.phase_degrees += 180
+        chooser = self.measurement_based_uncomputation_result_chooser()
+        x_result = 0
+        for i in range(len(qureg))[::-1]:
+            x_result <<= 1
+            if chooser():
+                x_result |= 1
+        if qp.popcnt(x_result & z_result) & 1:
+            self.phase_degrees += 180
 
-        # Reset target.
-        reg[:] = 0
+        return qp.StartMeasurementBasedUncomputationResult(measurement=x_result, context=captured_phase_degrees)
 
-    def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
-        if self.phase_degrees != op.expected_phase_degrees:
+    def did_start_measurement_based_uncomputation(self, qureg: 'qp.Qureg', result: 'qp.StartMeasurementBasedUncomputationResult'):
+        pass
+
+    def do_end_measurement_based_uncomputation(self, qureg: 'qp.Qureg', start: 'qp.StartMeasurementBasedUncomputationResult'):
+        if self.phase_degrees != start.context:
             raise AssertionError('Failed to uncompute. Measurement based uncomputation failed to fix phase flips.')
 
     def do_phase_flip(self, controls: 'qp.QubitIntersection'):
