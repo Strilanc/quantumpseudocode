@@ -5,7 +5,6 @@ from .xor import (
 
 from .add import (
     do_addition,
-    do_subtraction,
 )
 
 from .cmp import (

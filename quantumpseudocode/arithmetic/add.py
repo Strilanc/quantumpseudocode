@@ -7,24 +7,21 @@ from quantumpseudocode.ops import semi_quantum
 def do_addition_classical(*,
                           lvalue: qp.IntBuf,
                           offset: int,
-                          carry_in: bool = False):
-    lvalue += offset + carry_in
+                          carry_in: bool = False,
+                          forward: bool = True):
+    if forward:
+        lvalue += offset + carry_in
+    else:
+        lvalue -= offset + carry_in
 
 
-def do_subtraction_classical(*,
-                             lvalue: qp.IntBuf,
-                             offset: int,
-                             carry_in: bool = False):
-    lvalue -= offset + carry_in
-
-
-@semi_quantum(alloc_prefix='_add_',
-              classical=do_addition_classical)
+@semi_quantum(classical=do_addition_classical)
 def do_addition(*,
                 control: qp.Qubit.Control = True,
                 lvalue: qp.Quint,
                 offset: qp.Quint.Borrowed,
-                carry_in: qp.Qubit.Borrowed = False):
+                carry_in: qp.Qubit.Borrowed = False,
+                forward: bool = True):
     assert isinstance(control, qp.QubitIntersection) and len(control.qubits) <= 1
     assert isinstance(lvalue, qp.Quint)
     assert isinstance(offset, qp.Quint)
@@ -41,6 +38,9 @@ def do_addition(*,
         lvalue[0] ^= carry_in & control
         return
 
+    if not forward:
+        lvalue ^= -1
+
     with offset.hold_padded_to(out_len - 1) as offset:
         in_len = min(out_len, len(offset))
 
@@ -54,17 +54,8 @@ def do_addition(*,
         # Apply and uncompute carries.
         uma_sweep(lvalue, carry_in, offset, control)
 
-
-@semi_quantum(alloc_prefix='_sub_',
-              classical=do_subtraction_classical)
-def do_subtraction(*,
-                   control: qp.Qubit.Control = True,
-                   lvalue: qp.Quint,
-                   offset: qp.Quint.Borrowed,
-                   carry_in: qp.Qubit.Borrowed = False):
-    lvalue ^= -1
-    do_addition(control=control, lvalue=lvalue, offset=offset, carry_in=carry_in)
-    lvalue ^= -1
+    if not forward:
+        lvalue ^= -1
 
 
 def maj_sweep(lvalue: Union[qp.Quint, List[qp.Qubit], qp.Qureg],
