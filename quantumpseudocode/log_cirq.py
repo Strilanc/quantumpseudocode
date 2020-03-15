@@ -43,6 +43,9 @@ class CirqLabelOp(cirq.Operation):
     def _circuit_diagram_info_(self, args):
         return (self.label,) * len(self.qubits)
 
+    def __repr__(self):
+        return f'CirqLabelOp({self.qubits!r}, {self.label!r})'
+
 
 class LogCirqCircuit(qp.Logger):
     def __init__(self, measure_bias: Optional[float] = None):
@@ -53,13 +56,15 @@ class LogCirqCircuit(qp.Logger):
     def _val(self):
         return self.circuit
 
-    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
-        targets = [cirq.NamedQubit(str(q)) for q in op.qureg]
-        self.circuit.append(CirqLabelOp(targets, 'alloc'), cirq.InsertStrategy.NEW_THEN_INLINE)
+    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+        targets = [cirq.NamedQubit(str(q)) for q in qureg]
+        if targets:
+            self.circuit.append(CirqLabelOp(targets, 'alloc'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
         targets = [cirq.NamedQubit(str(q)) for q in op.qureg]
-        self.circuit.append(CirqLabelOp(targets, 'release'), cirq.InsertStrategy.NEW_THEN_INLINE)
+        if targets:
+            self.circuit.append(CirqLabelOp(targets, 'release'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
     def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         if controls.bit:
@@ -75,13 +80,15 @@ class LogCirqCircuit(qp.Logger):
 
     def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
-        if len(targets) and controls.bit:
+        if targets and controls.bit:
             targs = [cirq.NamedQubit(str(q)) for q in targets]
             self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
     def do_measure_qureg(self, op: 'qp.MeasureOperation'):
         qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
+        if not qubits:
+            return
         if op.reset:
             self.circuit.append(MeasureResetGate().on_each(*qubits),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
@@ -94,10 +101,14 @@ class LogCirqCircuit(qp.Logger):
             op.captured_phase_degrees = 0
             op.take_default_result(bias=self.measure_bias)
         qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
+        if not qubits:
+            return
         self.circuit.append(CirqLabelOp(qubits, 'Mxc'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
     def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
         targets = [cirq.NamedQubit(str(q)) for q in op.targets]
+        if not targets:
+            return
         self.circuit.append(CirqLabelOp(targets, 'cxM'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
 
@@ -109,7 +120,7 @@ class CountNots(qp.Logger):
     def _val(self):
         return self.counts
 
-    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         pass
 
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):

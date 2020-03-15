@@ -45,7 +45,7 @@ def do_plus_const_mod(*,
         lvalue += offset & qp.controlled_by(control)
         return
 
-    with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
+    with qp.qalloc(name='mod_cmp') as q:
         q.init(lvalue >= modulus - offset, controls=control)
         lvalue += offset & qp.controlled_by(control)
         lvalue -= modulus & qp.controlled_by(q & control)
@@ -73,7 +73,7 @@ def do_plus_mod(control: 'qp.Qubit.Control' = True,
         return
 
     with offset.hold_padded_to(n) as offset:
-        with qp.qmanaged(qp.Qubit(name='mod_cmp')) as q:
+        with qp.qalloc(name='mod_cmp') as q:
             if forward:
                 offset ^= -1
                 offset += modulus + 1

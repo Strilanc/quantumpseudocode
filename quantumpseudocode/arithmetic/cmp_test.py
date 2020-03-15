@@ -5,7 +5,7 @@ import quantumpseudocode as qp
 
 def test_cmp():
     with qp.Sim():
-        with qp.qmanaged_int(bits=4) as t:
+        with qp.qalloc_int(bits=4) as t:
             t.init(5)
             for k in range(-5, 30):
                 assert qp.measure(t >= k) == (5 >= k)
@@ -18,7 +18,7 @@ def test_cmp():
 
 def test_eq():
     with qp.Sim():
-        with qp.qmanaged_int(bits=4) as t:
+        with qp.qalloc_int(bits=4) as t:
             t.init(5)
             for k in range(-2, 60):
                 assert qp.measure(t == k) == (k == 5)
@@ -27,7 +27,7 @@ def test_eq():
 
 def test_neq():
     with qp.Sim():
-        with qp.qmanaged_int(bits=4) as t:
+        with qp.qalloc_int(bits=4) as t:
             t.init(5)
             for k in range(-2, 60):
                 with qp.hold(t != k) as q:
@@ -38,7 +38,7 @@ def test_neq():
 def test_eq_circuit():
     with qp.Sim(enforce_release_at_zero=False, phase_fixup_bias=True):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=4, name='lhs') as lhs:
+            with qp.qalloc_int(bits=4, name='lhs') as lhs:
                 with qp.hold(lhs == 5, name='target'):
                     pass
 
@@ -58,10 +58,10 @@ target: -----------alloc-------X-------Mxc---------------cxM---release----------
 def test_if_less_than_then_circuit():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=4, name='lhs') as lhs:
-                with qp.qmanaged_int(bits=4, name='rhs') as rhs:
-                    with qp.qmanaged(qp.Qubit(name='_or_eq')) as c:
-                        with qp.qmanaged(qp.Qubit(name='t')) as t:
+            with qp.qalloc_int(bits=4, name='lhs') as lhs:
+                with qp.qalloc_int(bits=4, name='rhs') as rhs:
+                    with qp.qalloc(name='_or_eq') as c:
+                        with qp.qalloc(name='t') as t:
                             qp.arithmetic.do_if_less_than(
                                 lhs=lhs,
                                 rhs=rhs,

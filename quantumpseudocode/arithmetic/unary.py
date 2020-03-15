@@ -21,9 +21,8 @@ class UnaryRValue(qp.RValue[int]):
 
         return NotImplemented
 
-    def make_storage_location(self,
-                              name: Optional[str] = None) -> 'qp.Quint':
-        return qp.Quint(qp.NamedQureg(name, 1 << len(self.binary)))
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc_int(name=name, bits=1 << len(self.binary))
 
     def init_storage_location(self,
                               location: 'qp.Quint',

@@ -20,8 +20,8 @@ class BoolRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def make_storage_location(self, name: Optional[str] = None):
-        return qp.Qubit(name)
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc(name=name)
 
     def init_storage_location(self,
                               location: 'qp.Qubit',
@@ -56,8 +56,8 @@ class IntRValue(RValue[bool]):
     def _value_equality_values_(self):
         return self.val
 
-    def make_storage_location(self, name: str = ''):
-        return qp.Quint(qp.NamedQureg(name, self.val.bit_length()))
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc_int(name=name, bits=self.val.bit_length())
 
     def __int__(self):
         return self.val

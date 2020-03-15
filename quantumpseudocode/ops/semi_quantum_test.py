@@ -52,7 +52,7 @@ global phase:                     pi
         v = f(True)
         assert isinstance(v, qp.Quint)
     cirq.testing.assert_has_diagram(circuit, """
-_f_x_1[0]: -----alloc---X---Mxc--------cxM---release---
+_f_x_1: --------alloc---X---Mxc--------cxM---release---
 
 global phase:                     pi
         """, use_unicode_characters=False)

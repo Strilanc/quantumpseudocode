@@ -21,6 +21,7 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
         self.phase_fixup_bias = phase_fixup_bias
         self.emulate_additions = emulate_additions
         self._phase_degrees = 0
+        self._anon_alloc_counter = 0
 
     @property
     def phase_degrees(self):
@@ -85,18 +86,22 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
             return lambda: self.phase_fixup_bias
         return lambda: random.random() < 0.5
 
-    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
-        if isinstance(op.qureg, qp.NamedQureg):
-            assert op.qureg.name not in self._int_state, "Double allocated {}".format(op.qureg.name)
-            self._int_state[op.qureg.name] = qp.IntBuf.raw(
-                val=random.randint(0, (1 << len(op.qureg)) - 1) if op.x_basis else 0,
-                length=len(op.qureg))
+    def do_allocate_qureg(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
+        if args.qureg_name is None:
+            name = f'_anon_{self._anon_alloc_counter}'
+            self._anon_alloc_counter += 1
         else:
-            for q in op.qureg:
-                assert q.name not in self._int_state, "Double allocated {}".format(q.name)
-                self._int_state[q.name] = qp.IntBuf.raw(
-                    val=random.randint(0, 1) if op.x_basis else 0,
-                    length=1)
+            name = args.qureg_name
+
+        result = qp.NamedQureg(name=name, length=args.qureg_length)
+        assert result.name not in self._int_state, f"Double allocated {result.name!r}"
+        self._int_state[result.name] = qp.IntBuf.raw(
+            val=random.randint(0, (1 << args.qureg_length) - 1) if args.x_basis else 0,
+            length=args.qureg_length)
+        return result
+
+    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+        pass
 
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
         for q in op.qureg:

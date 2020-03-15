@@ -5,70 +5,20 @@ import cirq
 import quantumpseudocode as qp
 
 
-def qmanaged(val: Union[None, int, 'qp.Qubit', 'qp.Qureg', 'qp.Quint'] = None, *, name: Optional[str] = None) -> 'qp.QallocManager':
-    if val is None:
-        q = qp.Qubit('qalloc' if name is None else name)
-        return QallocManager(qp.RawQureg([q]), q)
-
-    if isinstance(val, int):
-        q = qp.NamedQureg('' if name is None else name, val)
-        return QallocManager(q, q)
-
-    if isinstance(val, qp.Qubit):
-        assert name is None
-        return QallocManager(qp.RawQureg([val]), val)
-
-    if isinstance(val, qp.Qureg):
-        assert name is None
-        return QallocManager(val, val)
-
-    if isinstance(val, qp.Quint):
-        assert name is None
-        return QallocManager(val.qureg, val)
-
-    if isinstance(val, qp.QuintMod):
-        assert name is None
-        return QallocManager(val.qureg, val)
-
-    raise NotImplementedError('Unrecognized value to manage: {!r}'.format(val))
-
-
-def qmanaged_int(*, bits: int, name: str = ''):
-    return qp.qmanaged(qp.Quint(qp.NamedQureg(name, bits)))
-
-
-class QallocManager:
-    def __init__(self, qureg: 'qp.Qureg', wrap: Any):
-        self.qureg = qureg
-        self.wrap = wrap
-
-    def __enter__(self):
-        if len(self.qureg):
-            qp.global_logger.do_allocate_qureg(AllocQuregOperation(self.qureg))
-        return self.wrap
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if len(self.qureg) and exc_type is None:
-            qp.global_logger.do_release_qureg(ReleaseQuregOperation(self.qureg))
-
-
 def qalloc(val: Union[None, int] = None,
            *,
            name: Optional[str] = None,
            x_basis: bool = False) -> 'Any':
+    assert val is None or isinstance(val, int)
+    alloc_op = AllocArgs(qureg_name=name or '',
+                         qureg_length=1 if val is None else val,
+                         x_basis=x_basis)
+
+    qureg = qp.global_logger.do_allocate_qureg(alloc_op)
+    assert isinstance(qureg, qp.Qureg)
     if val is None:
-        result = qp.Qubit(name or '')
-        reg = qp.RawQureg([result])
-    elif isinstance(val, int):
-        result = qp.NamedQureg(name or '', length=val)
-        reg = result
-    else:
-        raise NotImplementedError()
-
-    if len(reg):
-        qp.global_logger.do_allocate_qureg(AllocQuregOperation(reg, x_basis))
-
-    return result
+        return qureg[0]
+    return qureg
 
 
 def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
@@ -96,10 +46,8 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
 def qalloc_int(*,
                bits: int,
                name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
-    result = qp.Quint(qureg=qp.NamedQureg(length=bits, name=name or ''))
-    if bits:
-        qp.global_logger.do_allocate_qureg(AllocQuregOperation(result.qureg))
-    return result
+    qureg = qp.global_logger.do_allocate_qureg(AllocArgs(qureg_name=name, qureg_length=bits))
+    return qp.Quint(qureg=qureg)
 
 
 def qalloc_int_mod(*,
@@ -107,30 +55,20 @@ def qalloc_int_mod(*,
                    name: Union[None, str, 'qp.UniqueHandle'] = None) -> 'Any':
     assert modulus > 0
     bits = qp.ceil_lg2(modulus)
-    result = qp.QuintMod(qureg=qp.NamedQureg(length=bits, name=name or ''),
-                         modulus=modulus)
-    if bits:
-        qp.global_logger.do_allocate_qureg(qp.AllocQuregOperation(result.qureg))
-    return result
+    qureg = qp.global_logger.do_allocate_qureg(qp.AllocArgs(qureg_length=bits, qureg_name=name))
+    return qp.QuintMod(qureg=qureg, modulus=modulus)
 
 
-@cirq.value_equality
-class AllocQuregOperation:
+class AllocArgs:
     def __init__(self,
-                 qureg: 'qp.Qureg',
+                 *,
+                 qureg_length: int,
+                 qureg_name: Union[None, str, 'qp.UniqueHandle'] = None,
                  x_basis: bool = False):
-        self.qureg = qureg
+        assert qureg_name is None or isinstance(qureg_name, (str, qp.UniqueHandle))
+        self.qureg_length = qureg_length
+        self.qureg_name = qureg_name
         self.x_basis = x_basis
-
-    def _value_equality_values_(self):
-        return self.qureg, self.x_basis
-
-    def __str__(self):
-        return 'ALLOC[{}, {}] {}'.format(
-            len(self.qureg), 'X' if self.x_basis else 'Z', self.qureg)
-
-    def __repr__(self):
-        return 'qp.AllocQuregOperation({!r})'.format(self.qureg)
 
 
 @cirq.value_equality

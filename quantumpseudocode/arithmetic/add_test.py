@@ -53,9 +53,9 @@ def test_function():
 def test_plus_equal_gate_circuit():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='a') as a:
-                with qp.qmanaged_int(bits=4, name='t') as t:
-                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+            with qp.qalloc_int(bits=3, name='a') as a:
+                with qp.qalloc_int(bits=4, name='t') as t:
+                    with qp.qalloc(name='_c') as c:
                         qp.arithmetic.do_addition(lvalue=t, offset=a, carry_in=c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -77,7 +77,7 @@ t[3]: -----------alloc-----------------------------------------------X----------
         """, use_unicode_characters=False)
 
 
-def test_do():
+def test_quantum_classical_consistent():
     qp.testing.assert_semi_quantum_func_is_consistent(
         qp.arithmetic.do_addition,
         fuzz_space={

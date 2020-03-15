@@ -180,3 +180,10 @@ class Quint:
 
     def __repr__(self):
         return 'qp.Quint({!r})'.format(self.qureg)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        qp.global_logger.do_release_qureg(
+            qp.ReleaseQuregOperation(self.qureg))

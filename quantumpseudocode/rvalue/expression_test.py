@@ -9,7 +9,7 @@ import quantumpseudocode as qp
 def test_let_and_circuit():
     with qp.Sim(enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='q') as q:
+            with qp.qalloc_int(bits=3, name='q') as q:
                 q[0].init(q[1] & q[2])
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -24,7 +24,7 @@ q[2]: ---alloc---@---release---
 def test_del_and_circuit():
     with qp.Sim(enforce_release_at_zero=False, phase_fixup_bias=True):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='q') as q:
+            with qp.qalloc_int(bits=3, name='q') as q:
                 q[0].clear(q[1] & q[2])
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -37,7 +37,7 @@ q[2]: ---alloc---------Z---------release---
 
     with qp.Sim(enforce_release_at_zero=False, phase_fixup_bias=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='b') as q:
+            with qp.qalloc_int(bits=3, name='b') as q:
                 q[0].clear(q[1] & q[2])
 
     cirq.testing.assert_has_diagram(circuit, r"""

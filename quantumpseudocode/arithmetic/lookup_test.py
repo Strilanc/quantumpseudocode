@@ -8,9 +8,9 @@ import quantumpseudocode as qp
 def test_xor_lookup():
     with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=4, name='addr') as addr:
-                with qp.qmanaged_int(bits=8, name='out') as out:
-                    with qp.qmanaged(name='cnt') as cnt:
+            with qp.qalloc_int(bits=4, name='addr') as addr:
+                with qp.qalloc_int(bits=8, name='out') as out:
+                    with qp.qalloc(name='cnt') as cnt:
                         out ^= qp.LookupTable(range(1, 17))[addr] & qp.controlled_by(cnt)
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -53,9 +53,9 @@ out[7]: ---------------------alloc----------------------------------------------
 def test_redundant_lookup():
     with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=4, name='addr') as addr:
-                with qp.qmanaged_int(bits=8, name='out') as out:
-                    with qp.qmanaged(name='cnt') as cnt:
+            with qp.qalloc_int(bits=4, name='addr') as addr:
+                with qp.qalloc_int(bits=8, name='out') as out:
+                    with qp.qalloc(name='cnt') as cnt:
                         out ^= qp.LookupTable([3] * 16)[addr] & qp.controlled_by(cnt)
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -90,8 +90,8 @@ out[7]: ------------alloc-------------------------release-------------
 def test_del_lookup():
     with qp.Sim(phase_fixup_bias=True, enforce_release_at_zero=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=4, name='addr') as addr:
-                    with qp.qmanaged(name='cnt'):
+            with qp.qalloc_int(bits=4, name='addr') as addr:
+                    with qp.qalloc(name='cnt'):
                         with qp.hold(qp.LookupTable(range(1, 17))[addr], name='out'):
                             circuit[:] = []
 

@@ -6,9 +6,9 @@ import quantumpseudocode as qp
 def test_let_unary_circuit():
     with qp.Sim():
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='b') as b:
-                with qp.qmanaged_int(bits=8, name='u') as u:
-                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+            with qp.qalloc_int(bits=3, name='b') as b:
+                with qp.qalloc_int(bits=8, name='u') as u:
+                    with qp.qalloc(name='_c') as c:
                         u.init(1 << b, c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -41,9 +41,9 @@ u[7]: -----------alloc----------------------------------------------------------
 def test_xor_unary_circuit():
     with qp.Sim(phase_fixup_bias=True):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='b') as b:
-                with qp.qmanaged_int(bits=8, name='u') as u:
-                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+            with qp.qalloc_int(bits=3, name='b') as b:
+                with qp.qalloc_int(bits=8, name='u') as u:
+                    with qp.qalloc(name='_c') as c:
                         u ^= (1 << b) & qp.controlled_by(c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -82,9 +82,9 @@ u[7]: -----------------------alloc----------------------------------------------
 def test_del_unary_circuit():
     with qp.Sim(phase_fixup_bias=True):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='b') as b:
-                with qp.qmanaged_int(bits=8, name='u') as u:
-                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+            with qp.qalloc_int(bits=3, name='b') as b:
+                with qp.qalloc_int(bits=8, name='u') as u:
+                    with qp.qalloc(name='_c') as c:
                         u.clear(1 << b, c)
 
     cirq.testing.assert_has_diagram(circuit, r"""
@@ -118,9 +118,9 @@ u[7]: -----------alloc-----------@---Mxc-------cxM------------------------------
     del c
     with qp.Sim(phase_fixup_bias=False):
         with qp.LogCirqCircuit() as circuit:
-            with qp.qmanaged_int(bits=3, name='b') as b:
-                with qp.qmanaged_int(bits=8, name='u') as u:
-                    with qp.qmanaged(qp.Qubit(name='_c')) as c:
+            with qp.qalloc_int(bits=3, name='b') as b:
+                with qp.qalloc_int(bits=8, name='u') as u:
+                    with qp.qalloc(name='_c') as c:
                         u.clear(1 << b, c)
 
     cirq.testing.assert_has_diagram(circuit, r"""

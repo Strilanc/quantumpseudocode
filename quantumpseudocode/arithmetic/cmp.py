@@ -68,8 +68,8 @@ class QuintEqConstRVal(RValue[bool]):
         self.rhs = rhs
         self.invert = invert
 
-    def make_storage_location(self, name: Optional[str] = None) -> Any:
-        return qp.Qubit(name)
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc(name=name)
 
     def init_storage_location(self,
                               location: Any,
@@ -115,8 +115,8 @@ class IfLessThanRVal(RValue[bool]):
         self.rhs = rhs
         self.or_equal = or_equal
 
-    def make_storage_location(self, name: Optional[str] = None) -> Any:
-        return qp.Qubit(name)
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc(name=name)
 
     def init_storage_location(self,
                               location: 'qp.Qubit',

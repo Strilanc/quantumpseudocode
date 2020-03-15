@@ -28,8 +28,8 @@ class ControlledRValue(qp.RValue):
             return 0
         return sim_state.resolve_location(self.rvalue, False)
 
-    def make_storage_location(self, name: Optional[str] = None):
-        return self.rvalue.make_storage_location(name)
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return self.rvalue.alloc_storage_location(name=name)
 
     def init_storage_location(self,
                               location: Any,

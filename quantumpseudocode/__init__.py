@@ -92,14 +92,11 @@ from quantumpseudocode.arithmetic import (
 )
 
 from quantumpseudocode.qalloc import (
-    AllocQuregOperation,
+    AllocArgs,
     qalloc,
     qalloc_int,
     qalloc_int_mod,
-    QallocManager,
-    qmanaged,
     qfree,
-    qmanaged_int,
     ReleaseQuregOperation,
 )
 

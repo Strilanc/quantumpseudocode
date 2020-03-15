@@ -149,9 +149,8 @@ class LookupRValue(qp.RValue[int]):
 
         return NotImplemented
 
-    def make_storage_location(self,
-                              name: Optional[str] = None) -> 'qp.Quint':
-        return qp.Quint(qp.NamedQureg(name, self.table.output_len()))
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc_int(name=name, bits=self.table.output_len())
 
     def init_storage_location(self,
                               location: 'qp.Quint',

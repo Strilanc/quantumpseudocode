@@ -18,7 +18,7 @@ class Qubit:
 
     @property
     def qureg(self):
-        return qp.RawQureg([self])
+        return qp.RawQureg([qp.Qubit(self.name, self.index or 0)])
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
         buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
@@ -82,3 +82,10 @@ class Qubit:
             return rev(qp.ControlledLValue(controls, self))
 
         return NotImplemented
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        qp.global_logger.do_release_qureg(
+            qp.ReleaseQuregOperation(qp.NamedQureg(name=self.name, length=1)))

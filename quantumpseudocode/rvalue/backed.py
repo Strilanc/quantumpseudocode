@@ -23,8 +23,8 @@ class QubitRValue(RValue[bool]):
     def existing_storage_location(self) -> Any:
         return self.val
 
-    def make_storage_location(self, name: Optional[str] = None):
-        raise ValueError('existing storage')
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc(name=name)
 
     def init_storage_location(self,
                               location: Any,
@@ -61,8 +61,8 @@ class QuintRValue(RValue[int]):
     def existing_storage_location(self) -> Any:
         return self.val
 
-    def make_storage_location(self, name: Optional[str] = None):
-        return qp.Quint(qp.NamedQureg(name, len(self.val)))
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc_int(name=name, bits=len(self.val))
 
     def init_storage_location(self,
                               location: Any,

@@ -24,8 +24,13 @@ class Logger(metaclass=abc.ABCMeta):
     def __init__(self):
         self.used = False
 
+    def do_allocate_qureg(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
+        result = qp.NamedQureg(args.qureg_name or '', length=args.qureg_length)
+        self.did_allocate_qureg(args, result)
+        return result
+
     @abc.abstractmethod
-    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         pass
 
     @abc.abstractmethod
@@ -81,8 +86,8 @@ class CaptureLens(Logger):
         super().__enter__()
         return self.out
 
-    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
-        self.out.append(('alloc', op))
+    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+        self.out.append(('alloc', (args, qureg)))
 
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
         self.out.append(('release', op))
@@ -111,11 +116,18 @@ class CaptureLens(Logger):
 class _GlobalLogger(Logger):
     def __init__(self):
         super().__init__()
+        self.sim: Optional['qp.Logger'] = None
         self.loggers: List['qp.Logger'] = []
 
-    def do_allocate_qureg(self, op: 'qp.AllocQuregOperation'):
+    def do_allocate_qureg(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
+        result = self.loggers[0].do_allocate_qureg(args)
+        for logger in self.loggers[1:]:
+            logger.did_allocate_qureg(args, result)
+        return result
+
+    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         for logger in self.loggers:
-            logger.do_allocate_qureg(op)
+            logger.did_allocate_qureg(args, qureg)
 
     def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
         for logger in self.loggers:

@@ -8,7 +8,7 @@ def test_sim():
     bits = 10
     with qp.Sim():
         with qp.hold(val=v1, name='a') as a:
-            with qp.qmanaged_int(bits=bits, name='out') as out:
+            with qp.qalloc_int(bits=bits, name='out') as out:
                 out += a * v2
                 out += offset
                 result = qp.measure(out, reset=True)
@@ -23,7 +23,7 @@ def test_count():
     with qp.Sim():
         with qp.CountNots() as counts:
             with qp.hold(val=v1, name='a') as a:
-                with qp.qmanaged_int(bits=bits, name='out') as out:
+                with qp.qalloc_int(bits=bits, name='out') as out:
                     out += a * v2
                     out += offset
                     _ = qp.measure(out, reset=True)

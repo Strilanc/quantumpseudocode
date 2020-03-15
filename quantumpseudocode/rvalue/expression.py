@@ -57,18 +57,29 @@ class ScaledIntRValue(RValue[int]):
 
         return NotImplemented
 
-    def make_storage_location(self, name: Optional[str] = None):
-        return qp.Quint(qp.NamedQureg(
-            name, len(self.coherent) + self.constant.bit_length()))
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc_int(name=name, bits=len(self.coherent) + self.constant.bit_length())
 
     def init_storage_location(self,
                               location: 'qp.Quint',
                               controls: 'qp.QubitIntersection'):
-        qp.PlusEqualProduct(
+        qp.arithmetic.do_plus_product(
+            control=controls,
             lvalue=location,
             quantum_factor=self.coherent,
             const_factor=self.constant,
-        ).emit_ops(controls)
+        )
+
+    def clear_storage_location(self,
+                               location: Any,
+                               controls: 'qp.QubitIntersection'):
+        qp.arithmetic.do_plus_product(
+            control=controls,
+            lvalue=location,
+            quantum_factor=self.coherent,
+            const_factor=self.constant,
+            forward=False
+        )
 
 
 @cirq.value_equality
@@ -117,8 +128,8 @@ class QubitIntersection(RValue[bool]):
 
         return NotImplemented
 
-    def make_storage_location(self, name: Optional[str] = None):
-        return qp.Qubit(name)
+    def alloc_storage_location(self, name: Optional[str] = None):
+        return qp.qalloc(name=name)
 
     def init_storage_location(self,
                               location: 'qp.Qubit',

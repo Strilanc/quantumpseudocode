@@ -57,6 +57,8 @@ class NamedQureg(Qureg):
     def __getitem__(self, item):
         r = range(self.length)[item]
         if isinstance(r, int):
+            if r == 0 and self.length == 1:
+                return qp.Qubit(self.name, None)
             return qp.Qubit(self.name, r)
         if isinstance(r, range):
             return RangeQureg(self, r)

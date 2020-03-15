@@ -82,8 +82,8 @@ class HeldRValueManager(Generic[T]):
         assert self.location is None
         self.location = self.rvalue.existing_storage_location()
         if self.location is None:
-            self.location = self.rvalue.make_storage_location(self.name)
-            self.qalloc = qp.qmanaged(self.location)
+            self.location = self.rvalue.alloc_storage_location(self.name)
+            self.qalloc = self.location
             self.qalloc.__enter__()
             self.rvalue.init_storage_location(self.location, self.controls)
         return self.location
