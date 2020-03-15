@@ -39,10 +39,10 @@ class PaddedQureg:
 
         assert self.padded is None
         sub_name = str(self.base) if isinstance(self.base, qp.NamedQureg) else ''
-        self.padded = qp.global_logger.do_allocate_qureg(qp.AllocArgs(
-            qureg_name='{}_pad'.format(sub_name),
-            qureg_length=self.min_len - len(self.base)
-        ))
+        self.padded = qp.qalloc(
+            name='{}_pad'.format(sub_name),
+            len=self.min_len - len(self.base)
+        )
         return self.wrapper(qp.RawQureg(list(self.base) + list(self.padded)))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -51,5 +51,5 @@ class PaddedQureg:
 
         if exc_type is None:
             assert self.padded is not None
-            qp.global_logger.do_release_qureg(qp.ReleaseQuregOperation(self.padded))
+            qp.qfree(self.padded)
             self.padded = None

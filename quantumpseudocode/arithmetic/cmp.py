@@ -147,7 +147,7 @@ class IfLessThanRVal(RValue[bool]):
                 lhs=self.lhs,
                 rhs=self.rhs,
                 or_equal=self.or_equal,
-                effect=lambda c: qp.global_logger.do_toggle_qureg(qp.RawQureg([other]), c))
+                effect=other.__ixor__)
             return other
 
         return NotImplemented

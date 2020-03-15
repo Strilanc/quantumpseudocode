@@ -1,9 +1,8 @@
-from quantumpseudocode.logger import (
+from quantumpseudocode.sink import (
     capture,
     CaptureLens,
     EmptyManager,
-    global_logger,
-    Logger,
+    Sink,
 )
 
 from quantumpseudocode.buf import (

@@ -2,7 +2,7 @@ import random
 from typing import List, Union, Callable, Any, Optional, TypeVar, Generic, overload, ContextManager
 
 import quantumpseudocode as qp
-
+from quantumpseudocode import sink
 
 T = TypeVar('T')
 
@@ -10,15 +10,23 @@ T = TypeVar('T')
 @overload
 def measure(val: qp.RValue[T], *, reset: bool = False) -> T:
     pass
+
+
 @overload
 def measure(val: qp.Quint, *, reset: bool = False) -> int:
     pass
+
+
 @overload
 def measure(val: qp.Qubit, *, reset: bool = False) -> bool:
     pass
+
+
 @overload
 def measure(val: qp.Qureg, *, reset: bool = False) -> List[bool]:
     pass
+
+
 def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
             *,
             reset: bool = False) -> Union[bool, int, List[bool], T]:
@@ -35,7 +43,7 @@ def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
     else:
         raise NotImplementedError(f"Don't know how to measure {val!r}.")
 
-    qp.global_logger.do_measure_qureg(op)
+    sink.global_sink.do_measure(op)
     assert op.results is not None
     return op.results
 
@@ -43,24 +51,22 @@ def measure(val: Union[qp.RValue[T], qp.Quint, qp.Qureg, qp.Qubit],
 @overload
 def measurement_based_uncomputation(val: qp.Quint) -> ContextManager[int]:
     pass
+
+
 @overload
 def measurement_based_uncomputation(val: qp.Qubit) -> ContextManager[bool]:
     pass
+
+
 @overload
 def measurement_based_uncomputation(val: qp.Qureg) -> ContextManager[List[bool]]:
     pass
+
+
 def measurement_based_uncomputation(
         val: Union[qp.Qubit, qp.Quint, qp.Qureg]) -> ContextManager[Union[int, bool, List[bool]]]:
-    return _measure_op_x(val)
-
-
-def _measure_op_x(
-        val: Union[qp.RValue[T], qp.Qubit, qp.Qureg, qp.Quint] = None
-        ) -> Union['qp.MeasureXForPhaseKickOperation[bool]',
-                   'qp.MeasureXForPhaseKickOperation[int]',
-                   'qp.MeasureXForPhaseKickOperation[List[bool]]']:
     if isinstance(val, qp.Qubit):
-        return qp.StartMeasurementBasedUncomputation(qp.RawQureg([val]), lambda e: bool(e[0]))
+        return qp.StartMeasurementBasedUncomputation(val.qureg, lambda e: bool(e[0]))
 
     if isinstance(val, qp.Qureg):
         return qp.StartMeasurementBasedUncomputation(val, lambda e: e)
@@ -68,7 +74,7 @@ def _measure_op_x(
     if isinstance(val, (qp.Quint, qp.QuintMod)):
         return qp.StartMeasurementBasedUncomputation(val.qureg, qp.little_endian_int)
 
-    raise NotImplementedError("Don't know {!r}".format(val))
+    raise NotImplementedError(f"Don't know {val!r}")
 
 
 class MeasureOperation(Generic[T]):
@@ -125,12 +131,12 @@ class StartMeasurementBasedUncomputation(Generic[T]):
                          "It returns a context manager, not a boolean.")
 
     def __enter__(self):
-        qp.global_logger.do_start_measurement_based_uncomputation(self)
+        sink.global_sink.do_start_measurement_based_uncomputation(self)
         return self.results
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         assert self.captured_phase_degrees is not None
-        qp.global_logger.do_end_measurement_based_uncomputation(
+        sink.global_sink.do_end_measurement_based_uncomputation(
             qp.EndMeasurementBasedComputationOp(self.targets, self.captured_phase_degrees))
 
 

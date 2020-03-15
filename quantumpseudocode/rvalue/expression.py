@@ -4,6 +4,7 @@ import cirq
 
 import quantumpseudocode as qp
 from .rvalue import RValue
+from quantumpseudocode import sink
 
 
 @cirq.value_equality
@@ -123,7 +124,7 @@ class QubitIntersection(RValue[bool]):
 
         if isinstance(other, qp.Qubit):
             if self.bit:
-                qp.global_logger.do_toggle_qureg(qp.RawQureg([other]), self & controls)
+                sink.global_sink.do_toggle(other.qureg, self & controls)
             return other
 
         return NotImplemented
@@ -134,8 +135,7 @@ class QubitIntersection(RValue[bool]):
     def init_storage_location(self,
                               location: 'qp.Qubit',
                               controls: 'qp.QubitIntersection'):
-        t = qp.RawQureg([location])
-        qp.global_logger.do_toggle_qureg(t, self & controls)
+        location ^= self & controls
 
     def clear_storage_location(self,
                                location: Any,

@@ -2,7 +2,6 @@ import random
 from typing import List, Union, Callable, Any, Optional, Tuple, Set, Dict, Iterable
 
 import quantumpseudocode as qp
-import quantumpseudocode.logger
 import quantumpseudocode.ops.operation
 
 
@@ -10,7 +9,7 @@ def _toggle_targets(lvalue: 'qp.Qureg') -> 'qp.Qureg':
     return lvalue
 
 
-class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.ClassicalSimState):
+class Sim(quantumpseudocode.sink.Sink, quantumpseudocode.ops.operation.ClassicalSimState):
     def __init__(self,
                  enforce_release_at_zero: bool = True,
                  phase_fixup_bias: Optional[bool] = None,
@@ -86,7 +85,7 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
             return lambda: self.phase_fixup_bias
         return lambda: random.random() < 0.5
 
-    def do_allocate_qureg(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
+    def do_allocate(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
         if args.qureg_name is None:
             name = f'_anon_{self._anon_alloc_counter}'
             self._anon_alloc_counter += 1
@@ -100,10 +99,10 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
             length=args.qureg_length)
         return result
 
-    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+    def did_allocate(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         pass
 
-    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+    def do_release(self, op: 'qp.ReleaseQuregOperation'):
         for q in op.qureg:
             if self.enforce_release_at_zero and not op.dirty:
                 assert self._read_qubit(q) == 0, 'Failed to uncompute {} before release'.format(q)
@@ -116,7 +115,7 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
                 assert q.name in self._int_state
                 del self._int_state[q.name]
 
-    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, op: 'qp.MeasureOperation'):
         assert op.raw_results is None
         reg = self.quint_buf(qp.Quint(op.targets))
         op.raw_results = tuple(reg[i] for i in range(len(reg)))
@@ -147,7 +146,7 @@ class Sim(quantumpseudocode.logger.Logger, quantumpseudocode.ops.operation.Class
         if self.resolve_location(controls, allow_mutate=False):
             self.phase_degrees += 180
 
-    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+    def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         assert set(targets).isdisjoint(controls.qubits)
         if controls.bit and all(self._read_qubit(q) for q in controls.qubits):
             for t in targets:

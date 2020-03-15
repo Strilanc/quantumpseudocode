@@ -3,6 +3,7 @@ from typing import Optional, Union, Any, overload
 import cirq
 
 import quantumpseudocode as qp
+from quantumpseudocode import sink
 
 
 @overload
@@ -61,7 +62,7 @@ def qalloc(*,
     else:
         raise ValueError(f'Incompatible argument combination.')
 
-    qureg = qp.global_logger.do_allocate_qureg(AllocArgs(
+    qureg = sink.global_sink.do_allocate(AllocArgs(
         qureg_name=name or '',
         qureg_length=n,
         x_basis=x_basis))
@@ -86,7 +87,8 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
             target, qp.QubitIntersection.ALWAYS)
 
     if isinstance(target, qp.Qubit):
-        reg = qp.RawQureg([target])
+        assert target.index is None, "Can't deallocate individual qubits from within a register."
+        reg = qp.NamedQureg(name=target.name, length=1)
     elif isinstance(target, qp.Qureg):
         reg = target
     elif isinstance(target, qp.Quint):
@@ -96,7 +98,7 @@ def qfree(target: Union[qp.Qubit, qp.Qureg, qp.Quint],
     else:
         raise NotImplementedError()
     if len(reg):
-        qp.global_logger.do_release_qureg(qp.ReleaseQuregOperation(reg, dirty=dirty))
+        sink.global_sink.do_release(qp.ReleaseQuregOperation(reg, dirty=dirty))
 
 
 class AllocArgs:

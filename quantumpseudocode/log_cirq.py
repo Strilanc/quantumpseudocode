@@ -47,7 +47,7 @@ class CirqLabelOp(cirq.Operation):
         return f'CirqLabelOp({self.qubits!r}, {self.label!r})'
 
 
-class LogCirqCircuit(qp.Logger):
+class LogCirqCircuit(qp.Sink):
     def __init__(self, measure_bias: Optional[float] = None):
         super().__init__()
         self.circuit = cirq.Circuit()
@@ -56,12 +56,12 @@ class LogCirqCircuit(qp.Logger):
     def _val(self):
         return self.circuit
 
-    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+    def did_allocate(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         targets = [cirq.NamedQubit(str(q)) for q in qureg]
         if targets:
             self.circuit.append(CirqLabelOp(targets, 'alloc'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+    def do_release(self, op: 'qp.ReleaseQuregOperation'):
         targets = [cirq.NamedQubit(str(q)) for q in op.qureg]
         if targets:
             self.circuit.append(CirqLabelOp(targets, 'release'), cirq.InsertStrategy.NEW_THEN_INLINE)
@@ -78,14 +78,14 @@ class LogCirqCircuit(qp.Logger):
             else:
                 self.circuit.append(cirq.GlobalPhaseOperation(-1), cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+    def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         ctrls = [cirq.NamedQubit(str(q)) for q in controls.qubits]
         if targets and controls.bit:
             targs = [cirq.NamedQubit(str(q)) for q in targets]
             self.circuit.append(MultiNot(targs).controlled_by(*ctrls),
                                 cirq.InsertStrategy.NEW_THEN_INLINE)
 
-    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, op: 'qp.MeasureOperation'):
         qubits = [cirq.NamedQubit(str(q)) for q in op.targets]
         if not qubits:
             return
@@ -112,7 +112,7 @@ class LogCirqCircuit(qp.Logger):
         self.circuit.append(CirqLabelOp(targets, 'cxM'), cirq.InsertStrategy.NEW_THEN_INLINE)
 
 
-class CountNots(qp.Logger):
+class CountNots(qp.Sink):
     def __init__(self):
         super().__init__()
         self.counts = collections.Counter()
@@ -120,10 +120,10 @@ class CountNots(qp.Logger):
     def _val(self):
         return self.counts
 
-    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+    def did_allocate(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         pass
 
-    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+    def do_release(self, op: 'qp.ReleaseQuregOperation'):
         pass
 
     def do_phase_flip(self, controls: 'qp.QubitIntersection'):
@@ -131,7 +131,7 @@ class CountNots(qp.Logger):
             if len(controls.qubits) > 0:
                 self.counts[len(controls.qubits) - 1] += 1
 
-    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+    def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         if controls.bit:
             if len(controls.qubits) > 1:
                 self.counts[1] += 2 * (len(targets) - 1)
@@ -139,7 +139,7 @@ class CountNots(qp.Logger):
             else:
                 self.counts[len(controls.qubits)] += len(targets)
 
-    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, op: 'qp.MeasureOperation'):
         pass
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):

@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Iterable, Union
 import cirq
 
 import quantumpseudocode as qp
+from quantumpseudocode import sink
 
 
 @cirq.value_equality
@@ -18,10 +19,12 @@ class Qubit:
 
     @property
     def qureg(self):
-        return qp.RawQureg([qp.Qubit(self.name, self.index or 0)])
+        if self.index is None:
+            return qp.NamedQureg(self.name, length=1)
+        return qp.RawQureg([qp.Qubit(self.name, self.index)])
 
     def resolve(self, sim_state: 'qp.ClassicalSimState', allow_mutate: bool):
-        buf = sim_state.quint_buf(qp.Quint(qp.RawQureg([self])))
+        buf = sim_state.quint_buf(qp.Quint(self.qureg))
         return buf if allow_mutate else bool(int(buf))
 
     def _value_equality_values_(self):
@@ -70,11 +73,11 @@ class Qubit:
             return self
 
         if other in [True, 1]:
-            qp.global_logger.do_toggle_qureg(qp.RawQureg([self]), qp.QubitIntersection.ALWAYS)
+            sink.global_sink.do_toggle(self.qureg, qp.QubitIntersection.ALWAYS)
             return self
 
         if isinstance(other, Qubit):
-            qp.global_logger.do_toggle_qureg(qp.RawQureg([self]), qp.QubitIntersection((other,)))
+            sink.global_sink.do_toggle(self.qureg, qp.QubitIntersection((other,)))
             return self
 
         rev = getattr(other, '__rixor__', None)
@@ -87,5 +90,4 @@ class Qubit:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        qp.global_logger.do_release_qureg(
-            qp.ReleaseQuregOperation(qp.NamedQureg(name=self.name, length=1)))
+        qp.qfree(self)

@@ -52,7 +52,7 @@ class LookupTable:
         if isinstance(item, qp.Quint):
             return qp.LookupRValue(self, item)
         if isinstance(item, qp.Qubit):
-            return qp.LookupRValue(self, qp.Quint(qp.RawQureg([item])))
+            return qp.LookupRValue(self, qp.Quint(item.qureg))
         raise NotImplementedError('Strange index: {}'.format(item))
 
     def __repr__(self):

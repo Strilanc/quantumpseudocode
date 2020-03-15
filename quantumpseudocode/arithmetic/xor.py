@@ -1,5 +1,6 @@
 import quantumpseudocode as qp
 from quantumpseudocode.ops import semi_quantum
+from quantumpseudocode import sink
 
 
 def do_xor_const_classical(*,
@@ -23,7 +24,7 @@ def do_xor_const(*,
     assert isinstance(lvalue, qp.Quint)
     assert isinstance(mask, int)
     targets = [q for i, q in enumerate(lvalue) if mask & (1 << i)]
-    qp.global_logger.do_toggle_qureg(qp.RawQureg(targets), control)
+    sink.global_sink.do_toggle(qp.RawQureg(targets), control)
 
 
 @semi_quantum(alloc_prefix='_xor_', classical=do_xor_classical)
@@ -35,4 +36,4 @@ def do_xor(*,
     assert isinstance(lvalue, qp.Quint)
     assert isinstance(mask, qp.Quint)
     for q, m in zip(lvalue, mask):
-        qp.global_logger.do_toggle_qureg(qp.RawQureg([q]), control & m)
+        sink.global_sink.do_toggle(q.qureg, control & m)

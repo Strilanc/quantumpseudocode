@@ -20,21 +20,21 @@ class EmptyManager:
         pass
 
 
-class Logger(metaclass=abc.ABCMeta):
+class Sink(metaclass=abc.ABCMeta):
     def __init__(self):
         self.used = False
 
-    def do_allocate_qureg(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
+    def do_allocate(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
         result = qp.NamedQureg(args.qureg_name or '', length=args.qureg_length)
-        self.did_allocate_qureg(args, result)
+        self.did_allocate(args, result)
         return result
 
     @abc.abstractmethod
-    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+    def did_allocate(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         pass
 
     @abc.abstractmethod
-    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+    def do_release(self, op: 'qp.ReleaseQuregOperation'):
         pass
 
     @abc.abstractmethod
@@ -42,11 +42,11 @@ class Logger(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+    def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         pass
 
     @abc.abstractmethod
-    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, op: 'qp.MeasureOperation'):
         pass
 
     @abc.abstractmethod
@@ -66,17 +66,17 @@ class Logger(metaclass=abc.ABCMeta):
     def __enter__(self):
         assert not self.used
         self.used = True
-        global_logger.loggers.append(self)
+        global_sink.sinks.append(self)
         return self._val()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        assert global_logger.loggers[-1] is self
-        global_logger.loggers.pop()
+        assert global_sink.sinks[-1] is self
+        global_sink.sinks.pop()
         if exc_type is None:
             self._succeeded()
 
 
-class CaptureLens(Logger):
+class CaptureLens(Sink):
     def __init__(self, out: List[Tuple[str, Any]], measure_bias: Optional[float]):
         super().__init__()
         self.out = out
@@ -86,19 +86,19 @@ class CaptureLens(Logger):
         super().__enter__()
         return self.out
 
-    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+    def did_allocate(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
         self.out.append(('alloc', (args, qureg)))
 
-    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
+    def do_release(self, op: 'qp.ReleaseQuregOperation'):
         self.out.append(('release', op))
 
     def do_phase_flip(self, controls: 'qp.QubitIntersection'):
         self.out.append(('phase_flip', controls))
 
-    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+    def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
         self.out.append(('toggle', (targets, controls)))
 
-    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
+    def do_measure(self, op: 'qp.MeasureOperation'):
         self.out.append(('measure', op))
         if self.measure_bias is not None:
             op.take_default_result(bias=self.measure_bias)
@@ -113,45 +113,44 @@ class CaptureLens(Logger):
         self.out.append(('end_measurement_based_uncomputation', op))
 
 
-class _GlobalLogger(Logger):
+class _GlobalSink(Sink):
     def __init__(self):
         super().__init__()
-        self.sim: Optional['qp.Logger'] = None
-        self.loggers: List['qp.Logger'] = []
+        self.sinks: List['qp.Sink'] = []
 
-    def do_allocate_qureg(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
-        result = self.loggers[0].do_allocate_qureg(args)
-        for logger in self.loggers[1:]:
-            logger.did_allocate_qureg(args, result)
+    def do_allocate(self, args: 'qp.AllocArgs') -> 'qp.Qureg':
+        result = self.sinks[0].do_allocate(args)
+        for sink in self.sinks[1:]:
+            sink.did_allocate(args, result)
         return result
 
-    def did_allocate_qureg(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
-        for logger in self.loggers:
-            logger.did_allocate_qureg(args, qureg)
+    def did_allocate(self, args: 'qp.AllocArgs', qureg: 'qp.Qureg'):
+        for sink in self.sinks:
+            sink.did_allocate(args, qureg)
 
-    def do_release_qureg(self, op: 'qp.ReleaseQuregOperation'):
-        for logger in self.loggers:
-            logger.do_release_qureg(op)
+    def do_release(self, op: 'qp.ReleaseQuregOperation'):
+        for sink in self.sinks:
+            sink.do_release(op)
 
     def do_phase_flip(self, controls: 'qp.QubitIntersection'):
-        for logger in self.loggers:
-            logger.do_phase_flip(controls)
+        for sink in self.sinks:
+            sink.do_phase_flip(controls)
 
-    def do_toggle_qureg(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
-        for logger in self.loggers:
-            logger.do_toggle_qureg(targets, controls)
+    def do_toggle(self, targets: 'qp.Qureg', controls: 'qp.QubitIntersection'):
+        for sink in self.sinks:
+            sink.do_toggle(targets, controls)
 
-    def do_measure_qureg(self, op: 'qp.MeasureOperation'):
-        for logger in self.loggers:
-            logger.do_measure_qureg(op)
+    def do_measure(self, op: 'qp.MeasureOperation'):
+        for sink in self.sinks:
+            sink.do_measure(op)
 
     def do_start_measurement_based_uncomputation(self, op: 'qp.StartMeasurementBasedUncomputation'):
-        for logger in self.loggers:
-            logger.do_start_measurement_based_uncomputation(op)
+        for sink in self.sinks:
+            sink.do_start_measurement_based_uncomputation(op)
 
     def do_end_measurement_based_uncomputation(self, op: 'qp.EndMeasurementBasedComputationOp'):
-        for logger in self.loggers:
-            logger.do_end_measurement_based_uncomputation(op)
+        for sink in self.sinks:
+            sink.do_end_measurement_based_uncomputation(op)
 
 
-global_logger = _GlobalLogger()
+global_sink = _GlobalSink()
