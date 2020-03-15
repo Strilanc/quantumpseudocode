@@ -100,6 +100,23 @@ class QubitIntersection(RValue[bool]):
         v = qp.Quint(qp.RawQureg(self.qubits)).resolve(sim_state, False)
         return self.bit and v == (1 << len(self.qubits)) - 1
 
+    @staticmethod
+    def try_from(val: Any) -> Optional['qp.QubitIntersection']:
+        if isinstance(val, (bool, int)):
+            if val in [False, 0]:
+                return qp.QubitIntersection.NEVER
+
+            if val in [True, 1]:
+                return qp.QubitIntersection.ALWAYS
+
+        if isinstance(val, qp.Qubit):
+            return qp.QubitIntersection((val,))
+
+        if isinstance(val, qp.QubitIntersection):
+            return val
+
+        return None
+
     def _value_equality_values_(self):
         return self.bit and frozenset(self.qubits)
 
@@ -115,18 +132,6 @@ class QubitIntersection(RValue[bool]):
             return qp.QubitIntersection.NEVER
         if other in [True, 1]:
             return self
-        return NotImplemented
-
-    def __rixor__(self, other):
-        other, controls = qp.ControlledLValue.split(other)
-        if controls == qp.QubitIntersection.NEVER:
-            return other
-
-        if isinstance(other, qp.Qubit):
-            if self.bit:
-                sink.global_sink.do_toggle(other.qureg, self & controls)
-            return other
-
         return NotImplemented
 
     def alloc_storage_location(self, name: Optional[str] = None):

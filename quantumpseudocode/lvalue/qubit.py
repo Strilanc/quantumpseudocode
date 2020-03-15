@@ -69,15 +69,9 @@ class Qubit:
         if controls == qp.QubitIntersection.NEVER:
             return self
 
-        if other in [False, 0]:
-            return self
-
-        if other in [True, 1]:
-            sink.global_sink.do_toggle(self.qureg, qp.QubitIntersection.ALWAYS)
-            return self
-
-        if isinstance(other, Qubit):
-            sink.global_sink.do_toggle(self.qureg, qp.QubitIntersection((other,)))
+        other_as_control = qp.QubitIntersection.try_from(other)
+        if other_as_control is not None:
+            sink.global_sink.do_toggle(self.qureg, other_as_control & controls)
             return self
 
         rev = getattr(other, '__rixor__', None)
