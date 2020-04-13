@@ -108,6 +108,13 @@ class Quint(RValue[int], LValue[int]):
                                  qp.rval(self),
                                  qp.rval(False))
 
+    def __and__(self, other) -> Union['qp.Quint', 'qp.QuintIntersection']:
+        if isinstance(other, (int, qp.Quint, qp.QuintIntersection)):
+            return qp.QuintIntersection(self, other).unwrap()
+        return NotImplemented
+
+    __rand__ = __and__
+
     def __ixor__(self, other):
         other, controls = qp.ControlledRValue.split(other)
         if controls == qp.QubitIntersection.NEVER:

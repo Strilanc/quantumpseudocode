@@ -25,3 +25,7 @@ from .rvalue import (
 from .lookup import (
     LookupTable,
 )
+
+from .quint_intersection import (
+    QuintIntersection,
+)
